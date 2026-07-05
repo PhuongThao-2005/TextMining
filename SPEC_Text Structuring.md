@@ -94,7 +94,13 @@ Every legal unit and chunk must preserve these key fields from `metadata_final.j
 - `issue_year`, `tinh_trang_hieu_luc_canonical`
 - `validity_group`, `dataset_tier`
 - `pham_vi_canonical`, `nganh_canonical`, `linh_vuc_canonical`
-- `quality_flags_document`
+- `quality_flags`
+
+Field naming policy:
+
+- `quality_flags` always means the metadata quality flags inherited unchanged from `metadata_final.jsonl`.
+- `structuring_quality_flags` means warnings/errors produced by text matching, legal-unit parsing, coverage validation, or chunking.
+- Do not rename metadata `quality_flags` to `quality_flags_document` in text structuring outputs.
 
 ### Document Record
 
@@ -108,11 +114,11 @@ Each `documents_structured.jsonl` record must include:
 - `issue_year`, `tinh_trang_hieu_luc_canonical`
 - `validity_group`, `dataset_tier`
 - `pham_vi_canonical`, `nganh_canonical`, `linh_vuc_canonical`
-- `quality_flags_document`
+- `quality_flags`
 - `source_text_path`, `source_text_hash`
 - `text_char_count`, `legal_unit_count`, `article_count`, `chunk_count`
 - `coverage_ratio`, `reconstruction_exact`, `reconstructed_text_hash`
-- `structuring_status`, `parse_confidence`, `quality_flags`
+- `structuring_status`, `parse_confidence`, `structuring_quality_flags`
 
 Allowed `structuring_status` values:
 
@@ -136,7 +142,7 @@ Each `legal_units.jsonl` record must include:
 - `raw_unit_text`, `unit_text`, `full_text`, `retrieval_text`
 - `unit_char_count`, `unit_token_estimate`, `chunk_count`
 - `start_char`, `end_char`
-- `source_text_path`, `parse_confidence`, `quality_flags`
+- `source_text_path`, `parse_confidence`, `structuring_quality_flags`
 - the key document metadata listed above
 
 Recommended IDs:
@@ -163,7 +169,7 @@ Each `chunks.jsonl` record must include:
 - `start_char`, `end_char`
 - `structure_level`, `article_detected`
 - `unit_split`, `multi_unit_chunk`
-- `source_text_path`, `quality_flags`
+- `source_text_path`, `structuring_quality_flags`
 - `text_structuring_version`
 - the key document metadata listed above
 
@@ -188,8 +194,8 @@ Text field meanings:
 - Recommended hard max: `1,200` tokens.
 - Recommended overlap: `100-150` tokens.
 - Mark split chunks with `unit_split = true`.
-- Mark fallback chunks with `article_detected = false`, `unit_type`, `structure_level`, and `quality_flags`.
-- Each chunk must include `parent_unit_id`, deterministic `chunk_id`, `citation_anchor`, `chunk_text`, `retrieval_text`, chunk indexes, offsets, and quality flags.
+- Mark fallback chunks with `article_detected = false`, `unit_type`, `structure_level`, and `structuring_quality_flags`.
+- Each chunk must include `parent_unit_id`, deterministic `chunk_id`, `citation_anchor`, `chunk_text`, `retrieval_text`, chunk indexes, offsets, and structuring quality flags.
 
 Citation anchor format:
 
@@ -270,7 +276,7 @@ Retrieval should:
 - use `parent_unit_id` for same-unit expansion;
 - use `doc_id` / `id_str` for metadata and graph joins;
 - use `citation_anchor` for answer citations;
-- rank/filter by `dataset_tier`, `validity_group`, `unit_type`, `parse_confidence`, and `quality_flags`;
+- rank/filter by `dataset_tier`, `validity_group`, `unit_type`, `parse_confidence`, metadata `quality_flags`, and `structuring_quality_flags`;
 - prefer `primary` and `active` chunks for current-law questions;
 - allow `reference` and expired chunks for historical, lineage, amendment, or validity questions.
 
@@ -292,7 +298,7 @@ Graph alignment may create:
 5. Parse text into legal units.
 6. Validate coverage and reconstruction.
 7. Chunk each legal unit independently.
-8. Attach metadata, IDs, offsets, quality flags, and citation anchors.
+8. Attach metadata, IDs, offsets, `quality_flags`, `structuring_quality_flags`, and citation anchors.
 9. Write output files and report.
 
 ## 10. Acceptance Criteria
@@ -308,6 +314,7 @@ Graph alignment may create:
 | Chunks do not cross article boundaries in normal mode | Required |
 | Every chunk has `parent_unit_id` | Required |
 | Every unit and chunk preserves key document metadata | Required |
+| Metadata `quality_flags` and `structuring_quality_flags` are kept separate | Required |
 | Every chunk has deterministic `chunk_id` | Required |
 | Every chunk has citation-ready `citation_anchor` | Required |
 | No usable text is silently dropped | Required |
