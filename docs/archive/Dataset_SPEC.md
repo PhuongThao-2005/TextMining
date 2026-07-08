@@ -4,25 +4,31 @@
 
 This document is the EDA and finalization report for the cleaned dataset package produced from:
 
-- `Road2AI_ApplePie/data/untracked_data/metadata.jsonl`
-- `Road2AI_ApplePie/data/untracked_data/relationships.jsonl`
+- `data/untracked_data/metadata.jsonl`
+- `data/untracked_data/relationships.jsonl`
 
 The finalized dataset is prepared for the G-LRAG system described in `SPEC.md`. This stage focuses on dataset filtering, preprocessing, normalization, quarantine handling, and handoff readiness. Graph construction remains out of scope and will be handled separately.
 
+> **Scope note — no full document text.** This finalized package contains **document-level metadata and document-to-document relationships only**. It does **not** contain full document body text (`content_html`, article text, etc.). Downstream stages that require document text (text structuring, chunk-level vector retrieval) must source it separately and join by `id_str`; they cannot obtain it from these artifacts. See §8.
+
+### Path convention
+
+All paths in this document are relative to the project root. The finalized artifacts live in `data/finalized/` and the raw inputs in `data/untracked_data/`. The `data/` directory is gitignored. (Earlier drafts and `scripts/finalize_dataset.py` reference a `Road2AI_ApplePie/data/...` prefix from the original source repository; the authoritative location for this project is `data/`.)
+
 ## 2. Finalized Dataset Artifacts
 
-The finalized dataset was generated into `Road2AI_ApplePie/data/finalized/`.
+The finalized dataset was generated into `data/finalized/`.
 
 | Artifact | Purpose |
 | --- | --- |
-| `Road2AI_ApplePie/data/finalized/metadata_final.jsonl` | Cleaned metadata records for retrieval, citation, and downstream processing |
-| `Road2AI_ApplePie/data/finalized/relationships_final.jsonl` | Cleaned document-to-document relationships for downstream graph/retrieval work |
-| `Road2AI_ApplePie/data/finalized/metadata_quarantine.jsonl` | Metadata records excluded from final use, retained for audit/recovery |
-| `Road2AI_ApplePie/data/finalized/relationships_quarantine.jsonl` | Relationship records excluded from final use, retained for audit/recovery |
-| `Road2AI_ApplePie/data/finalized/metadata_external_stubs.jsonl` | Placeholder records for relationship targets missing from metadata |
-| `Road2AI_ApplePie/data/finalized/preprocessing_report.md` | Machine-generated preprocessing summary |
+| `data/finalized/metadata_final.jsonl` | Cleaned metadata records for retrieval, citation, and downstream processing |
+| `data/finalized/relationships_final.jsonl` | Cleaned document-to-document relationships for downstream graph/retrieval work |
+| `data/finalized/metadata_quarantine.jsonl` | Metadata records excluded from final use, retained for audit/recovery |
+| `data/finalized/relationships_quarantine.jsonl` | Relationship records excluded from final use, retained for audit/recovery |
+| `data/finalized/metadata_external_stubs.jsonl` | Placeholder records for relationship targets missing from metadata |
+| `data/finalized/preprocessing_report.md` | Machine-generated preprocessing summary |
 
-The preprocessing pipeline used to produce these files is available at `scripts/finalize_dataset.py`.
+The preprocessing pipeline used to produce these files is available at `scripts/finalize_dataset.py`. Note: the script's hardcoded `RAW_DIR`/`OUT_DIR` still point at `Road2AI_ApplePie/data/...`; to reproduce these artifacts at the project's `data/` location, those two constants must be adjusted.
 
 ## 3. Raw Dataset EDA Summary
 
@@ -166,6 +172,10 @@ Interpretation:
 | `unknown_type` | 8 |
 | `future_issue_date` | 2 |
 
+> **Reason counts are tags, not row counts.** The reason tags sum to 1,799, which is 3 more than the 1,796 quarantined rows. This is expected: a single record can carry more than one exclusion reason (the `exclusion_reasons` field is a list), so 3 records are double-tagged. The row total (1,796) is authoritative; the reason breakdown is a per-tag tally. Verified against `metadata_quarantine.jsonl`.
+>
+> The additional exclusion reasons the pipeline can emit but which did not trigger any quarantine in this run are: `missing_id`, `missing_title`, `missing_so_ky_hieu`, and `unsupported_type` (all count 0). They are listed here so downstream teams know the full set of possible quarantine reasons, not only the three observed.
+
 Interpretation:
 
 - Most metadata quarantine decisions were caused by missing issuer information.
@@ -215,6 +225,34 @@ Interpretation:
 - `validity`, `amendment`, `supplement`, and `suspension` relationships are useful for current-law and legal-lineage reasoning.
 - `related` relationships are intentionally retained but should be treated as weak/low-priority context.
 
+### 6.2.1 Authoritative Raw → Canonical Mapping
+
+This is the mapping actually applied by `scripts/finalize_dataset.py` and verified against `relationships_final.jsonl`. Downstream teams (graph, retrieval) **must** use this table as the source of truth for `relationship_canonical` values. The 17 raw labels map one-to-one to 17 canonical labels; no label is merged, split, or dropped.
+
+| Raw label (Vietnamese) | `relationship_canonical` | `relationship_group` | Count |
+| --- | --- | --- | ---: |
+| `Văn bản căn cứ` | `based_on` | `basis` | 578,736 |
+| `Văn bản dẫn chiếu` | `cites` | `citation` | 75,023 |
+| `Văn bản hết hiệu lực` | `expires_or_replaces` | `validity` | 61,227 |
+| `Văn bản quy định hết hiệu lực` | `expired_or_replaced_by` | `validity` | 49,995 |
+| `Văn bản được HD, QĐ chi tiết` | `guided_or_detailed_by` | `guidance` | 34,991 |
+| `Văn bản HD, QĐ chi tiết` | `guides_or_details` | `guidance` | 34,240 |
+| `Văn bản bổ sung` | `supplements` | `supplement` | 12,794 |
+| `Văn bản bị hết hiệu lực 1 phần` | `partially_expired_by` | `validity` | 8,073 |
+| `Văn bản được sửa đổi` | `amended_by` | `amendment` | 7,667 |
+| `Văn bản sửa đổi` | `amends` | `amendment` | 7,420 |
+| `Văn bản được bổ sung` | `supplemented_by` | `supplement` | 6,498 |
+| `Văn bản quy định hết hiệu lực 1 phần` | `partially_expires` | `validity` | 6,061 |
+| `Văn bản liên quan khác` | `related_to` | `related` | 461 |
+| `Văn bản đình chỉ 1 phần` | `partially_suspends` | `suspension` | 21 |
+| `Văn bản bị đình chỉ 1 phần` | `partially_suspended_by` | `suspension` | 19 |
+| `Văn bản đình chỉ` | `suspends` | `suspension` | 16 |
+| `Văn bản bị đình chỉ` | `suspended_by` | `suspension` | 14 |
+
+The 17 counts sum to exactly 883,256, matching the `relationships_final.jsonl` row count.
+
+> **Direction/label caveat for the validity group — read before graph ingestion.** The pipeline maps `Văn bản hết hiệu lực` → `expires_or_replaces` and `Văn bản quy định hết hiệu lực` → `expired_or_replaced_by`. Note this is the **opposite** of what the raw Vietnamese wording alone would suggest (`quy định hết hiệu lực` = "stipulates expiry" reads like the *replacer*, yet it is mapped to `expired_or_replaced_by`). Two possibilities exist and have **not** been disambiguated: (a) the mapping label is inverted for this pair, or (b) the `(doc_id, other_doc_id)` order is recorded from a perspective that makes the mapping correct. This must be confirmed against real sample rows before the graph team builds `EXPIRES_OR_REPLACES` / `EXPIRED_OR_REPLACED_BY` edges. Until confirmed, treat the `validity` group direction as unverified. `SPEC_Knowledge Graph.md` §6.1 currently documents the inverse of what the data actually contains for this pair (see the misalignment report).
+
 ### 6.3 Relationship Quarantine Reasons
 
 | Reason | Count |
@@ -223,6 +261,10 @@ Interpretation:
 | `source_quarantined` | 4,781 |
 | `target_quarantined` | 2,030 |
 | `self_loop` | 277 |
+
+> **Reason counts are tags, not row counts.** These tags sum to 14,740, which is 106 more than the 14,634 quarantined relationship rows. As with metadata, a single edge can carry more than one exclusion reason (e.g. a self-loop that is also a duplicate, or an edge whose source is quarantined and target is also quarantined), so 106 edges are multi-tagged. The row total (14,634) is authoritative. Verified against `relationships_quarantine.jsonl`.
+>
+> Note: `missing_source_metadata` is recorded as an `edge_quality_flag` but is **not** an exclusion reason — edges whose target is missing from metadata are kept and routed to external stubs (§6.4), not quarantined.
 
 Interpretation:
 
@@ -234,9 +276,13 @@ Interpretation:
 
 | Metric | Value |
 | --- | ---: |
-| External stubs created | 19,763 |
+| External stubs created (unique missing target IDs) | 19,763 |
+| `external_target=true` edges in `relationships_final.jsonl` | 57,120 |
+| Raw edges with target missing from metadata (§3.2) | 57,790 |
 
 External stubs represent relationship target IDs that appear in `relationships.jsonl` but are missing from `metadata.jsonl`.
+
+> **Edge-vs-stub reconciliation.** 19,763 is the count of **unique** missing target IDs; 57,120 is the count of **kept edges** in the final relationships that point at one of those missing targets (many edges can point at the same missing target). The raw EDA (§3.2) counted 57,790 edges with a missing target; the 670-edge difference (57,790 − 57,120) is accounted for by edges that were quarantined for another reason (duplicate, self-loop, source quarantined) before reaching the final set. Stubs are keyed by unique ID, so the stub count stays at 19,763 regardless of how many edges reference each stub. Verified against `relationships_final.jsonl` and `metadata_external_stubs.jsonl`.
 
 Stub policy:
 
@@ -268,6 +314,10 @@ Each kept metadata record has added normalized fields:
 - `dataset_tier`
 - `quality_flags`
 - `citation_label`
+
+> **What "canonical" means for the string fields.** `loai_van_ban_canonical` applies a small explicit type-normalization map (e.g. `Nghị Quyết` → `Nghị quyết`, empty/`None` → `unknown_type`). But `co_quan_ban_hanh_canonical`, `pham_vi_canonical`, `nganh_canonical`, `linh_vuc_canonical`, and `so_ky_hieu_clean` are currently produced by whitespace/Unicode cleaning only (`clean_text`) — they are **not** mapped to a controlled vocabulary. Downstream stages that use these as exact-match keyword filters (see `SPEC_Vector_Retrieval.md` §3.2) should expect surface variants (casing, diacritics kept, punctuation) of the same real-world value to appear as distinct keys. If strict faceted filtering is required, a follow-up canonicalization pass is needed. Verified against `metadata_final.jsonl`.
+
+> **`quality_flags` naming.** In this file `quality_flags` always means the metadata-level quality flags produced here. The text-structuring stage introduces a separate `structuring_quality_flags`; the two must be kept distinct downstream. Do not rename this field to `quality_flags_document`. See the misalignment report for the cross-spec naming conflict.
 
 ### 7.2 Added Relationship Fields
 
@@ -301,6 +351,8 @@ Each external stub has:
 ### 8.1 Use for Vector Retrieval
 
 Use `metadata_final.jsonl` as the metadata source for indexing and retrieval.
+
+> **This package has no document body text.** `metadata_final.jsonl` provides metadata and citation fields only. Chunk-level vector retrieval (`SPEC_Vector_Retrieval.md`) indexes `chunks.jsonl`, which is produced by the text-structuring stage from a separate full-text source joined by `id_str`. The dataset finalization stage does not supply that full text. This is the primary handoff dependency to flag to the retrieval and text-structuring teams.
 
 Recommended default indexing:
 
