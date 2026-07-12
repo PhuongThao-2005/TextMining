@@ -1,1 +1,6 @@
 data/
+__pycache__/
+*.py[cod]
+.tmp_tests/
+runcode.txt
+.venv/
