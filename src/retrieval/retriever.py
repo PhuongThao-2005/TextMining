@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from knowledge_graph.context_schema import GraphGuidedFilter
+from knowledge_graph.expansion import GraphExpansion
+
 from .config import VectorIndexConfig
 from .embeddings import Embedder
 from .io_utils import clean_text
@@ -12,16 +15,25 @@ from .stores import SearchHit, VectorStore
 class VectorRetriever:
     """Baseline vector retrieval flow: query embed -> filter -> expand -> rerank."""
 
-    def __init__(self, *, config: VectorIndexConfig, embedder: Embedder, store: VectorStore) -> None:
+    def __init__(
+        self,
+        *,
+        config: VectorIndexConfig,
+        embedder: Embedder,
+        store: VectorStore,
+        graph_expansion: GraphExpansion | None = None,
+    ) -> None:
         self.config = config
         self.embedder = embedder
         self.store = store
+        self.graph_expansion = graph_expansion
 
     def retrieve(
         self,
         query: str,
         filter_profile: str = "current_law",
         id_str_filter: list[str] | None = None,
+        graph_guided_filter: GraphGuidedFilter | None = None,
         top_k: int | None = None,
         top_n: int | None = None,
         score_threshold: float | None = None,
@@ -30,6 +42,11 @@ class VectorRetriever:
     ) -> RetrievalResult:
         if filter_profile not in VALID_FILTER_PROFILES:
             raise ValueError(f"Unknown filter_profile={filter_profile!r}")
+        if graph_guided_filter is not None:
+            id_str_filter = list(graph_guided_filter.id_strs)
+            filter_profile = "graph_guided"
+            if graph_guided_filter.empty_filter_warning:
+                return RetrievalResult([], 0, filter_profile, empty_filter_warning=True)
         if filter_profile == "graph_guided" and not id_str_filter:
             return RetrievalResult([], 0, filter_profile, empty_filter_warning=True)
 
@@ -73,6 +90,25 @@ class VectorRetriever:
         return filters
 
     def _expand_same_units(self, hits: list[SearchHit]) -> list[SearchHit]:
+        if self.graph_expansion is None:
+            return self._expand_same_units_local(hits)
+
+        ordered_chunk_ids: list[str] = []
+        for hit in hits:
+            chunk_id = str(hit.payload.get("chunk_id") or hit.point_id)
+            expanded = self.graph_expansion.expand(
+                [chunk_id],
+                max_hop=1,
+                max_context=(self.config.max_expansion_chunks * 2) + 1,
+            )
+            ordered_chunk_ids.extend(expanded.ordered_context_chunks)
+        if not ordered_chunk_ids:
+            return list(hits)
+
+        sibling_hits = self.store.scroll({"chunk_id": {"in": self._dedupe_chunk_ids(ordered_chunk_ids)}}, limit=len(ordered_chunk_ids))
+        return list(hits) + sibling_hits
+
+    def _expand_same_units_local(self, hits: list[SearchHit]) -> list[SearchHit]:
         expanded = list(hits)
         for hit in hits:
             payload = hit.payload
@@ -94,6 +130,17 @@ class VectorRetriever:
             )
             expanded.extend(siblings)
         return expanded
+
+    @staticmethod
+    def _dedupe_chunk_ids(chunk_ids: list[str]) -> list[str]:
+        seen: set[str] = set()
+        deduped: list[str] = []
+        for chunk_id in chunk_ids:
+            if chunk_id in seen:
+                continue
+            seen.add(chunk_id)
+            deduped.append(chunk_id)
+        return deduped
 
     @staticmethod
     def _dedupe(hits: list[SearchHit]) -> list[SearchHit]:
