@@ -144,13 +144,24 @@ class VectorRetriever:
 
     @staticmethod
     def _dedupe(hits: list[SearchHit]) -> list[SearchHit]:
-        best: dict[str, SearchHit] = {}
+        # Phase 1: dedupe by chunk_id (keep highest score per ID)
+        best_by_id: dict[str, SearchHit] = {}
         for hit in hits:
             chunk_id = str(hit.payload.get("chunk_id") or hit.point_id)
-            current = best.get(chunk_id)
+            current = best_by_id.get(chunk_id)
             if current is None or hit.score > current.score:
-                best[chunk_id] = hit
-        return list(best.values())
+                best_by_id[chunk_id] = hit
+
+        # Phase 2: dedupe by chunk_text content (keep highest score per text)
+        # Handles structuring duplicates: different chunk_ids, identical text
+        best_by_text: dict[str, SearchHit] = {}
+        for hit in best_by_id.values():
+            text = hit.payload.get("chunk_text", "")
+            current = best_by_text.get(text)
+            if current is None or hit.score > current.score:
+                best_by_text[text] = hit
+
+        return list(best_by_text.values())
 
     def _to_retrieved_chunk(self, hit: SearchHit, query: str, filter_profile: str) -> RetrievedChunk:
         payload = hit.payload
