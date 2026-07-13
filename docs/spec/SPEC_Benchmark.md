@@ -36,7 +36,7 @@ Provision Role Classification
     ▼
 Grounded Synthetic QA Generation
    (generate theo đúng category cho phép; mỗi call có thể sinh 1 batch QA độc lập
-    cho cùng 1 provision, mặc định batch_size=4; multi-hop/cross-document dùng thêm provision
+    cho cùng 1 provision, mặc định batch_size=6; multi-hop/cross-document dùng thêm provision
     liên quan qua edges; ground truth tự inherit từ nguồn đã dùng)
     │
     ▼
@@ -44,7 +44,7 @@ Minimal Evidence Tagging
    (xác định chunk_id tối thiểu thực sự chứa phần trả lời, không phải cả provision)
     │
     ▼
-LLM Verification (1 lớp, checklist gộp 5 tiêu chí; verifier chạy theo batch, tối đa 5 RPM, retry cho 429, max_workers=1 cho Gemini Free)
+LLM Verification (1 lớp, checklist gộp 5 tiêu chí; verifier chạy theo batch, rate limit theo max 15 RPM với safety factor 0.80, retry cho 429, max_workers=2)
     │
     ▼
 Retrieval Sanity Check (nhẹ, chỉ chạy trên mẫu 10–15%, KHÔNG dùng để tạo ground truth)
@@ -76,7 +76,7 @@ Golden Benchmark (Frozen) — benchmark_v2.0.jsonl
 
 **Minimal Evidence Tagging** — Vì 1 provision có thể có nhiều chunk, chỉ gán chunk nào thực sự overlap với phần trả lời (theo tinh thần "minimal supporting evidence" của LegalBench-RAG), tránh việc Recall@K bị "ăn gian" khi hệ thống trả về nguyên provision dài.
 
-**LLM Verification** — verifier có thể đánh giá đồng thời một batch QA (mặc định batch_size≈4) thay vì gọi riêng từng item, kiểm tra gộp: answer correctness, evidence sufficiency, no hallucination, category correctness, difficulty correctness. Fail bất kỳ tiêu chí nào → discard, không tự sửa.
+**LLM Verification** — verifier có thể đánh giá đồng thời một batch QA (mặc định batch_size=6) thay vì gọi riêng từng item, kiểm tra gộp: answer correctness, evidence sufficiency, no hallucination, category correctness, difficulty correctness. Fail bất kỳ tiêu chí nào → discard, không tự sửa.
 
 **Retrieval Sanity Check** — Chạy Hybrid retriever Top-30 trên **mẫu 10-15%** QA đã pass verification, chỉ để phát hiện câu hỏi bị paraphrase trôi quá xa provision gốc (gắn cờ `low_lexical_alignment`), không dùng để tạo hay sửa ground truth.
 
@@ -119,8 +119,11 @@ Golden Benchmark (Frozen) — benchmark_v2.0.jsonl
     "source_provision_ids": ["..."],
     "source_chunk_ids": ["..."],
     "evidence_provenance": "provisions.jsonl + chunks.jsonl",
-    "batch_size": 4,
-    "rate_limit_rpm": 5
+    "batch_size": 6,
+    "requests_per_minute": 15,
+    "rpm_safety_factor": 0.80,
+    "min_request_interval_sec": 5.0,
+    "max_workers": 2
   },
   "low_lexical_alignment": false,
   "human_reviewed": true,
@@ -219,6 +222,8 @@ mọi loại      → RAGAS Faithfulness / Context Precision / Context Recall / 
 ---
 
 # 3. EVALUATION PIPELINE
+
+Xem thêm bản tóm tắt chạy đánh giá tại `docs/evaluation_pipeline.md`.
 
 ## 3.1 End-to-end Evaluation Workflow (đơn giản hóa)
 
