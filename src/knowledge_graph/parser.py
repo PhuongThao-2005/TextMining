@@ -6,30 +6,7 @@ from typing import Any
 from retrieval.io_utils import clean_text
 
 from .schema import ChunkNode, DocumentNode, ExternalStubNode, FacetValue, ProvisionNode, TextProvenanceRecord
-
-
-def _as_int(value: Any, default: int = 0) -> int:
-    """Convert a JSON value to int with a stable default."""
-
-    if value is None or value == "":
-        return default
-    return int(value)
-
-
-def _as_bool(value: Any, default: bool = False) -> bool:
-    """Convert a JSON value to bool with a stable default."""
-
-    if value is None or value == "":
-        return default
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-        if normalized in {"true", "1", "yes", "y"}:
-            return True
-        if normalized in {"false", "0", "no", "n"}:
-            return False
-    return bool(value)
+from .utils import as_bool, as_int, quality_flags
 
 
 def _facet_value(value: Any) -> FacetValue:
@@ -43,14 +20,6 @@ def _facet_value(value: Any) -> FacetValue:
     return FacetValue(code="MISSING", surface="", raw="")
 
 
-def _quality_flags(values: Any) -> tuple[str, ...]:
-    """Normalize a JSON list of quality flags into an immutable tuple."""
-
-    if not values:
-        return ()
-    return tuple(clean_text(item) for item in values if clean_text(item))
-
-
 def parse_text_provenance_row(row: dict[str, Any]) -> TextProvenanceRecord:
     """Parse a `text_provenance.jsonl` row into a typed record."""
 
@@ -58,8 +27,8 @@ def parse_text_provenance_row(row: dict[str, Any]) -> TextProvenanceRecord:
         id_str=clean_text(row.get("id_str")),
         text_status=clean_text(row.get("text_status")),
         structuring_status=clean_text(row.get("structuring_status")),
-        legal_unit_count=_as_int(row.get("legal_unit_count")),
-        chunk_count=_as_int(row.get("chunk_count")),
+        legal_unit_count=as_int(row.get("legal_unit_count")),
+        chunk_count=as_int(row.get("chunk_count")),
     )
 
 
@@ -92,7 +61,7 @@ def parse_document_row(
         issue_year=_coerce_optional_int(row.get("issue_year")),
         chuc_danh=clean_text(row.get("chuc_danh")),
         nguoi_ky=clean_text(row.get("nguoi_ky")),
-        quality_flags=_quality_flags(row.get("quality_flags")),
+        quality_flags=quality_flags(row.get("quality_flags")),
         text_status=provenance_record.text_status,
         structuring_status=provenance_record.structuring_status,
         legal_unit_count=provenance_record.legal_unit_count,
@@ -105,10 +74,10 @@ def parse_external_stub_row(row: dict[str, Any]) -> ExternalStubNode:
 
     return ExternalStubNode(
         id_str=clean_text(row.get("id_str")),
-        is_external_stub=_as_bool(row.get("is_external_stub"), True),
-        citation_safe=_as_bool(row.get("citation_safe"), False),
-        referenced_by_edge_count=_as_int(row.get("referenced_by_edge_count")),
-        quality_flags=_quality_flags(row.get("quality_flags")),
+        is_external_stub=as_bool(row.get("is_external_stub"), True),
+        citation_safe=as_bool(row.get("citation_safe"), False),
+        referenced_by_edge_count=as_int(row.get("referenced_by_edge_count")),
+        quality_flags=quality_flags(row.get("quality_flags")),
     )
 
 
@@ -126,17 +95,17 @@ def parse_provision_row(row: dict[str, Any]) -> ProvisionNode:
         unit_heading=clean_text(row.get("unit_heading")),
         path=clean_text(row.get("path")),
         citation_anchor=clean_text(row.get("citation_anchor")),
-        char_start=_as_int(row.get("char_start")),
-        char_end=_as_int(row.get("char_end")),
-        unit_char_count=_as_int(row.get("unit_char_count")),
-        unit_token_estimate=_as_int(row.get("unit_token_estimate")),
-        chunk_count=_as_int(row.get("chunk_count")),
-        coverage_verified=_as_bool(row.get("coverage_verified")),
+        char_start=as_int(row.get("char_start")),
+        char_end=as_int(row.get("char_end")),
+        unit_char_count=as_int(row.get("unit_char_count")),
+        unit_token_estimate=as_int(row.get("unit_token_estimate")),
+        chunk_count=as_int(row.get("chunk_count")),
+        coverage_verified=as_bool(row.get("coverage_verified")),
         title=clean_text(row.get("title")) or None,
         citation_label=clean_text(row.get("citation_label")) or None,
         loai_van_ban=clean_text(row.get("loai_van_ban")) or None,
         so_ky_hieu=clean_text(row.get("so_ky_hieu")) or None,
-        quality_flags=_quality_flags(row.get("quality_flags")),
+        quality_flags=quality_flags(row.get("quality_flags")),
     )
 
 
@@ -147,10 +116,10 @@ def parse_chunk_row(row: dict[str, Any]) -> ChunkNode:
         chunk_id=clean_text(row.get("chunk_id")),
         parent_unit_id=clean_text(row.get("parent_unit_id")),
         id_str=clean_text(row.get("id_str")),
-        chunk_index_in_unit=_as_int(row.get("chunk_index_in_unit")),
-        chunk_count_in_unit=_as_int(row.get("chunk_count_in_unit")),
-        unit_split=_as_bool(row.get("unit_split")),
-        structuring_quality_flags=_quality_flags(row.get("structuring_quality_flags")),
+        chunk_index_in_unit=as_int(row.get("chunk_index_in_unit")),
+        chunk_count_in_unit=as_int(row.get("chunk_count_in_unit")),
+        unit_split=as_bool(row.get("unit_split")),
+        structuring_quality_flags=quality_flags(row.get("structuring_quality_flags")),
     )
 
 

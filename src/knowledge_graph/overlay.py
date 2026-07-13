@@ -19,28 +19,7 @@ class OverlayBundle:
     authority_index: dict[str, tuple[AuthorityIndexEntry, ...]]
 
 
-def _as_bool(value: Any, default: bool = False) -> bool:
-    """Convert a JSON value to bool with a stable default."""
-
-    if value is None or value == "":
-        return default
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-        if normalized in {"true", "1", "yes", "y"}:
-            return True
-        if normalized in {"false", "0", "no", "n"}:
-            return False
-    return bool(value)
-
-
-def _as_int(value: Any, default: int = 0) -> int:
-    """Convert a JSON value to int with a stable default."""
-
-    if value is None or value == "":
-        return default
-    return int(value)
+from .utils import as_bool, as_int
 
 
 def parse_validity_event_row(row: dict[str, Any]) -> ValidityEvent:
@@ -54,7 +33,7 @@ def parse_validity_event_row(row: dict[str, Any]) -> ValidityEvent:
         scope=clean_text(row.get("scope")),
         rel_canonical=clean_text(row.get("rel_canonical")),
         source_edge_id=clean_text(row.get("source_edge_id")),
-        direction_verified=_as_bool(row.get("direction_verified")),
+        direction_verified=as_bool(row.get("direction_verified")),
     )
 
 
@@ -63,7 +42,7 @@ def parse_authority_index_row(row: dict[str, Any]) -> AuthorityIndexEntry:
 
     return AuthorityIndexEntry(
         loai_van_ban=clean_text(row.get("loai_van_ban")),
-        legal_authority_rank=_as_int(row.get("legal_authority_rank"), 99),
+        legal_authority_rank=as_int(row.get("legal_authority_rank"), 99),
         rank_label=clean_text(row.get("rank_label")),
         version=clean_text(row.get("version")),
     )
@@ -139,11 +118,19 @@ def resolve_authority_rank_conflicts(
     materialized = [entry for entry in candidates if entry.loai_van_ban == document_type]
     if not materialized:
         return AuthorityIndexEntry(loai_van_ban=document_type, legal_authority_rank=fallback_rank, rank_label="Unknown / unranked", version="fallback")
-    materialized.sort(key=lambda item: (item.legal_authority_rank, item.version), reverse=False)
+
+    def _parse_version(version_str: str) -> int:
+        try:
+            return int(version_str.split("@")[-1])
+        except (ValueError, IndexError):
+            return 0
+
+    materialized.sort(key=lambda item: (item.legal_authority_rank, _parse_version(item.version)), reverse=False)
     best_rank = min(entry.legal_authority_rank for entry in materialized)
     best_candidates = [entry for entry in materialized if entry.legal_authority_rank == best_rank]
-    best_candidates.sort(key=lambda item: item.version, reverse=True)
+    best_candidates.sort(key=lambda item: _parse_version(item.version), reverse=True)
     return best_candidates[0]
+
 
 
 class OverlayJoiner:

@@ -8,7 +8,7 @@ from retrieval.io_utils import clean_text
 from .builder import KnowledgeGraph
 from .context_schema import EvidenceContext, GraphGuidedFilter
 from .overlay_schema import DocumentOverlay
-from .traversal import TraversalPath, TraversalResult
+from .traversal import TraversalResult
 
 
 FilterProfile = Literal["current_law", "broad", "historical", "graph_guided"]
