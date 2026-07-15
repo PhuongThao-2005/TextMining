@@ -8,6 +8,12 @@ workloads. Payload metadata is served from ``payload_cache.sqlite`` (keyed by
 ``recreate_collection`` / ``upsert`` are intentionally unsupported: this store
 is a load-time read path for an already-built ``data/faiss_index/`` artifact
 (build/write remains on :class:`FaissVectorStore`).
+
+Payload cache schema v2 extracts filter columns
+(``chunk_id``, ``parent_unit_id``, ``chunk_index_in_unit``, ``validity_group``,
+``id_str``) so ``scroll()`` can use SQL indexes instead of a full-table Python
+scan. That matters for ``expand_units`` which previously re-scanned every row
+once per FAISS hit.
 """
 
 from __future__ import annotations
@@ -27,6 +33,19 @@ from .stores import SearchHit, VectorStore, payload_matches
 
 logger = logging.getLogger(__name__)
 
+# Bump when the SQLite payload table / index layout changes so stale caches rebuild.
+_PAYLOAD_CACHE_SCHEMA_VERSION = "2"
+
+_SQL_FILTER_FIELDS = frozenset(
+    {
+        "chunk_id",
+        "parent_unit_id",
+        "chunk_index_in_unit",
+        "validity_group",
+        "id_str",
+    }
+)
+
 
 @dataclass(frozen=True)
 class PayloadCacheStatus:
@@ -36,6 +55,27 @@ class PayloadCacheStatus:
     is_stale: bool
     payload_size: int
     payload_mtime_ns: int
+
+
+def _expected_cache_meta(payloads_path: Path) -> dict[str, str]:
+    payload_stat = payloads_path.stat()
+    return {
+        "schema_version": _PAYLOAD_CACHE_SCHEMA_VERSION,
+        "payload_mtime_ns": str(payload_stat.st_mtime_ns),
+        "payload_size": str(payload_stat.st_size),
+    }
+
+
+def _read_cache_meta(cache_path: Path) -> dict[str, str] | None:
+    try:
+        conn = sqlite3.connect(str(cache_path))
+        try:
+            return dict(conn.execute("SELECT key, value FROM meta").fetchall())
+        finally:
+            conn.close()
+    except Exception:
+        logger.debug("payload cache meta read failed", exc_info=True)
+        return None
 
 
 def _check_payload_cache(index_dir: Path) -> PayloadCacheStatus:
@@ -63,26 +103,15 @@ def _check_payload_cache(index_dir: Path) -> PayloadCacheStatus:
             payload_mtime_ns=payload_mtime_ns,
         )
 
-    expected = {
-        "payload_mtime_ns": str(payload_mtime_ns),
-        "payload_size": str(payload_size),
-    }
-    try:
-        conn = sqlite3.connect(str(cache_path))
-        try:
-            rows = dict(conn.execute("SELECT key, value FROM meta").fetchall())
-        finally:
-            conn.close()
-        if rows == expected:
-            return PayloadCacheStatus(
-                exists=True,
-                is_stale=False,
-                payload_size=payload_size,
-                payload_mtime_ns=payload_mtime_ns,
-            )
-    except Exception:
-        # Corrupt / incomplete cache is treated as stale so it will be rebuilt.
-        logger.debug("payload cache meta check failed; treating as stale", exc_info=True)
+    expected = _expected_cache_meta(payloads_path)
+    rows = _read_cache_meta(cache_path)
+    if rows == expected:
+        return PayloadCacheStatus(
+            exists=True,
+            is_stale=False,
+            payload_size=payload_size,
+            payload_mtime_ns=payload_mtime_ns,
+        )
 
     return PayloadCacheStatus(
         exists=True,
@@ -92,26 +121,46 @@ def _check_payload_cache(index_dir: Path) -> PayloadCacheStatus:
     )
 
 
+def _extract_index_fields(payload_text: str) -> tuple[str | None, str | None, int | None, str | None, str | None]:
+    """Pull scroll/filter columns out of a raw JSON payload line."""
+    try:
+        payload = json.loads(payload_text)
+    except json.JSONDecodeError:
+        return None, None, None, None, None
+
+    chunk_id = payload.get("chunk_id")
+    parent_unit_id = payload.get("parent_unit_id")
+    validity_group = payload.get("validity_group")
+    id_str = payload.get("id_str")
+    index_raw = payload.get("chunk_index_in_unit")
+    chunk_index: int | None
+    if isinstance(index_raw, bool):
+        chunk_index = None
+    elif isinstance(index_raw, int):
+        chunk_index = index_raw
+    elif isinstance(index_raw, float) and index_raw.is_integer():
+        chunk_index = int(index_raw)
+    else:
+        chunk_index = None
+
+    return (
+        None if chunk_id is None else str(chunk_id),
+        None if parent_unit_id is None else str(parent_unit_id),
+        chunk_index,
+        None if validity_group is None else str(validity_group),
+        None if id_str is None else str(id_str),
+    )
+
+
 def _ensure_payload_cache(payloads_path: Path, cache_path: Path) -> None:
     """Reuse ``cache_path`` when fresh; otherwise rebuild from ``payloads_path``."""
-    payload_stat = payloads_path.stat()
-    meta = {
-        "payload_mtime_ns": str(payload_stat.st_mtime_ns),
-        "payload_size": str(payload_stat.st_size),
-    }
+    meta = _expected_cache_meta(payloads_path)
 
     if cache_path.exists():
-        try:
-            conn = sqlite3.connect(str(cache_path))
-            try:
-                rows = dict(conn.execute("SELECT key, value FROM meta").fetchall())
-            finally:
-                conn.close()
-            if rows == meta:
-                print(f"Reusing SQLite payload cache: {cache_path.name}")
-                return
-        except Exception:
-            pass
+        rows = _read_cache_meta(cache_path)
+        if rows == meta:
+            print(f"Reusing SQLite payload cache: {cache_path.name}")
+            return
         cache_path.unlink(missing_ok=True)
 
     tmp_path = cache_path.with_suffix(".sqlite.tmp")
@@ -127,25 +176,66 @@ def _ensure_payload_cache(payloads_path: Path, cache_path: Path) -> None:
         conn.execute("PRAGMA synchronous = OFF")
         conn.execute("PRAGMA temp_store = MEMORY")
         conn.execute(
-            "CREATE TABLE payloads (line_no INTEGER PRIMARY KEY, payload TEXT NOT NULL)"
+            """
+            CREATE TABLE payloads (
+                line_no INTEGER PRIMARY KEY,
+                payload TEXT NOT NULL,
+                chunk_id TEXT,
+                parent_unit_id TEXT,
+                chunk_index_in_unit INTEGER,
+                validity_group TEXT,
+                id_str TEXT
+            )
+            """
         )
         conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        conn.execute(
+            "CREATE INDEX idx_payloads_parent_unit "
+            "ON payloads(parent_unit_id, chunk_index_in_unit)"
+        )
+        conn.execute("CREATE INDEX idx_payloads_chunk_id ON payloads(chunk_id)")
+        conn.execute("CREATE INDEX idx_payloads_validity ON payloads(validity_group)")
+        conn.execute("CREATE INDEX idx_payloads_id_str ON payloads(id_str)")
 
-        batch: list[tuple[int, str]] = []
+        batch: list[tuple[int, str, str | None, str | None, int | None, str | None, str | None]] = []
         with payloads_path.open("r", encoding="utf-8") as handle:
             for line_no, line in enumerate(handle):
                 line = line.strip()
-                if line:
-                    batch.append((line_no, line))
+                if not line:
+                    continue
+                chunk_id, parent_unit_id, chunk_index, validity_group, id_str = _extract_index_fields(
+                    line
+                )
+                batch.append(
+                    (
+                        line_no,
+                        line,
+                        chunk_id,
+                        parent_unit_id,
+                        chunk_index,
+                        validity_group,
+                        id_str,
+                    )
+                )
                 if len(batch) >= 10_000:
                     conn.executemany(
-                        "INSERT INTO payloads(line_no, payload) VALUES (?, ?)",
+                        """
+                        INSERT INTO payloads(
+                            line_no, payload, chunk_id, parent_unit_id,
+                            chunk_index_in_unit, validity_group, id_str
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """,
                         batch,
                     )
                     batch.clear()
         if batch:
             conn.executemany(
-                "INSERT INTO payloads(line_no, payload) VALUES (?, ?)",
+                """
+                INSERT INTO payloads(
+                    line_no, payload, chunk_id, parent_unit_id,
+                    chunk_index_in_unit, validity_group, id_str
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
                 batch,
             )
 
@@ -314,6 +404,20 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         return hits
 
     def scroll(self, filters: dict[str, Any], limit: int) -> list[SearchHit]:
+        """Return payloads matching ``filters`` without vector similarity.
+
+        Fast path: pure equality / ``in`` / range filters on indexed columns are
+        pushed into SQL. Anything else falls back to a full-table Python scan.
+        """
+        t0 = time.perf_counter()
+        sql_hits = self._scroll_sql(filters, limit)
+        if sql_hits is not None:
+            print(
+                f"scroll SQL: {time.perf_counter() - t0:.3f}s | "
+                f"matched={len(sql_hits)} limit={limit}"
+            )
+            return sql_hits
+
         hits: list[SearchHit] = []
         for line_no, payload in self._iter_payloads():
             if payload_matches(payload, filters):
@@ -323,6 +427,92 @@ class SQLitePayloadFaissVectorStore(VectorStore):
                 hits.append(SearchHit(point_id=point_id, score=0.0, payload=payload))
                 if len(hits) >= limit:
                     break
+        print(
+            f"scroll full-scan: {time.perf_counter() - t0:.3f}s | "
+            f"matched={len(hits)} limit={limit}"
+        )
+        return hits
+
+    def _scroll_sql(
+        self, filters: dict[str, Any], limit: int
+    ) -> list[SearchHit] | None:
+        """Translate simple filters into an indexed SQL query.
+
+        Returns ``None`` when the filter set cannot be fully expressed in SQL so
+        the caller can fall back to a full-table Python scan.
+        """
+        if limit <= 0:
+            return []
+        if not filters:
+            rows = self.conn.execute(
+                "SELECT line_no, payload FROM payloads ORDER BY line_no LIMIT ?",
+                (limit,),
+            ).fetchall()
+            return self._rows_to_hits(rows)
+
+        if any(field not in _SQL_FILTER_FIELDS for field in filters):
+            return None
+
+        where_clauses: list[str] = []
+        params: list[Any] = []
+        for field, expected in filters.items():
+            clause, clause_params = self._sql_predicate(field, expected)
+            if clause is None:
+                return None
+            where_clauses.append(clause)
+            params.extend(clause_params)
+
+        sql = (
+            "SELECT line_no, payload FROM payloads WHERE "
+            + " AND ".join(where_clauses)
+            + " ORDER BY line_no LIMIT ?"
+        )
+        params.append(limit)
+        rows = self.conn.execute(sql, params).fetchall()
+        return self._rows_to_hits(rows)
+
+    @staticmethod
+    def _sql_predicate(field: str, expected: Any) -> tuple[str | None, list[Any]]:
+        if isinstance(expected, dict):
+            if "in" in expected:
+                values = list(expected["in"])
+                if not values:
+                    return "0", []
+                placeholders = ",".join("?" for _ in values)
+                return f"{field} IN ({placeholders})", values
+            if "range" in expected:
+                low, high = expected["range"]
+                return f"{field} BETWEEN ? AND ?", [low, high]
+            if "lte" in expected or "gte" in expected:
+                parts: list[str] = []
+                params: list[Any] = []
+                if "gte" in expected:
+                    parts.append(f"{field} >= ?")
+                    params.append(expected["gte"])
+                if "lte" in expected:
+                    parts.append(f"{field} <= ?")
+                    params.append(expected["lte"])
+                return " AND ".join(parts), params
+            return None, []
+
+        if isinstance(expected, (list, tuple, set)):
+            values = list(expected)
+            if not values:
+                return "0", []
+            placeholders = ",".join("?" for _ in values)
+            return f"{field} IN ({placeholders})", values
+
+        return f"{field} = ?", [expected]
+
+    def _rows_to_hits(self, rows: list[tuple[Any, ...]]) -> list[SearchHit]:
+        hits: list[SearchHit] = []
+        for line_no, payload_text in rows:
+            line_no_int = int(line_no)
+            payload = json.loads(payload_text)
+            point_id = self.int_to_id.get(line_no_int) or str(
+                payload.get("chunk_id") or line_no_int
+            )
+            hits.append(SearchHit(point_id=point_id, score=0.0, payload=payload))
         return hits
 
     @property

@@ -109,24 +109,41 @@ class VectorRetriever:
         return list(hits) + sibling_hits
 
     def _expand_same_units_local(self, hits: list[SearchHit]) -> list[SearchHit]:
+        """Fetch same-provision neighbors without one full payload scan per hit.
+
+        Groups seed hits by ``parent_unit_id`` and issues one ``scroll`` per unit
+        over the union of needed ``chunk_index_in_unit`` windows. On the SQLite
+        store this becomes a single indexed query per parent instead of N full
+        table scans.
+        """
         expanded = list(hits)
+        parent_ranges: dict[str, tuple[int, int]] = {}
         for hit in hits:
             payload = hit.payload
             parent_unit_id = payload.get("parent_unit_id")
             index = payload.get("chunk_index_in_unit")
             if not parent_unit_id or not isinstance(index, int):
                 continue
+            low = max(1, index - self.config.max_expansion_chunks)
+            high = index + self.config.max_expansion_chunks
+            current = parent_ranges.get(str(parent_unit_id))
+            if current is None:
+                parent_ranges[str(parent_unit_id)] = (low, high)
+            else:
+                parent_ranges[str(parent_unit_id)] = (
+                    min(current[0], low),
+                    max(current[1], high),
+                )
+
+        for parent_unit_id, (low, high) in parent_ranges.items():
+            # Bound the fetch; each unit window is tiny relative to the corpus.
+            limit = max((high - low + 1) * 4, (self.config.max_expansion_chunks * 2) + 1)
             siblings = self.store.scroll(
                 {
                     "parent_unit_id": parent_unit_id,
-                    "chunk_index_in_unit": {
-                        "range": (
-                            max(1, index - self.config.max_expansion_chunks),
-                            index + self.config.max_expansion_chunks,
-                        )
-                    },
+                    "chunk_index_in_unit": {"range": (low, high)},
                 },
-                limit=(self.config.max_expansion_chunks * 2) + 1,
+                limit=limit,
             )
             expanded.extend(siblings)
         return expanded

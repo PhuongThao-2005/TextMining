@@ -54,6 +54,8 @@ def test_check_payload_cache_fresh(tmp_path: Path) -> None:
         payload_size=payloads.stat().st_size,
         payload_mtime_ns=payloads.stat().st_mtime_ns,
     )
+    meta = _read_meta(cache)
+    assert meta.get("schema_version") == "2"
 
 
 def test_check_payload_cache_stale_by_size(tmp_path: Path) -> None:
@@ -152,6 +154,7 @@ def _make_index_fixture(tmp_path: Path, n: int = 3, dim: int = 8):
             {
                 "chunk_id": f"chunk-{i}",
                 "parent_unit_id": f"parent-{i // 2}",
+                "chunk_index_in_unit": (i % 2) + 1,
                 "id_str": f"doc-{i}",
                 "chunk_text": f"text-{i}",
                 "title": f"Title {i}",
@@ -227,5 +230,83 @@ def test_search_hit_identity_fields_for_benchmark(tmp_path: Path) -> None:
         for key in ("chunk_id", "parent_unit_id", "id_str"):
             assert key in payload
             assert payload[key]
+    finally:
+        store.close()
+
+
+def test_scroll_uses_indexed_parent_unit_filter(tmp_path: Path) -> None:
+    index_dir, _, _ = _make_index_fixture(tmp_path, n=6)
+    store = SQLitePayloadFaissVectorStore.load(index_dir)
+    try:
+        # parent-0 owns chunk-0 (index 1) and chunk-1 (index 2)
+        siblings = store.scroll(
+            {
+                "parent_unit_id": "parent-0",
+                "chunk_index_in_unit": {"range": (1, 2)},
+            },
+            limit=10,
+        )
+        assert {h.payload["chunk_id"] for h in siblings} == {"chunk-0", "chunk-1"}
+
+        by_chunk_ids = store.scroll(
+            {"chunk_id": {"in": ["chunk-2", "chunk-4"]}},
+            limit=10,
+        )
+        assert {h.payload["chunk_id"] for h in by_chunk_ids} == {"chunk-2", "chunk-4"}
+
+        # Unknown filter field must still work via full-scan fallback.
+        title_hits = store.scroll({"title": "Title 1"}, limit=5)
+        assert len(title_hits) == 1
+        assert title_hits[0].payload["chunk_id"] == "chunk-1"
+
+        # Indexed columns exist in the rebuilt cache.
+        cols = {
+            row[1]
+            for row in store.conn.execute("PRAGMA table_info(payloads)").fetchall()
+        }
+        assert {
+            "chunk_id",
+            "parent_unit_id",
+            "chunk_index_in_unit",
+            "validity_group",
+            "id_str",
+        }.issubset(cols)
+    finally:
+        store.close()
+
+
+def test_expand_same_units_local_batches_by_parent(tmp_path: Path) -> None:
+    from retrieval.config import VectorIndexConfig
+    from retrieval.embeddings import HashingEmbedder
+    from retrieval.retriever import VectorRetriever
+
+    index_dir, vectors, _ = _make_index_fixture(tmp_path, n=4)
+    store = SQLitePayloadFaissVectorStore.load(index_dir)
+    try:
+        config = VectorIndexConfig(
+            embedding_model="hash",
+            top_k=4,
+            top_n=4,
+            score_threshold=0.0,
+            expand_units=True,
+            max_expansion_chunks=1,
+        )
+        retriever = VectorRetriever(
+            config=config,
+            embedder=HashingEmbedder(dimension=8),
+            store=store,
+        )
+
+        # Force the local expansion path with known payloads.
+        seed_hits = store.search(vectors[0].tolist(), limit=2, score_threshold=None)
+        expanded = retriever._expand_same_units_local(seed_hits)
+        parent_ids = {
+            str(h.payload.get("parent_unit_id"))
+            for h in expanded
+            if h.payload.get("parent_unit_id")
+        }
+        assert parent_ids  # expansion should keep parent linkage
+        # Should not explode into full corpus; fixture only has 4 vectors.
+        assert len(expanded) <= 8
     finally:
         store.close()
