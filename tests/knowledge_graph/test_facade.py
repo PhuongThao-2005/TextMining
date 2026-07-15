@@ -9,6 +9,7 @@ from knowledge_graph import (
     OverlayBundle,
     ValidityEvent,
     AuthorityIndexEntry,
+    load_knowledge_graph,
 )
 
 
@@ -83,3 +84,21 @@ def test_facade_full_integration_pipeline(mock_dataset_dir: Path):
     assert set(expansion_res.documents) == {"1", "2"}
     assert len(expansion_res.overlays) == 2
     assert not expansion_res.warnings
+
+
+def test_facade_build_and_save_load_round_trip(mock_dataset_dir: Path, tmp_path: Path):
+    """Optional facade save/load wrappers on fixture dataset."""
+
+    out = tmp_path / "facade_kg.gpickle"
+    facade = KnowledgeGraphFacade(paths=GraphLoaderPaths(data_dir=mock_dataset_dir))
+    build, artifact = facade.build_and_save_graph(out)
+    assert artifact.byte_size > 0
+    assert out.exists()
+
+    loaded = facade.load_graph(out)
+    assert len(loaded.graph.documents) == build.stats.document_count
+    assert len(loaded.graph.chunks) == build.stats.chunk_count
+
+    # Direct load helper agrees with facade wrapper
+    direct = load_knowledge_graph(out)
+    assert set(direct.graph.documents) == set(loaded.graph.documents)

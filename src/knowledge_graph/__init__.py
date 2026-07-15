@@ -30,6 +30,19 @@ from .overlay import OverlayBundle, OverlayJoiner, compute_currency_status, inde
 from .overlay_schema import AuthorityIndexEntry, DocumentOverlay, ValidityEvent
 from .traversal import GraphTraversal, TraversalMode, TraversalPath, TraversalResult, TraversalStep
 from .facade import KnowledgeGraphFacade, ParsedGraphSources
+from .persist import (
+    FORMAT_NAME,
+    FORMAT_VERSION,
+    GraphPickleArtifactInfo,
+    GraphPickleCorruptError,
+    GraphPickleEnvelope,
+    GraphPickleError,
+    GraphPickleIncompatibleError,
+    GraphPickleLoadResult,
+    GraphPickleNotFoundError,
+    load_knowledge_graph,
+    save_knowledge_graph,
+)
 
 __all__ = [
     "ChunkNode",
@@ -48,7 +61,16 @@ __all__ = [
     "FilterProfile",
     "AuthorityIndexEntry",
     "DocumentOverlay",
+    "FORMAT_NAME",
+    "FORMAT_VERSION",
     "GraphGuidedFilter",
+    "GraphPickleArtifactInfo",
+    "GraphPickleCorruptError",
+    "GraphPickleEnvelope",
+    "GraphPickleError",
+    "GraphPickleIncompatibleError",
+    "GraphPickleLoadResult",
+    "GraphPickleNotFoundError",
     "KnowledgeGraph",
     "KnowledgeGraphFacade",
     "GraphExpansion",
@@ -69,11 +91,13 @@ __all__ = [
     "compute_currency_status",
     "index_authority_index",
     "index_validity_timeline",
+    "load_knowledge_graph",
     "parse_authority_index_row",
     "parse_authority_index_rows",
     "parse_validity_event_row",
     "parse_validity_event_rows",
     "resolve_authority_rank_conflicts",
+    "save_knowledge_graph",
     "TextProvenanceRecord",
     "parse_edge_row",
     "parse_edge_rows",

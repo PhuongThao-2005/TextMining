@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable
 
 from .builder import GraphBuildResult, GraphBuilder, KnowledgeGraph
@@ -23,6 +24,7 @@ from .parser import (
     parse_external_stub_rows,
     parse_provision_rows,
 )
+from .persist import GraphPickleArtifactInfo, GraphPickleLoadResult, load_knowledge_graph, save_knowledge_graph
 from .traversal import GraphTraversal, TraversalMode, TraversalResult
 
 
@@ -96,6 +98,42 @@ class KnowledgeGraphFacade:
             chunks=parsed.chunks,
             edges=parsed.edges,
         )
+
+    def build_and_save_graph(
+        self,
+        output_path: Path | str,
+        *,
+        source_data_dir: str | None = None,
+    ) -> tuple[GraphBuildResult, GraphPickleArtifactInfo]:
+        """Build the structural graph from configured paths and save a pickle.
+
+        Preflights required structural JSONL inputs, builds via
+        :meth:`build_graph`, then writes a versioned structural pickle.
+        Overlays are not frozen into the artifact.
+        """
+
+        self.paths.validate()
+        build_result = self.build_graph()
+        label = source_data_dir
+        if label is None:
+            label = str(self.paths.data_dir)
+        artifact = save_knowledge_graph(
+            build_result.graph,
+            output_path,
+            stats=build_result.stats,
+            warnings=build_result.warnings,
+            source_data_dir=label,
+        )
+        return build_result, artifact
+
+    def load_graph(self, path: Path | str) -> GraphPickleLoadResult:
+        """Load a structural graph pickle without JSONL rebuild or overlays.
+
+        Overlays remain an explicit post-load step via
+        :meth:`build_overlay_bundle` when overlay sources are available.
+        """
+
+        return load_knowledge_graph(path)
 
     def build_traversal(self, graph: KnowledgeGraph) -> GraphTraversal:
         """Create a traversal service for an already built knowledge graph."""
