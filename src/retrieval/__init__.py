@@ -30,3 +30,10 @@ try:
 except RuntimeError:
     pass
 
+
+# SQLitePayloadFaissVectorStore is optional (requires faiss-cpu + sqlite3 stdlib)
+try:
+    from .sqlite_faiss_store import SQLitePayloadFaissVectorStore
+    __all__.append("SQLitePayloadFaissVectorStore")
+except RuntimeError:
+    pass

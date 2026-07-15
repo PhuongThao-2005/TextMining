@@ -1,0 +1,41 @@
+"""EDA helpers for Dataset v2 exploration notebooks."""
+
+from .dataset_v2 import (
+    PreflightResult,
+    ReconciliationCheck,
+    ReservoirSample,
+    StreamCountResult,
+    TagTally,
+    VocabCoverage,
+    coerce_category,
+    iter_jsonl,
+    lookup_by_key,
+    parse_reconciliation_report,
+    preflight,
+    reconcile,
+    reservoir_sample,
+    resolve_project_root,
+    stream_count,
+    tally_tags,
+    vocab_coverage,
+)
+
+__all__ = [
+    "PreflightResult",
+    "ReconciliationCheck",
+    "ReservoirSample",
+    "StreamCountResult",
+    "TagTally",
+    "VocabCoverage",
+    "coerce_category",
+    "iter_jsonl",
+    "lookup_by_key",
+    "parse_reconciliation_report",
+    "preflight",
+    "reconcile",
+    "reservoir_sample",
+    "resolve_project_root",
+    "stream_count",
+    "tally_tags",
+    "vocab_coverage",
+]
