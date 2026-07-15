@@ -1,0 +1,212 @@
+# ### HYBRID_GRAPH_INTEGRATION — diagnostics, comparison, demos (US2/US3/US4)
+
+hybrid_demo_query = 'Điều kiện để người lao động đơn phương chấm dứt hợp đồng lao động là gì?'
+
+
+def show_hybrid_diagnostics(ctx: HybridEvidenceContext) -> None:
+    """Seed vs expanded counts, identity samples, overlays, warnings (US2)."""
+    print('=== Hybrid diagnostics ===')
+    print('Query:', ctx.query)
+    print('Mode:', ctx.mode)
+    print('Mechanism: graph_expansion (not local_expand_units)')
+    print(f'Seed count: {len(ctx.seed.seed_chunks)} | seed candidates: {ctx.seed.total_candidates}')
+    if ctx.expansion is None:
+        print('Expansion: not run')
+    else:
+        print(
+            f'Expanded ids: {len(ctx.expansion.expanded_chunk_ids)} | '
+            f'added: {len(ctx.expansion.added_chunk_ids)} | '
+            f'capped: {ctx.expansion.capped} | '
+            f'mechanism_label: {ctx.expansion.mechanism_label}'
+        )
+        if ctx.expansion.warnings:
+            print('Expansion warnings:')
+            for w in ctx.expansion.warnings:
+                print(' -', w)
+    print(f'Evidence (citation-ready) count: {len(ctx.evidence_chunks)}')
+    print('Sample identity chain (chunk_id → parent_unit_id → id_str):')
+    show_results(chunks_to_display_rows(ctx.evidence_chunks, limit=8))
+
+    print('\n--- Overlay diagnostics ---')
+    if ctx.overlay_available and ctx.document_overlays:
+        print(f'Overlay coverage for involved docs: {len(ctx.document_overlays)}')
+        sample_id, sample_ov = next(iter(ctx.document_overlays.items()))
+        print(f'Sample document id_str={sample_id}')
+        print(f'  currency_status: {sample_ov.currency_status}')
+        print(f'  currency_status_as_of: {sample_ov.currency_status_as_of}')
+        print(f'  legal_authority_rank: {sample_ov.legal_authority_rank}')
+        print(f'  authority_rank_source: {sample_ov.authority_rank_source}')
+    else:
+        print('Overlays unavailable or none matched involved documents — no authoritative currency/authority claims.')
+
+    if ctx.diagnostics:
+        print('\nStage notes:')
+        for note in ctx.diagnostics:
+            print(' -', note)
+
+
+def compare_vector_vs_hybrid(
+    query: str,
+    *,
+    top_n: int = TOP_N,
+    filter_profile: str = FILTER_PROFILE,
+) -> ModeComparisonRecord:
+    """Same query under vector_only vs hybrid_expanded (US3 / FR-011)."""
+    notes: list[str] = []
+    # Vector-only
+    vo_result = retriever.retrieve(
+        query,
+        top_n=top_n,
+        filter_profile=filter_profile,
+        score_threshold=SCORE_THRESHOLD,
+        expand_units=False,
+    )
+    vo_ids = [c.chunk_id for c in vo_result.chunks]
+
+    expansion_ran = False
+    added = 0
+    hybrid_ids: list[str] = []
+    hybrid_count = 0
+    try:
+        require_graph_for_hybrid('hybrid side of mode comparison')
+        hctx = run_hybrid_retrieve(query, top_n=top_n, filter_profile=filter_profile, enable_expansion=True)
+        expansion_ran = hctx.expansion is not None and hctx.mode == 'hybrid_expanded'
+        added = len(hctx.expansion.added_chunk_ids) if hctx.expansion else 0
+        hybrid_ids = [c.chunk_id for c in hctx.evidence_chunks]
+        hybrid_count = len(hctx.evidence_chunks)
+        if expansion_ran and added == 0:
+            notes.append('Expansion ran but added nothing beyond seeds.')
+        elif expansion_ran:
+            notes.append(f'Expansion added {added} chunk ids.')
+        notes.extend(hctx.diagnostics[:5])
+    except RuntimeError as exc:
+        notes.append(f'Hybrid unavailable: {exc}')
+        hybrid_count = -1
+
+    record = ModeComparisonRecord(
+        query=query,
+        vector_only_count=len(vo_result.chunks),
+        hybrid_count=hybrid_count,
+        expansion_ran=expansion_ran,
+        added_context_count=added,
+        sample_vector_only_ids=vo_ids[:5],
+        sample_hybrid_ids=hybrid_ids[:5],
+        notes=notes,
+    )
+    print('=== Mode comparison: vector_only vs hybrid_expanded ===')
+    print('Query:', query)
+    print(f'  vector_only     count={record.vector_only_count} sample_ids={record.sample_vector_only_ids}')
+    print(f'  hybrid_expanded count={record.hybrid_count} expansion_ran={record.expansion_ran} added={record.added_context_count}')
+    print(f'  sample_hybrid_ids={record.sample_hybrid_ids}')
+    for n in record.notes:
+        print('  note:', n)
+    return record
+
+
+def run_graph_guided_prefilter_demo(
+    query: str,
+    *,
+    start_id: str | None = None,
+    top_n: int = TOP_N,
+    filter_profile: str = 'current_law',
+) -> GraphGuidedDemoResult:
+    """Secondary whitelist-before-search path (US4 / FR-020). Not the default ask() path."""
+    require_graph_for_hybrid('graph-guided pre-filter demo')
+    assert kg_facade is not None and kg_graph is not None
+
+    sid = (start_id or GRAPH_GUIDED_START_ID or '').strip()
+    if not sid:
+        # Derive from a seed hit when possible
+        seed = retriever.retrieve(query, top_n=max(1, top_n), filter_profile=FILTER_PROFILE, expand_units=False)
+        if seed.chunks and seed.chunks[0].id_str:
+            sid = seed.chunks[0].id_str
+            print(f'Graph-guided start id_str taken from first seed hit: {sid}')
+        else:
+            # Fall back to first document with a verified edge
+            for edge in kg_graph.verified_document_edges:
+                if edge.src_id in kg_graph.documents:
+                    sid = edge.src_id
+                    print(f'Graph-guided start id_str taken from verified edge src: {sid}')
+                    break
+    if not sid:
+        raise RuntimeError('No start id_str available for graph-guided pre-filter demo.')
+
+    traversal = kg_facade.traverse(
+        kg_graph,
+        start_id=sid,
+        mode=GRAPH_GUIDED_TRAVERSAL_MODE,  # type: ignore[arg-type]
+        max_depth=GRAPH_GUIDED_MAX_DEPTH,
+    )
+    overlays = document_overlays if graph_load_status.overlays_ready else {}
+    guided = kg_facade.build_graph_guided_filter(
+        graph=kg_graph,
+        traversal=traversal,
+        overlays=overlays,
+        filter_profile=filter_profile,  # type: ignore[arg-type]
+        constraints=QueryConstraints(validity_groups=('active', 'partial', 'future')),
+    )
+    print('=== Graph-guided pre-filter demo (SECONDARY path) ===')
+    print('start_id:', sid)
+    print('traversal_mode:', GRAPH_GUIDED_TRAVERSAL_MODE)
+    print('whitelist size:', len(guided.id_strs))
+    print('empty_filter_warning:', guided.empty_filter_warning)
+    print('filter_profile:', guided.filter_profile)
+    print('filter reason:', getattr(guided, 'reason', '') or '(none)')
+
+    retrieval = None
+    if guided.empty_filter_warning or not guided.id_strs:
+        print(
+            'EMPTY whitelist — not searching full corpus under a graph-guided label. '
+            'empty_filter_warning stays True; no unfiltered hits returned as graph-guided.'
+        )
+        retrieval = RetrievalResult([], 0, 'graph_guided', empty_filter_warning=True)
+    else:
+        retrieval = retriever.retrieve(
+            query,
+            top_n=top_n,
+            graph_guided_filter=guided,
+            expand_units=False,
+        )
+        print('graph-guided retrieval returned:', len(retrieval.chunks), 'chunks')
+        print('empty_filter_warning on result:', retrieval.empty_filter_warning)
+        show_results(chunks_to_display_rows(retrieval.chunks, limit=8))
+
+    return GraphGuidedDemoResult(
+        start_id=sid,
+        traversal_mode=str(GRAPH_GUIDED_TRAVERSAL_MODE),
+        whitelist_size=len(guided.id_strs),
+        empty_filter_warning=bool(guided.empty_filter_warning or not guided.id_strs),
+        filter_reason=str(getattr(guided, 'reason', '') or guided.filter_profile),
+        retrieval=retrieval,
+    )
+
+
+# --- Demo runs (safe when graph missing: hybrid calls fail clearly) ---
+print('Running hybrid demo query when enabled...')
+hybrid_ctx = None
+comparison_record = None
+graph_guided_demo = None
+
+if ENABLE_HYBRID_EXPANSION and graph_load_status.structural_ready:
+    hybrid_ctx = run_hybrid_retrieve(hybrid_demo_query, top_n=TOP_N, filter_profile=FILTER_PROFILE)
+    show_hybrid_diagnostics(hybrid_ctx)
+    comparison_record = compare_vector_vs_hybrid(hybrid_demo_query)
+elif ENABLE_HYBRID_EXPANSION and not graph_load_status.structural_ready:
+    print('Hybrid enabled but graph unavailable — demonstrating FR-015 clear failure:')
+    try:
+        require_graph_for_hybrid('hybrid demo')
+    except RuntimeError as exc:
+        print('Expected failure:', exc)
+    print('Pure vector search still works:')
+    rows_v, res_v = search(hybrid_demo_query, top_n=5, filter_profile=FILTER_PROFILE, expand_units=False)
+    print('vector_only returned:', len(res_v.chunks))
+else:
+    print('ENABLE_HYBRID_EXPANSION=False — skip hybrid demo. Vector-only path remains default.')
+
+if ENABLE_GRAPH_GUIDED_PREFILTER_DEMO:
+    if graph_load_status.structural_ready:
+        graph_guided_demo = run_graph_guided_prefilter_demo(hybrid_demo_query)
+    else:
+        print('Graph-guided demo enabled but graph unavailable — skipping with explicit message.')
+else:
+    print('ENABLE_GRAPH_GUIDED_PREFILTER_DEMO=False — secondary pre-filter demo not run.')

@@ -1,0 +1,27 @@
+from pathlib import Path
+import json
+import os
+import sys
+import time
+import logging
+
+PROJECT_ROOT = Path("/content/TextMining")
+if not (PROJECT_ROOT / 'src').exists():
+    # Useful if the notebook is launched from notebooks/.
+    PROJECT_ROOT = Path.cwd().parent
+
+SRC_DIR = PROJECT_ROOT / 'src'
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+hf_token = os.environ.get('HF_TOKEN') or os.environ.get('HUGGING_FACE_HUB_TOKEN')
+if hf_token:
+    os.environ['HF_TOKEN'] = hf_token
+    os.environ['HUGGING_FACE_HUB_TOKEN'] = hf_token
+    print('HF Hub token detected in environment.')
+else:
+    logging.getLogger('huggingface_hub.utils._http').setLevel(logging.ERROR)
+    print('HF_TOKEN not set; suppressing the Hugging Face unauthenticated-request warning.')
+
+print('Project root:', PROJECT_ROOT)
+print('src on path:', SRC_DIR.exists())

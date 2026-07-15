@@ -1,0 +1,3 @@
+## 2. Configure artifact paths and retrieval settings
+
+Change `INDEX_DIR` if you download the FAISS files somewhere else.

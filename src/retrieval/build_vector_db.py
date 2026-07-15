@@ -76,6 +76,23 @@ def parse_args() -> argparse.Namespace:
              "Default: embedding_dir/faiss_index",
     )
     parser.add_argument(
+        "--faiss-index-type",
+        choices=["flat", "ivfpq"],
+        default="flat",
+        help="FAISS index family when --store faiss: 'flat' (exact, multi-GB) or "
+             "'ivfpq' (compressed, Colab-friendly). Default: flat.",
+    )
+    parser.add_argument("--faiss-nlist", type=int, default=4096, help="IVFPQ nlist (clusters).")
+    parser.add_argument("--faiss-m", type=int, default=64, help="IVFPQ PQ sub-quantizers (must divide dim).")
+    parser.add_argument("--faiss-nbits", type=int, default=8, help="IVFPQ bits per code.")
+    parser.add_argument("--faiss-nprobe", type=int, default=32, help="IVFPQ search nprobe.")
+    parser.add_argument(
+        "--faiss-train-size",
+        type=int,
+        default=None,
+        help="Optional IVFPQ train sample size (default: min(ntotal, nlist*39)).",
+    )
+    parser.add_argument(
         "--batch-size",
         type=int,
         default=100,
@@ -105,10 +122,28 @@ def create_store(args: argparse.Namespace):
     from .stores import InMemoryVectorStore, QdrantVectorStore
 
     if args.store == "faiss":
+        from .faiss_index_types import FaissIndexConfig
         from .faiss_store import FaissVectorStore
+
         index_dir = args.index_dir or (args.embedding_dir / "faiss_index")
-        logger.info("Using FaissVectorStore at %s", index_dir)
-        return FaissVectorStore.create(dimension=1024, index_dir=index_dir)
+        index_config = FaissIndexConfig(
+            index_type=args.faiss_index_type,
+            nlist=args.faiss_nlist,
+            m=args.faiss_m,
+            nbits=args.faiss_nbits,
+            nprobe=args.faiss_nprobe,
+            train_size=args.faiss_train_size,
+        ).normalized()
+        logger.info(
+            "Using FaissVectorStore at %s (index_type=%s)",
+            index_dir,
+            index_config.index_type,
+        )
+        return FaissVectorStore.create(
+            dimension=1024,
+            index_dir=index_dir,
+            index_config=index_config,
+        )
     elif args.store == "qdrant":
         logger.info("Connecting to Qdrant at %s", args.qdrant_url)
         return QdrantVectorStore(

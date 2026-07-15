@@ -1,0 +1,1 @@
+ALL_OK n=80 hits=3 type=IndexIVFPQ rss=50.9

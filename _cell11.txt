@@ -1,0 +1,33 @@
+if missing:
+    raise FileNotFoundError('Download index.faiss and payloads.jsonl before running this cell.')
+
+from retrieval.config import VectorIndexConfig
+from retrieval.embeddings import SentenceTransformerEmbedder
+from retrieval.retriever import VectorRetriever
+from retrieval.sqlite_faiss_store import SQLitePayloadFaissVectorStore
+
+load_t0 = time.perf_counter()
+config = VectorIndexConfig(
+    embedding_model=EMBEDDING_MODEL,
+    top_k=TOP_K,
+    top_n=TOP_N,
+    score_threshold=SCORE_THRESHOLD,
+    expand_units=EXPAND_UNITS,
+)
+
+store = SQLitePayloadFaissVectorStore.load(INDEX_DIR)
+embedder = SentenceTransformerEmbedder(
+    EMBEDDING_MODEL,
+    query_prefix=config.query_prefix,
+    passage_prefix=config.passage_prefix,
+)
+retriever = VectorRetriever(config=config, embedder=embedder, store=store)
+
+print(f'Vector retriever ready in {time.perf_counter() - load_t0:.2f}s')
+print(f'Loaded FAISS vectors: {store.total_vectors:,}')
+print(f'Embedding dimension: {embedder.dimension}')
+print('Store class:', type(store).__module__ + '.' + type(store).__name__)
+
+# Vector-only retriever (graph_expansion=None). Hybrid retriever is wired after graph load.
+hybrid_retriever = None
+graph_expansion = None

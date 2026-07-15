@@ -1,0 +1,35 @@
+# FAISS Vector Retrieval + Hybrid Graph Notebook
+
+This notebook runs retrieval after `index.faiss` and `payloads.jsonl` are available, and (when v2 graph sources are present) demonstrates the **primary hybrid pipeline**:
+
+```text
+query → embed → vector seed retrieval → graph expansion + validity/authority overlays → optional LLM generation
+```
+
+**Architecture**
+- Store: [`SQLitePayloadFaissVectorStore`](../src/retrieval/sqlite_faiss_store.py) — FAISS + rebuild-if-stale `payload_cache.sqlite`
+- Retrieval: [`VectorRetriever`](../src/retrieval/retriever.py) — seed search; optional graph expansion / graph-guided filter
+- Knowledge graph: [`KnowledgeGraphFacade`](../src/knowledge_graph/facade.py), [`GraphExpansion`](../src/knowledge_graph/expansion.py), overlays
+- Generation: [`generation.reasoning_client`](../src/generation/reasoning_client.py) — OpenAI-compatible client with three-way reasoning parse
+
+**Primary vs secondary graph paths**
+- **Primary (default full pipeline):** vector-first hybrid expansion (seed hits → graph expand → overlays → generate)
+- **Secondary (optional demo):** graph-guided pre-filter (document whitelist before vector search) — not the default `ask()` path
+
+Expected layouts:
+
+```text
+data/faiss_index/
+  index.faiss
+  payloads.jsonl
+  id_map.json        # optional
+  payload_cache.sqlite  # built automatically on first load
+
+data/v2/             # required for hybrid graph path
+  documents.jsonl, provisions.jsonl, chunks.jsonl, edges.jsonl, external_stubs.jsonl
+  validity_timeline.jsonl, authority_index.jsonl   # optional overlays
+```
+
+Run cells top to bottom. Pure vector profiles (`current_law`, `broad`, `historical`) remain usable if the graph is missing. Hybrid mode fails clearly when the graph is unavailable rather than silently falling back under a hybrid label.
+
+**Note:** This notebook is a hybrid **demonstration** layered on existing modules — not a replacement for dedicated graph verification ([`scripts/verify_kg.py`](../scripts/verify_kg.py)) or judged evaluation ([`scripts/evaluate_e2e.py`](../scripts/evaluate_e2e.py)).

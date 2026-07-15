@@ -1,0 +1,120 @@
+def ask(
+    query: str,
+    top_n: int = TOP_N,
+    filter_profile: str = FILTER_PROFILE,
+    score_threshold: float | None = SCORE_THRESHOLD,
+    *,
+    use_hybrid: bool | None = None,
+    use_hybrid_evidence: bool | None = None,
+):
+    """Full pipeline: vector seed → (optional graph expand/overlays) → generate.
+
+    Default demonstration path uses hybrid expanded evidence when
+    ENABLE_HYBRID_EXPANSION and the graph is loaded (FR-009 / FR-022).
+    Hybrid requested while graph unavailable fails clearly (FR-015).
+    """
+    hybrid = ENABLE_HYBRID_EXPANSION if use_hybrid is None else use_hybrid
+    hybrid_for_gen = USE_HYBRID_EVIDENCE_FOR_GENERATION if use_hybrid_evidence is None else use_hybrid_evidence
+
+    hybrid_ctx = None
+    result = None
+    evidence_chunks = []
+
+    if hybrid:
+        require_graph_for_hybrid('hybrid ask() full pipeline')
+        hybrid_ctx = run_hybrid_retrieve(
+            query,
+            top_n=top_n,
+            filter_profile=filter_profile,
+            score_threshold=score_threshold,
+            enable_expansion=True,
+        )
+        print('Mode:', hybrid_ctx.mode)
+        print('Seed candidates:', hybrid_ctx.seed.total_candidates)
+        print('Evidence chunks:', len(hybrid_ctx.evidence_chunks))
+        print('Expansion added context:', hybrid_ctx.expansion_added_context)
+        if hybrid_ctx.diagnostics:
+            print('Diagnostics:')
+            for note in hybrid_ctx.diagnostics:
+                print(' -', note)
+        show_results(chunks_to_display_rows(hybrid_ctx.evidence_chunks))
+        evidence_chunks = list(hybrid_ctx.evidence_chunks)
+        # Build a RetrievalResult-like object for callers that expect .chunks
+        from retrieval.schema import RetrievalResult
+        result = RetrievalResult(
+            chunks=evidence_chunks,
+            total_candidates=hybrid_ctx.seed.total_candidates,
+            filter_profile_used=filter_profile,
+            empty_filter_warning=False,
+        )
+    else:
+        rows, result = search(
+            query,
+            top_n=top_n,
+            filter_profile=filter_profile,
+            score_threshold=score_threshold,
+            expand_units=False,
+        )
+        print('Mode: vector_only')
+        print('Filter profile used:', result.filter_profile_used)
+        print('Total candidates:', result.total_candidates)
+        print('Empty filter warning:', result.empty_filter_warning)
+        show_results(rows)
+        evidence_chunks = list(result.chunks)
+
+    usable = [c for c in evidence_chunks if (c.chunk_text or '').strip()]
+    if not usable:
+        print('No usable evidence text after retrieval/expansion; skipping generation (empty context).')
+        outcome = GenerationOutcome(qa_id=None, parsed=None, skipped_empty_context=True, error=None)
+        return {
+            'query': query,
+            'outcome': outcome,
+            'result': result,
+            'hybrid': hybrid_ctx,
+            'mode': hybrid_ctx.mode if hybrid_ctx else 'vector_only',
+        }
+
+    if generator is None:
+        print('Generator not configured; returning retrieval/expansion-only result.')
+        return {
+            'query': query,
+            'outcome': None,
+            'result': result,
+            'hybrid': hybrid_ctx,
+            'mode': hybrid_ctx.mode if hybrid_ctx else 'vector_only',
+        }
+
+    if hybrid and hybrid_for_gen:
+        gen_chunks = usable
+        print('Generation uses hybrid expanded evidence (USE_HYBRID_EVIDENCE_FOR_GENERATION=True).')
+    elif hybrid and not hybrid_for_gen:
+        # Prefer seed-only evidence when hybrid retrieval ran but generation should not use expansion.
+        seed_only = list(hybrid_ctx.seed.seed_chunks) if hybrid_ctx is not None else usable
+        gen_chunks = [c for c in seed_only if (c.chunk_text or '').strip()] or usable
+        print('Generation uses seed-only evidence (USE_HYBRID_EVIDENCE_FOR_GENERATION=False).')
+    else:
+        gen_chunks = usable
+    outcome = generate_answer(query, gen_chunks)
+    display_generation_outcome(outcome)
+
+    print('\n--- Citations used (citation-ready evidence only) ---')
+    for rank, chunk in enumerate(gen_chunks, start=1):
+        print(
+            f'[{rank}] {chunk.citation_anchor or chunk.citation_label} - {chunk.title} '
+            f'| chunk_id={chunk.chunk_id} → parent_unit_id={chunk.parent_unit_id} → id_str={chunk.id_str}'
+        )
+    return {
+        'query': query,
+        'outcome': outcome,
+        'result': result,
+        'hybrid': hybrid_ctx,
+        'mode': hybrid_ctx.mode if hybrid_ctx else 'vector_only',
+    }
+
+
+pipeline_query = 'Điều kiện để người lao động đơn phương chấm dứt hợp đồng lao động là gì?'
+# Uncomment when ready (generator optional — hybrid retrieval still completes without credentials):
+# pipeline_output = ask(pipeline_query, top_n=10, filter_profile='broad')
+print('ask() defined. Default path: vector seed → graph expand/overlays → generate when hybrid enabled.')
+print('Call: pipeline_output = ask(pipeline_query, top_n=10, filter_profile="broad")')
+print('Vector-only: pipeline_output = ask(pipeline_query, use_hybrid=False)')

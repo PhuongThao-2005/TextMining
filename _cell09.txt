@@ -1,0 +1,18 @@
+phase_t0 = time.perf_counter()
+required_files = [INDEX_DIR / 'index.faiss', INDEX_DIR / 'payloads.jsonl']
+optional_files = [INDEX_DIR / 'id_map.json']
+
+missing = [p for p in required_files if not p.exists()]
+if missing:
+    print('Downloads are not ready yet. Missing:')
+    for p in missing:
+        print(' -', p)
+else:
+    print('Required files found.')
+    for p in required_files + optional_files:
+        if p.exists():
+            print(f'{p.name}: {p.stat().st_size / 1024 / 1024:.2f} MB')
+        else:
+            print(f'{p.name}: not found (optional)')
+
+print(f'Preflight completed in {time.perf_counter() - phase_t0:.2f}s')

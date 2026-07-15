@@ -1,0 +1,26 @@
+# ### HYBRID_GRAPH_INTEGRATION — intended import surface (FR-002)
+from dataclasses import dataclass, field
+from typing import Any
+
+from knowledge_graph import (
+    GraphBuildStats,
+    GraphExpansion,
+    GraphLoaderPaths,
+    GraphPickleCorruptError,
+    GraphPickleIncompatibleError,
+    GraphPickleNotFoundError,
+    KnowledgeGraphFacade,
+    QueryConstraints,
+    load_knowledge_graph,
+    parse_authority_index_rows,
+    parse_validity_event_rows,
+)
+from knowledge_graph.context_schema import GraphGuidedFilter
+from knowledge_graph.expansion_schema import ExpansionResult
+from knowledge_graph.overlay import OverlayBundle
+from knowledge_graph.overlay_schema import DocumentOverlay
+from retrieval.io_utils import read_jsonl
+from retrieval.schema import RetrievedChunk, RetrievalResult
+from retrieval.stores import SearchHit
+
+print('Hybrid import surface ready: KnowledgeGraphFacade, GraphExpansion, overlays, GraphGuidedFilter')

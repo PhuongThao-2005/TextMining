@@ -1,0 +1,38 @@
+# Directory containing index.faiss + payloads.jsonl (+ optional id_map.json)
+INDEX_DIR = Path("/content/drive/Shareddrives/[Text Mining] - Project/faiss_index")
+# Graph + overlay sources (structural graph under data/v2)
+V2_DATA_DIR = Path("/content/drive/Shareddrives/[Text Mining] - Project/Data/pre-processed")
+
+# Must match the embedding model used to build index.faiss.
+# Alias EMBEDDING_MODEL_NAME kept for plan/quickstart naming parity.
+EMBEDDING_MODEL = 'intfloat/multilingual-e5-large'
+EMBEDDING_MODEL_NAME = EMBEDDING_MODEL
+
+TOP_K = 30                 # candidates pulled from FAISS before reranking/dedup
+TOP_N = 10                 # final chunks returned
+SCORE_THRESHOLD = 0.30
+# Local same-provision expansion (payload-window). Prefer False when demoing graph expansion.
+EXPAND_UNITS = False
+LOCAL_EXPAND_UNITS = EXPAND_UNITS  # alias: local_expand_units mechanism label
+DEFAULT_FILTER_PROFILE = 'broad'  # current_law | broad | historical (non-graph)
+FILTER_PROFILE = DEFAULT_FILTER_PROFILE
+BENCHMARK_SAMPLE_SIZE = 10
+
+# --- Hybrid graph settings (003-notebook-graph-integration / FR-021) ---
+ENABLE_HYBRID_EXPANSION = True
+HYBRID_MAX_HOP = 1
+HYBRID_MAX_CONTEXT = 12
+AS_OF_DATE = '2026-07-13'
+USE_HYBRID_EVIDENCE_FOR_GENERATION = True
+ENABLE_GRAPH_GUIDED_PREFILTER_DEMO = False  # secondary whitelist-before-search path
+GRAPH_GUIDED_START_ID = ''  # optional document id_str; empty → take from first seed hit
+GRAPH_GUIDED_TRAVERSAL_MODE = 'basis'
+GRAPH_GUIDED_MAX_DEPTH = 3
+
+print('INDEX_DIR:', INDEX_DIR)
+print('V2_DATA_DIR:', V2_DATA_DIR)
+print('ENABLE_HYBRID_EXPANSION:', ENABLE_HYBRID_EXPANSION)
+print('USE_HYBRID_EVIDENCE_FOR_GENERATION:', USE_HYBRID_EVIDENCE_FOR_GENERATION)
+print('LOCAL_EXPAND_UNITS / EXPAND_UNITS:', LOCAL_EXPAND_UNITS)
+print('ENABLE_GRAPH_GUIDED_PREFILTER_DEMO:', ENABLE_GRAPH_GUIDED_PREFILTER_DEMO)
+INDEX_DIR

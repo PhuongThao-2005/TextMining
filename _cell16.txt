@@ -1,0 +1,257 @@
+# ### HYBRID_GRAPH_INTEGRATION — two-stage hybrid helper + views (US1)
+
+
+@dataclass
+class SeedRetrievalView:
+    query: str
+    filter_profile: str
+    total_candidates: int
+    seed_chunks: list[RetrievedChunk]
+    seed_chunk_ids: list[str]
+    mode_label: str  # vector_only | hybrid_seed
+
+
+@dataclass
+class GraphExpansionView:
+    expansion: ExpansionResult | None
+    expanded_chunk_ids: list[str]
+    added_chunk_ids: list[str]
+    resolved_chunks: list[RetrievedChunk]
+    warnings: list[str]
+    capped: bool
+    mechanism_label: str = 'graph_expansion'
+
+
+@dataclass
+class HybridEvidenceContext:
+    query: str
+    mode: str  # vector_only | hybrid_expanded | graph_guided_prefilter
+    seed: SeedRetrievalView
+    expansion: GraphExpansionView | None
+    evidence_chunks: list[RetrievedChunk]
+    document_overlays: dict[str, DocumentOverlay]
+    overlay_available: bool
+    expansion_added_context: bool
+    diagnostics: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ModeComparisonRecord:
+    query: str
+    vector_only_count: int
+    hybrid_count: int
+    expansion_ran: bool
+    added_context_count: int
+    sample_vector_only_ids: list[str]
+    sample_hybrid_ids: list[str]
+    notes: list[str] = field(default_factory=list)
+
+
+@dataclass
+class GraphGuidedDemoResult:
+    start_id: str
+    traversal_mode: str
+    whitelist_size: int
+    empty_filter_warning: bool
+    filter_reason: str
+    retrieval: RetrievalResult | None
+
+
+def _hit_to_retrieved_chunk(hit: SearchHit, query: str, filter_profile: str) -> RetrievedChunk:
+    """Reuse VectorRetriever conversion so identity fields stay consistent."""
+    return retriever._to_retrieved_chunk(hit, query, filter_profile)
+
+
+def _is_citation_safe_chunk(chunk: RetrievedChunk) -> bool:
+    """External stubs / non-citation-safe nodes are never citation-ready (FR-013)."""
+    meta = chunk.metadata or {}
+    if meta.get('is_external_stub') is True:
+        return False
+    if meta.get('citation_safe') is False:
+        return False
+    # Graph external stubs keyed by id_str
+    if kg_graph is not None and chunk.id_str and chunk.id_str in getattr(kg_graph, 'external_stubs', {}):
+        return False
+    if not (chunk.chunk_text or '').strip():
+        return False
+    return True
+
+
+def _resolve_chunk_ids(chunk_ids: list[str], query: str, filter_profile: str) -> list[RetrievedChunk]:
+    if not chunk_ids:
+        return []
+    # Preserve order from expansion; scroll may return unordered.
+    hits = store.scroll({'chunk_id': {'in': list(chunk_ids)}}, limit=max(len(chunk_ids), 1))
+    by_id: dict[str, SearchHit] = {}
+    for hit in hits:
+        cid = str(hit.payload.get('chunk_id') or hit.point_id)
+        by_id[cid] = hit
+    ordered: list[RetrievedChunk] = []
+    for cid in chunk_ids:
+        hit = by_id.get(cid)
+        if hit is None:
+            continue
+        ordered.append(_hit_to_retrieved_chunk(hit, query, filter_profile))
+    return ordered
+
+
+def run_hybrid_retrieve(
+    query: str,
+    *,
+    top_n: int = TOP_N,
+    filter_profile: str = FILTER_PROFILE,
+    score_threshold: float | None = SCORE_THRESHOLD,
+    enable_expansion: bool | None = None,
+    max_hop: int | None = None,
+    max_context: int | None = None,
+) -> HybridEvidenceContext:
+    """Vector seed → optional GraphExpansion → overlay join → HybridEvidenceContext."""
+    do_expand = ENABLE_HYBRID_EXPANSION if enable_expansion is None else enable_expansion
+    max_hop = HYBRID_MAX_HOP if max_hop is None else max_hop
+    max_context = HYBRID_MAX_CONTEXT if max_context is None else max_context
+    diagnostics: list[str] = []
+
+    # Stage 1: seed vector retrieve (never local expand here)
+    seed_result = retriever.retrieve(
+        query,
+        top_n=top_n,
+        filter_profile=filter_profile,
+        score_threshold=score_threshold,
+        expand_units=False,
+    )
+    seed_chunks = list(seed_result.chunks)
+    seed_ids = [c.chunk_id for c in seed_chunks]
+    seed_view = SeedRetrievalView(
+        query=query,
+        filter_profile=seed_result.filter_profile_used,
+        total_candidates=seed_result.total_candidates,
+        seed_chunks=seed_chunks,
+        seed_chunk_ids=seed_ids,
+        mode_label='hybrid_seed' if do_expand else 'vector_only',
+    )
+
+    if not do_expand:
+        diagnostics.append('Hybrid expansion disabled — returning vector-only seeds.')
+        return HybridEvidenceContext(
+            query=query,
+            mode='vector_only',
+            seed=seed_view,
+            expansion=None,
+            evidence_chunks=seed_chunks,
+            document_overlays={},
+            overlay_available=graph_load_status.overlays_ready,
+            expansion_added_context=False,
+            diagnostics=diagnostics,
+        )
+
+    require_graph_for_hybrid('hybrid expansion')
+
+    if not seed_ids:
+        diagnostics.append('Zero seed hits — skipping graph expansion and recording empty context.')
+        empty_expansion = GraphExpansionView(
+            expansion=None,
+            expanded_chunk_ids=[],
+            added_chunk_ids=[],
+            resolved_chunks=[],
+            warnings=['No seed chunk IDs; expansion skipped.'],
+            capped=False,
+            mechanism_label='graph_expansion',
+        )
+        return HybridEvidenceContext(
+            query=query,
+            mode='hybrid_expanded',
+            seed=seed_view,
+            expansion=empty_expansion,
+            evidence_chunks=[],
+            document_overlays={},
+            overlay_available=graph_load_status.overlays_ready,
+            expansion_added_context=False,
+            diagnostics=diagnostics,
+        )
+
+    expansion_result = graph_expansion.expand(
+        seed_ids,
+        max_hop=max_hop,
+        max_context=max_context,
+    )
+    expanded_ids = list(expansion_result.ordered_context_chunks)
+    seed_set = set(seed_ids)
+    added_ids = [cid for cid in expanded_ids if cid not in seed_set]
+    # Prefer expanded order; if expansion returned nothing usable, fall back to seeds
+    ordered_ids = expanded_ids or list(seed_ids)
+    capped = bool(
+        max_context is not None
+        and expansion_result.max_context is not None
+        and len(expanded_ids) >= int(expansion_result.max_context)
+    )
+    if capped:
+        diagnostics.append(f'Expansion context capped at max_context={max_context}.')
+
+    warnings = list(expansion_result.warnings or ())
+    resolved = _resolve_chunk_ids(ordered_ids, query, filter_profile)
+    # Keep citation-ready only for generation/display of "evidence"
+    citation_ready = [c for c in resolved if _is_citation_safe_chunk(c)]
+    dropped = len(resolved) - len(citation_ready)
+    if dropped:
+        diagnostics.append(f'Excluded {dropped} non-citation-safe/stub/empty chunks from citation-ready evidence.')
+
+    if not added_ids:
+        diagnostics.append('Graph expansion ran with zero added neighbors (seeds only) — not a failure.')
+    else:
+        diagnostics.append(f'Graph expansion added {len(added_ids)} chunk ids beyond seeds.')
+
+    for w in warnings:
+        diagnostics.append(f'Expansion warning: {w}')
+
+    expansion_view = GraphExpansionView(
+        expansion=expansion_result,
+        expanded_chunk_ids=expanded_ids,
+        added_chunk_ids=added_ids,
+        resolved_chunks=resolved,
+        warnings=warnings,
+        capped=capped,
+        mechanism_label='graph_expansion',
+    )
+
+    # Overlay join by id_str (display-only signals; do not mutate payloads)
+    involved_ids = {c.id_str for c in citation_ready if c.id_str}
+    subset_overlays: dict[str, DocumentOverlay] = {}
+    if graph_load_status.overlays_ready and document_overlays:
+        subset_overlays = {i: document_overlays[i] for i in involved_ids if i in document_overlays}
+        diagnostics.append(f'Overlays attached for {len(subset_overlays)}/{len(involved_ids)} involved documents (as_of={AS_OF_DATE}).')
+    else:
+        diagnostics.append('Overlays unavailable — structural expansion only; no authoritative currency claims.')
+
+    evidence = citation_ready if citation_ready else list(seed_chunks)
+    return HybridEvidenceContext(
+        query=query,
+        mode='hybrid_expanded',
+        seed=seed_view,
+        expansion=expansion_view,
+        evidence_chunks=evidence,
+        document_overlays=subset_overlays,
+        overlay_available=graph_load_status.overlays_ready,
+        expansion_added_context=bool(added_ids),
+        diagnostics=diagnostics,
+    )
+
+
+def chunks_to_display_rows(chunks: list[RetrievedChunk], *, limit: int | None = None) -> list[dict[str, Any]]:
+    rows = []
+    for rank, chunk in enumerate(chunks[: limit or len(chunks)], start=1):
+        rows.append({
+            'rank': rank,
+            'chunk_id': chunk.chunk_id,
+            'parent_unit_id': chunk.parent_unit_id,
+            'id_str': chunk.id_str,
+            'citation': chunk.citation_anchor or chunk.citation_label,
+            'title': chunk.title,
+            'validity_group': chunk.validity_group,
+            'legal_authority_rank': chunk.legal_authority_rank,
+            'vector_score': round(chunk.vector_score, 4),
+            'text': (chunk.chunk_text or '')[:400],
+        })
+    return rows
+
+
+print('Hybrid helper ready: run_hybrid_retrieve(), require_graph_for_hybrid(), chunks_to_display_rows()')

@@ -286,8 +286,18 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         self._conn = self.conn
 
     @classmethod
-    def load(cls, index_dir: Path) -> "SQLitePayloadFaissVectorStore":
-        """Load FAISS index and ensure a fresh SQLite payload cache under ``index_dir``."""
+    def load(
+        cls,
+        index_dir: Path,
+        *,
+        nprobe: int | None = None,
+    ) -> "SQLitePayloadFaissVectorStore":
+        """Load FAISS index and ensure a fresh SQLite payload cache under ``index_dir``.
+
+        Supports both exact Flat IP and compressed IVFPQ ``index.faiss`` files.
+        When the index exposes ``nprobe`` (IVF family), apply ``nprobe`` from the
+        argument or from ``index_type.json`` written by the rebuild path.
+        """
         faiss = _import_faiss()
         index_dir = Path(index_dir)
 
@@ -295,6 +305,7 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         payloads_path = index_dir / "payloads.jsonl"
         cache_path = index_dir / "payload_cache.sqlite"
         id_map_path = index_dir / "id_map.json"
+        meta_path = index_dir / "index_type.json"
 
         if not index_path.exists():
             raise FileNotFoundError(f"FAISS index not found at {index_path}")
@@ -310,6 +321,19 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         except TypeError:
             index = faiss.read_index(str(index_path))
         print(f"FAISS index loaded in {time.perf_counter() - t0:.2f}s")
+        print(f"FAISS index type: {type(index).__name__} ntotal={int(index.ntotal):,} dim={int(index.d)}")
+
+        resolved_nprobe = nprobe
+        if resolved_nprobe is None and meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                if "nprobe" in meta:
+                    resolved_nprobe = int(meta["nprobe"])
+            except Exception:
+                resolved_nprobe = None
+        if resolved_nprobe is not None and hasattr(index, "nprobe"):
+            index.nprobe = max(1, int(resolved_nprobe))
+            print(f"FAISS nprobe set to {index.nprobe}")
 
         int_to_id: dict[int, str] = {}
         if id_map_path.exists():

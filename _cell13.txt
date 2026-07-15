@@ -1,0 +1,3 @@
+KG_PICKLE_PATH = Path("/content/drive/Shareddrives/[Text Mining] - Project/KG/knowledge_graph.gpickle")
+# Keep False for normal notebook use: load pickle only (no JSONL rebuild).
+ALLOW_GRAPH_JSONL_REBUILD = False

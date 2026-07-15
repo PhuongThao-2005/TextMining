@@ -1,0 +1,36 @@
+n_cells=35
+00|mark|# FAISS Vector Retrieval + Hybrid Graph Notebook
+01|mark|## 1. Environment setup
+02|code|!git clone https://github.com/PhuongThao-2005/TextMining.git
+03|code|from google.colab import drive
+04|code|# Optional: install runtime dependencies if your environment does not have them yet.
+05|code|from pathlib import Path
+06|mark|## 2. Configure artifact paths and retrieval settings
+07|code|# Directory containing index.faiss + payloads.jsonl (+ optional id_map.json)
+08|mark|## 3. Preflight: wait until downloads are complete
+09|code|phase_t0 = time.perf_counter()
+10|mark|## 4. Load the FAISS store and build retriever
+11|code|if missing:
+12|mark|## 4.3 Hybrid graph integration (vector-first)
+13|code|KG_PICKLE_PATH = Path("/content/drive/Shareddrives/[Text Mining] - Project/KG/knowledge_graph.gpickle")
+14|code|# ### HYBRID_GRAPH_INTEGRATION — intended import surface (FR-002)
+15|code|# ### HYBRID_GRAPH_INTEGRATION - preflight, gpickle load (preferred), overlays, expansion wire, guard
+16|code|# ### HYBRID_GRAPH_INTEGRATION — two-stage hybrid helper + views (US1)
+17|mark|## 5. Retrieval helper
+18|code|def search(
+19|mark|## 5.1 Benchmark helper
+20|code|def benchmark_search(query: str, repeats: int = 3, filter_profile: str = FILTER_PROFILE):
+21|mark|## 6. Run a query
+22|code|query_t0 = time.perf_counter()
+23|mark|## 6.1 Hybrid expansion demo, diagnostics, and comparison
+24|code|# ### HYBRID_GRAPH_INTEGRATION — diagnostics, comparison, demos (US2/US3/US4)
+25|mark|## 7. Optional: inspect one full chunk
+26|code|if result.chunks:
+27|mark|## 8. Configure the answer generator (OpenAI-compatible API)
+28|code|from generation.reasoning_client import GeneratorConfig
+29|mark|## 9. Generator client and answer-generation helper
+30|code|from generation.reasoning_client import (
+31|mark|## 10. Full RAG pipeline: retrieve + generate
+32|code|def ask(
+33|mark|## 11. Optional: run the full pipeline over a benchmark sample
+34|code|import random
