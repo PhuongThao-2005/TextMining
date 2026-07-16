@@ -37,3 +37,41 @@ try:
     __all__.append("SQLitePayloadFaissVectorStore")
 except RuntimeError:
     pass
+
+# Colab-safe runtime helpers (feature 005) — pure policy/load-plan utilities
+from .colab_runtime import (
+    CleanupRequest,
+    LoadPlan,
+    MemorySnapshot,
+    ResidentComponentSnapshot,
+    RuntimeProfile,
+    apply_cleanup,
+    build_load_plan,
+    capture_memory_snapshot,
+    decide_graph_source_mode,
+    format_load_plan,
+    format_resident_snapshot,
+    format_session_outcome,
+    payload_cache_rebuild_warning,
+    resolve_runtime_profile,
+    session_outcome_label,
+)
+__all__.extend(
+    [
+        "CleanupRequest",
+        "LoadPlan",
+        "MemorySnapshot",
+        "ResidentComponentSnapshot",
+        "RuntimeProfile",
+        "apply_cleanup",
+        "build_load_plan",
+        "capture_memory_snapshot",
+        "decide_graph_source_mode",
+        "format_load_plan",
+        "format_resident_snapshot",
+        "format_session_outcome",
+        "payload_cache_rebuild_warning",
+        "resolve_runtime_profile",
+        "session_outcome_label",
+    ]
+)
