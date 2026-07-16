@@ -32,6 +32,6 @@
 ## Notes
 
 - Mentions of evaluation module, metric names, and `qa_final.jsonl` are contract/dependency references required for evaluation fidelity (same pattern as prior notebook specs), not a tech-stack prescription for a new implementation language.
-- Hybrid clarified (2026-07-16): requires GraphExpansion + GraphTraversal; fusion seeds → expansion → traversal-resolved (dedupe first); primary sequence GRAPH_MODULE §10; modes/caps per GRAPH_MODULE §6–7.
+- Hybrid clarified (2026-07-16): requires GraphExpansion + GraphTraversal; fusion seeds → expansion → traversal-resolved (dedupe first); primary sequence GRAPH_MODULE §10; modes/caps per GRAPH_MODULE §6–7; traversal starts = unfiltered vector pre-pass seeds (no ground_truth starts for scored hybrid).
 - Out of scope called out: E2E generation/judge metrics, index building, QA synthesis.
-- Checklist re-validated after clarify session: all items still pass; ready for `/speckit-plan`.
+- Checklist re-validated after clarify session (incl. Q4 start-ID policy): all items still pass; ready for `/speckit-plan`.
