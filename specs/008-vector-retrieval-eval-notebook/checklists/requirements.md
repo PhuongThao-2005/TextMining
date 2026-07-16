@@ -1,8 +1,7 @@
-# Specification Quality Checklist: Notebook Graph Module Integration
+# Specification Quality Checklist: Vector-Only Retrieval Evaluation Notebook
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-07-15
-**Updated**: 2026-07-15 — revalidated after correcting primary pipeline to vector-first hybrid expansion
+**Created**: 2026-07-16
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -32,9 +31,6 @@
 
 ## Notes
 
-- Primary pipeline corrected from "graph whitelist first" to:
-  `embed → vector retrieve seeds → graph expand + overlays → LLM`.
-- Graph-guided pre-filter remains optional/secondary (P3), not the default full-pipeline story.
-- Spec intentionally references existing project artifacts (notebook path, v2 dataset location, FAISS index location) as scope boundaries.
-- Mentions of existing knowledge-graph and retrieval modules are dependency assumptions for integration, consistent with prior notebook specs in this repo.
-- Ready for `/speckit-plan`.
+- All checklist items pass. Module names (`src/evaluation/metrics.py`, `VectorRetriever`, etc.) are referenced only to pin reuse of existing, already-tested logic and avoid ad-hoc reimplementation — not to prescribe new implementation details.
+- Explicit exclusion confirmed per user instruction: this feature must not read or depend on `L_RAG/notebooks/archive/`.
+- Ready for `/speckit-clarify` (optional) or `/speckit-plan`.

@@ -1,13 +1,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal
 
-from retrieval import HashingEmbedder, QdrantVectorStore, SentenceTransformerEmbedder, VectorIndexConfig, VectorRetriever
+from retrieval import (
+    HashingEmbedder,
+    QdrantVectorStore,
+    SentenceTransformerEmbedder,
+    SQLitePayloadFaissVectorStore,
+    VectorIndexConfig,
+    VectorRetriever,
+)
 
 
 @dataclass(frozen=True)
 class RetrieverRuntimeConfig:
-    store: str = "qdrant"
+    store: Literal["faiss", "qdrant"] = "faiss"
+    index_dir: str | Path = "data/faiss_index"
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str | None = None
     collection_name: str = "legal_chunks"
@@ -33,8 +43,26 @@ def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever:
         if runtime.dev_hashing
         else SentenceTransformerEmbedder(runtime.model, query_prefix=config.query_prefix, passage_prefix=config.passage_prefix)
     )
-    if runtime.store != "qdrant":
-        raise ValueError("Evaluation CLI currently expects a prebuilt Qdrant index; use --dev-hashing only with tests.")
-    store = QdrantVectorStore(runtime.collection_name, runtime.qdrant_url, runtime.qdrant_api_key)
+
+    if runtime.dev_hashing:
+        # Smoke-test path: in-memory store, no real index required (FR-011/FR-012 n/a here).
+        from retrieval import InMemoryVectorStore
+
+        store = InMemoryVectorStore()
+    elif runtime.store == "faiss":
+        index_dir = Path(runtime.index_dir)
+        try:
+            store = SQLitePayloadFaissVectorStore.load(index_dir)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(
+                f"Could not construct a FAISS-backed vector retriever from index_dir={index_dir!s}: {exc}. "
+                "Ensure INDEX_DIR points at a directory containing 'index.faiss' and 'payloads.jsonl' "
+                "(see scripts/build_vector_index.py)."
+            ) from exc
+    elif runtime.store == "qdrant":
+        store = QdrantVectorStore(runtime.collection_name, runtime.qdrant_url, runtime.qdrant_api_key)
+    else:
+        raise ValueError(f"Unknown runtime.store={runtime.store!r}; expected 'faiss' or 'qdrant'.")
+
     return VectorRetriever(config=config, embedder=embedder, store=store)
 
