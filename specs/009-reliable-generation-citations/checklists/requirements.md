@@ -1,7 +1,7 @@
-# Specification Quality Checklist: Vector-Only Retrieval Evaluation Notebook
+# Specification Quality Checklist: Reliable Generation Citations
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-07-16
+**Created**: 2026-07-24
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -31,6 +31,8 @@
 
 ## Notes
 
-- All checklist items pass. Module names (`src/evaluation/metrics.py`, `VectorRetriever`, etc.) are referenced only to pin reuse of existing, already-tested logic and avoid ad-hoc reimplementation — not to prescribe new implementation details.
-- Explicit exclusion confirmed per user instruction: this feature must not read or depend on `L_RAG/notebooks/archive/`.
-- Ready for `/speckit-clarify` (optional) or `/speckit-plan`.
+- Validation passed on 2026-07-24 (iteration 1).
+- Clarification session 2026-07-24: eval record shape (`question_id`/`question_type`/`question`/`answer`/`relevant_articles`), `law_id`=doc_id, `so_hieu`, local `article_id`/`chunk_id`; `question_type`=`answer_type` from `qa_final`.
+- Spec stays at outcome/behavior level: structured system citations from evidence; generator prose is non-authoritative for citations.
+- Plan/research/quickstart/tasks regenerated 2026-07-24 to match eval-shape clarification.
+- Ready for `/speckit-implement`.
