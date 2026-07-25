@@ -38,6 +38,20 @@ try:
 except RuntimeError:
     pass
 
+# BM25SparseRetriever is optional (requires rank_bm25)
+try:
+    from .sparse_retriever import BM25SparseRetriever
+    __all__.append("BM25SparseRetriever")
+except RuntimeError:
+    pass
+
+# HybridRetriever is optional (requires rank_bm25 + optionally sentence-transformers for CE)
+try:
+    from .hybrid_retriever import HybridRetriever, LatencyBreakdown
+    __all__.extend(["HybridRetriever", "LatencyBreakdown"])
+except (RuntimeError, ImportError):
+    pass
+
 # Colab-safe runtime helpers (feature 005) — pure policy/load-plan utilities
 from .colab_runtime import (
     CleanupRequest,
