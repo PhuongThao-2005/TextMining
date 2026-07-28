@@ -1,0 +1,68 @@
+# Ablation configuration schema version 1.
+#
+# Required top-level keys per config:
+#   benchmark: {path, version}
+#   corpus: {path, version}
+#   retrieval:
+#     top_k: positive integer
+#     filter_profile: current_law | broad | historical
+#     dense: {enabled, backend}
+#     sparse/graph/fusion/reranker: {enabled, ...}
+#   generation: {provider, model}
+#   judge: {provider, model?}
+#   agent: {enabled, type?}
+#   output: {root}
+#
+# Supported now:
+#   dense.backend: faiss | qdrant | hashing
+#   generation.provider: reference | gemini | openai_compatible
+#   judge.provider: none | gemini
+#
+# Sparse, graph, fusion, reranker, and agent sections are explicit extension
+# points. Enabling an unwired component causes a clear deferred result; the
+# runner never silently substitutes another stack.
+
+schema_version: 1
+
+configs:
+  Example-Reference-Hashing:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: hashing
+        model: development-hashing
+        score_threshold: 0.0
+        expand_units: false
+      sparse:
+        enabled: false
+      graph:
+        enabled: false
+      fusion:
+        enabled: false
+      reranker:
+        enabled: false
+    generation:
+      provider: reference
+      model: reference
+      temperature: 0.0
+    judge:
+      provider: none
+    agent:
+      enabled: false
+      type: plain_rag
+    output:
+      root: evaluation_runs/ablation
+    seed: 42
+    metadata:
+      purpose: local plumbing example; not an official benchmark result
+      tags:
+        - example
+        - offline

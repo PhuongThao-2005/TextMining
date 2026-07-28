@@ -288,7 +288,6 @@ class SQLitePayloadFaissVectorStore(VectorStore):
     @classmethod
     def load(cls, index_dir: Path) -> "SQLitePayloadFaissVectorStore":
         """Load FAISS index and ensure a fresh SQLite payload cache under ``index_dir``."""
-        faiss = _import_faiss()
         index_dir = Path(index_dir)
 
         index_path = index_dir / "index.faiss"
@@ -301,6 +300,7 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         if not payloads_path.exists():
             raise FileNotFoundError(f"Payload file not found at {payloads_path}")
 
+        faiss = _import_faiss()
         _ensure_payload_cache(payloads_path, cache_path)
 
         t0 = time.perf_counter()
