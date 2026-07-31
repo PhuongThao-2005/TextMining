@@ -1,8 +1,7 @@
 """OpenAI-compatible generator client with reasoning/answer parsing.
 
-Extracted from the FAISS retrieval notebook so prompt construction and the
-three-way reasoning extraction (dedicated field, <think> block, or explicit
-"not returned") are unit-testable without live API calls.
+Provider-specific reasoning is parsed for compatibility but never included in
+the final answer returned to evaluation artifacts.
 """
 
 from __future__ import annotations
@@ -11,22 +10,23 @@ import re
 from dataclasses import dataclass
 from typing import Any, Sequence
 
+from .prompt_strategy import PromptStrategy, build_generation_prompt
+
 THINK_BLOCK_RE = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
+OPEN_THINK_RE = re.compile(r"<think>", re.IGNORECASE)
+CLOSE_THINK_RE = re.compile(r"</think>", re.IGNORECASE)
+FINAL_ANSWER_RE = re.compile(
+    r"(?:final\s+answer|answer|câu\s+trả\s+lời\s+cuối\s+cùng|trả\s+lời)\s*:\s*",
+    re.IGNORECASE,
+)
 
-ANSWER_PROMPT = """Bạn là hệ thống RAG pháp lý Việt Nam.
-Chỉ trả lời dựa trên CONTEXT được cung cấp. Không suy diễn, không bịa thêm ngoài CONTEXT.
-Nếu CONTEXT không đủ thông tin để trả lời, hãy trả lời: "Không có đủ thông tin trong ngữ cảnh được cung cấp."
-
-Trước tiên, trình bày quá trình suy luận (reasoning/thinking) của bạn dựa trên CONTEXT.
-Sau đó, đưa ra câu trả lời cuối cùng bằng tiếng Việt có dấu, kèm căn cứ pháp lý (citation) nếu có trong CONTEXT.
-
-QUESTION:
-{question}
-
-CONTEXT:
-{context}
-
-Trả lời bằng tiếng Việt có dấu:"""
+# Backward-compatible public constant. New code should call build_generation_prompt.
+ANSWER_PROMPT = build_generation_prompt(
+    question="{question}",
+    answer_type="",
+    context="{context}",
+    strategy=PromptStrategy.BASE,
+)
 
 
 @dataclass(frozen=True)
@@ -83,18 +83,37 @@ class GeneratorClient:
             ) from exc
         self.client = OpenAI(base_url=base_url, api_key=api_key)
 
-    def generate(self, prompt: str, *, temperature: float = 0.0) -> RawGenerationResponse:
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-            )
-        except Exception as exc:
-            # Re-raise without leaking credentials that SDKs sometimes echo.
-            message = _redact_secrets(str(exc), [self._api_key])
-            raise RuntimeError(f"Generator call failed: {message}") from None
+    def generate(
+        self,
+        prompt: str,
+        *,
+        temperature: float = 0.0,
+        top_p: float = 1.0,
+        max_output_tokens: int = 1024,
+        timeout_seconds: float = 60.0,
+        max_retries: int = 0,
+    ) -> RawGenerationResponse:
+        response: Any = None
+        for attempt in range(max_retries + 1):
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=temperature,
+                    top_p=top_p,
+                    max_tokens=max_output_tokens,
+                    timeout=timeout_seconds,
+                )
+                break
+            except Exception as exc:
+                if attempt < max_retries:
+                    continue
+                message = _redact_secrets(str(exc), [self._api_key])
+                raise RuntimeError(
+                    f"Generator call failed after {attempt + 1} attempt(s): {message}"
+                ) from None
 
+        assert response is not None
         message = response.choices[0].message
         content = (getattr(message, "content", None) or "").strip()
         reasoning_field = _extract_reasoning_field(message)
@@ -125,32 +144,52 @@ def parse_generation_response(raw: RawGenerationResponse) -> ParsedAnswer:
     content = raw.content or ""
     field = (raw.reasoning_field or "").strip() or None
 
+    safe_answer, block_reasoning, had_think_block = _safe_final_answer(content)
     if field:
         return ParsedAnswer(
-            answer=content.strip(),
+            answer=safe_answer,
             reasoning=field,
             reasoning_available=True,
             reasoning_source="field",
         )
 
-    match = THINK_BLOCK_RE.search(content)
-    if match:
-        reasoning = match.group(1).strip()
-        answer = THINK_BLOCK_RE.sub("", content).strip()
+    if had_think_block:
         return ParsedAnswer(
-            answer=answer,
-            reasoning=reasoning or None,
-            reasoning_available=bool(reasoning),
-            reasoning_source="think_block" if reasoning else "not_returned",
+            answer=safe_answer,
+            reasoning=block_reasoning,
+            reasoning_available=bool(block_reasoning),
+            reasoning_source="think_block" if block_reasoning else "not_returned",
         )
 
-    # Unterminated <think> (open without close) falls through here intentionally.
     return ParsedAnswer(
-        answer=content.strip(),
+        answer=safe_answer,
         reasoning=None,
         reasoning_available=False,
         reasoning_source="not_returned",
     )
+
+
+def _safe_final_answer(content: str) -> tuple[str, str | None, bool]:
+    """Remove reasoning blocks, including safely handling malformed open tags."""
+
+    matches = list(THINK_BLOCK_RE.finditer(content))
+    reasoning = "\n".join(
+        match.group(1).strip() for match in matches if match.group(1).strip()
+    ) or None
+    answer = THINK_BLOCK_RE.sub("", content)
+    unmatched = OPEN_THINK_RE.search(answer)
+    if unmatched:
+        prefix = answer[: unmatched.start()].strip()
+        remainder = answer[unmatched.end() :]
+        marker = FINAL_ANSWER_RE.search(remainder)
+        suffix = remainder[marker.end() :].strip() if marker else ""
+        answer = "\n".join(part for part in (prefix, suffix) if part)
+    unmatched_closes = list(CLOSE_THINK_RE.finditer(answer))
+    if unmatched_closes:
+        answer = answer[unmatched_closes[-1].end() :]
+    answer = OPEN_THINK_RE.sub("", answer)
+    answer = CLOSE_THINK_RE.sub("", answer).strip()
+    return answer, reasoning, bool(matches)
 
 
 def format_context_for_prompt(chunks: Sequence[Any]) -> str:
@@ -180,6 +219,12 @@ def generate_answer(
     *,
     qa_id: str | None = None,
     temperature: float = 0.0,
+    top_p: float = 1.0,
+    max_output_tokens: int = 1024,
+    timeout_seconds: float = 60.0,
+    max_retries: int = 0,
+    answer_type: str = "",
+    prompt_strategy: PromptStrategy | str | None = None,
 ) -> GenerationOutcome:
     """Generate a parsed answer from retrieved chunks, or record skip/error state."""
     if not chunks:
@@ -199,8 +244,20 @@ def generate_answer(
 
     try:
         context = format_context_for_prompt(chunks)
-        prompt = ANSWER_PROMPT.format(question=query, context=context)
-        raw = client.generate(prompt, temperature=temperature)
+        prompt = build_generation_prompt(
+            question=query,
+            answer_type=answer_type,
+            context=context,
+            strategy=prompt_strategy,
+        )
+        raw = client.generate(
+            prompt,
+            temperature=temperature,
+            top_p=top_p,
+            max_output_tokens=max_output_tokens,
+            timeout_seconds=timeout_seconds,
+            max_retries=max_retries,
+        )
         parsed = parse_generation_response(raw)
         return GenerationOutcome(
             qa_id=qa_id,
