@@ -1,17 +1,38 @@
 # My - Detailed TODO
 
-## Summary
+## Current status (2026-07-31)
 
 - **Source work plan:** `next_phase_work_plan.md`, section `[Người 5 - My] — E2E runner, LLM/Agent ablation, UI, final report`
-- **Scan date:** 2026-07-28
-- **Repository scope:** Entire repository, including `src/`, `scripts/`, `notebooks/`, `tests/`, `docs/`, `specs/`, local data artifacts, project configuration, and Git history. Generated/cache directories and `.git/` contents were excluded from source scanning.
-- **Counting rule:** The totals below count the 10 major work-plan obligations in this document. Detailed checklist items are evidence-level subtasks and are not counted again.
+- **Reviewed history:** `192cef8` (runner/E2E), `6627c5b` (LLM/agent/UI/aggregation), `ec49794` (Kaggle E2E notebook), and merge `0fc26fb`
 - **Total major tasks:** 10
-- **Completed:** 3
-- **Partially completed:** 1
-- **Not started:** 6
-- **Needs manual verification:** 0
-- **Current overall assessment:** The named-config runner, batch orchestration, and reusable E2E metric/latency/fault-isolation core are implemented and validated with offline fixtures. UI, aggregation, required notebooks, official LLM/agent runs, and final report outputs remain.
+- **Implementation-complete:** 6
+- **Partially complete:** 2
+- **Not started / blocked on result data:** 2
+
+| Task | Current status | Evidence and boundary |
+| --- | --- | --- |
+| 1. Single-config runner | Completed | Production API, strict validation, manifests, isolated outputs, and fixture tests pass. |
+| 2. Batch runner | Completed | Ordered continuation, resume, summaries, and fixture tests pass. |
+| 3. E2E evaluation core | Completed | Metrics, grouped denominators, latency, fault isolation, redaction, and artifacts pass tests. |
+| 4. E2E Kaggle notebook | Completed locally | `notebooks/e2e_rag_eval.ipynb` is valid, clone-first, zero-output, and covered by 17 offline tests. Actual Kaggle execution remains unverified. |
+| 5. Local UI and guide | Completed locally | `ui/app.py`, `src/service/qa_service.py`, `docs/ui_demo.md`, import validation, and 13 service tests pass. Live provider/index questions remain unverified. |
+| 6. Aggregation script | Completed locally | `scripts/aggregate_ablation_results.py` and 14 fixture tests cover validation, compatibility grouping, partial runs, deterministic CSV, and Markdown. No official runs exist to aggregate. |
+| 7. Ablation report notebook | Not started | `notebooks/ablation_report.ipynb` is absent and depends on validated cross-team result artifacts. |
+| 8. LLM ablation runs | Partially complete | All three configs, prompt strategies, fairness validation, secret-safe model selection, and tests exist; official live runs/results do not. |
+| 9. Agent ablation runs | Partially complete | Plain RAG and bounded Simple Planner implementations/configs/tests exist; official runs do not. MultiTool is explicitly deferred with a documented reason. |
+| 10. Final summary/recommendation | Not started | `ablation_summary.csv`, `ablation_report.md`, and an evidence-backed recommendation cannot be produced without validated owner runs. |
+
+### Current validation evidence
+
+- My-owned focused suite: `94 passed`.
+- Full repository suite: `209 passed, 6 skipped`.
+- All six LLM/agent named configs pass structural dry-run; MultiTool returns the intended `deferred` status.
+- `ui.app` imports successfully and the E2E notebook passes `nbformat` validation.
+- No production benchmark, live provider, Kaggle, GPU, or official full-run result is claimed.
+
+## Historical audit (2026-07-28)
+
+The detailed checklist below is retained as the original point-in-time scan. Its per-task status and “missing file” statements are superseded by the current-status table above where later commits added implementation.
 
 ## Legend
 

@@ -95,4 +95,3 @@ def coerce_agent_mode(value: object) -> AgentMode:
         return AgentMode(str(value or "none"))
     except ValueError as exc:
         raise ValueError(f"Unknown agent mode {value!r}; expected one of {[mode.value for mode in AgentMode]}.") from exc
-
