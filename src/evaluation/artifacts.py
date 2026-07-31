@@ -57,8 +57,13 @@ def validate_run_parameters(
         raise ValueError(f"RUN_MODE must be one of {sorted(VALID_RUN_MODES)}.")
     if not isinstance(smoke_limit, int) or isinstance(smoke_limit, bool) or not 1 <= smoke_limit <= 100:
         raise ValueError("SMOKE_LIMIT must be an integer from 1 through 100.")
+<<<<<<< HEAD
     # Inspect-without-a-run is an intentional informational state for the
     # committed Kaggle notebook default; it must never trigger execution.
+=======
+    if run_mode == "inspect" and existing_run_dir is None:
+        raise ValueError("EXISTING_RUN_DIR is required in inspect mode.")
+>>>>>>> 6627c5b92cedad4cafe475f816b4ce7f8701c37e
 
 
 def load_run_artifacts(run_dir: Path, *, require_completed: bool = False) -> RunArtifacts:
