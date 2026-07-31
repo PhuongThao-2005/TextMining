@@ -29,9 +29,29 @@ from evaluation.e2e_runner import (  # noqa: E402
     run_e2e_evaluation,
     write_e2e_artifacts,
 )
+from agent.contracts import (  # noqa: E402
+    AGENT_VERSION,
+    TRACE_SCHEMA_VERSION,
+    TOOL_CONTRACT_VERSION,
+    AgentMode,
+    coerce_agent_mode,
+)
+from agent.simple_planner import PLANNER_POLICY, PLANNER_POLICY_VERSION, SimplePlanner  # noqa: E402
+from agent.tools import RetrievalTool  # noqa: E402
 from evaluation.io_utils import write_json  # noqa: E402
 from evaluation.retriever_factory import RetrieverRuntimeConfig, build_vector_retriever  # noqa: E402
-from generation.reasoning_client import GeneratorClient, generate_answer  # noqa: E402
+from generation.prompt_strategy import (  # noqa: E402
+    PROMPT_TEMPLATE_VERSION,
+    build_generation_prompt,
+    coerce_prompt_strategy,
+    prompt_template_hash,
+)
+from generation.reasoning_client import (  # noqa: E402
+    GeneratorClient,
+    RawGenerationResponse,
+    generate_answer,
+    parse_generation_response,
+)
 
 
 DEFAULT_CONFIG_FILE = PROJECT_ROOT / "configs" / "ablation_configs.yaml"
@@ -40,6 +60,16 @@ SUPPORTED_DENSE_BACKENDS = {"faiss", "qdrant", "hashing"}
 SUPPORTED_GENERATORS = {"reference", "gemini", "openai_compatible"}
 SUPPORTED_JUDGES = {"none", "gemini"}
 RUN_STATUSES = {"completed", "failed", "skipped", "deferred", "needs-rerun"}
+LLM_ABLATION_CONFIG_NAMES = (
+    "LLM-BaseReasoning",
+    "LLM-CoTReasoning",
+    "LLM-LargerModel",
+)
+AGENT_ABLATION_CONFIG_NAMES = (
+    "Agent-None-PlainRAG",
+    "Agent-SimplePlanner",
+    "Agent-MultiTool-Orchestrated",
+)
 
 
 class AblationConfigError(ValueError):
@@ -101,6 +131,10 @@ def load_ablation_configs(path: Path = DEFAULT_CONFIG_FILE) -> dict[str, dict[st
             raise AblationConfigError("Every config name must be a non-empty string.")
         if not isinstance(config, dict):
             raise AblationConfigError(f"Config {name!r} must be a mapping.")
+    if all(name in configs for name in LLM_ABLATION_CONFIG_NAMES):
+        validate_llm_ablation_fairness(configs)
+    if all(name in configs for name in AGENT_ABLATION_CONFIG_NAMES):
+        validate_agent_ablation_fairness(configs)
     return configs
 
 
@@ -164,8 +198,24 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
             f"Unsupported generation provider {provider!r}; expected one of {sorted(SUPPORTED_GENERATORS)}."
         )
     _require_non_empty_string(generation, "model", f"{config_name}.generation")
-    if "temperature" in generation and not isinstance(generation["temperature"], (int, float)):
-        raise AblationConfigError(f"{config_name}.generation.temperature must be numeric.")
+    try:
+        coerce_prompt_strategy(generation.get("prompt_strategy"))
+    except ValueError as exc:
+        raise AblationConfigError(f"{config_name}.generation: {exc}") from exc
+    if "prompt_template_version" in generation:
+        version = _require_non_empty_string(
+            generation, "prompt_template_version", f"{config_name}.generation"
+        )
+        if version != PROMPT_TEMPLATE_VERSION:
+            raise AblationConfigError(
+                f"{config_name}.generation.prompt_template_version must be "
+                f"{PROMPT_TEMPLATE_VERSION!r}; got {version!r}."
+            )
+    _validate_number(generation, "temperature", config_name, minimum=0.0)
+    _validate_number(generation, "top_p", config_name, minimum=0.0, maximum=1.0)
+    _validate_number(generation, "timeout_seconds", config_name, minimum=0.0, exclusive_minimum=True)
+    _validate_integer(generation, "max_output_tokens", config_name, minimum=1)
+    _validate_integer(generation, "max_retries", config_name, minimum=0)
 
     judge = config.get("judge", {"provider": "none"})
     if not isinstance(judge, dict):
@@ -179,11 +229,98 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
         _require_non_empty_string(judge, "model", f"{config_name}.judge")
 
     _require_bool(agent, "enabled", f"{config_name}.agent")
+    raw_mode = agent.get("mode", "none" if not agent["enabled"] else agent.get("type"))
+    if raw_mode == "plain_rag":
+        raw_mode = "none"
+    try:
+        mode = coerce_agent_mode(raw_mode)
+    except ValueError as exc:
+        raise AblationConfigError(f"{config_name}.agent: {exc}") from exc
+    if mode is AgentMode.NONE and agent["enabled"]:
+        raise AblationConfigError(f"{config_name}.agent.enabled must be false when mode is none.")
+    if mode is AgentMode.SIMPLE_PLANNER:
+        if not agent["enabled"]:
+            raise AblationConfigError(f"{config_name}.agent.enabled must be true for simple_planner.")
+        max_steps = agent.get("max_steps")
+        if not isinstance(max_steps, int) or isinstance(max_steps, bool) or not 1 <= max_steps <= 3:
+            raise AblationConfigError(f"{config_name}.agent.max_steps must be an integer from 1 through 3.")
+        if agent.get("max_tool_calls") != 1:
+            raise AblationConfigError(f"{config_name}.agent.max_tool_calls must equal 1.")
+        if agent.get("allowed_tools") != ["retrieve"]:
+            raise AblationConfigError(f"{config_name}.agent.allowed_tools must be exactly ['retrieve'].")
+        deadline = agent.get("deadline_seconds")
+        if not isinstance(deadline, (int, float)) or isinstance(deadline, bool) or not 0 < deadline <= 300:
+            raise AblationConfigError(f"{config_name}.agent.deadline_seconds must be numeric and at most 300.")
+        retries = agent.get("max_retries")
+        if retries != 0:
+            raise AblationConfigError(f"{config_name}.agent.max_retries must equal 0 with a one-call tool limit.")
+    if mode is AgentMode.MULTI_TOOL and agent.get("implementation_status") != "deferred":
+        raise AblationConfigError(f"{config_name}.agent multi_tool must declare implementation_status: deferred.")
     seed = config.get("seed", 42)
     if not isinstance(seed, int) or isinstance(seed, bool):
         raise AblationConfigError(f"{config_name}.seed must be an integer.")
     if "metadata" in config and not isinstance(config["metadata"], dict):
         raise AblationConfigError(f"{config_name}.metadata must be a mapping.")
+
+
+def validate_llm_ablation_fairness(configs: Mapping[str, dict[str, Any]]) -> None:
+    """Fail when the controlled LLM configs differ outside their intended variable."""
+
+    missing = [name for name in LLM_ABLATION_CONFIG_NAMES if name not in configs]
+    if missing:
+        raise AblationConfigError(
+            "LLM ablation fairness validation requires configs: " + ", ".join(missing)
+        )
+    base = configs["LLM-BaseReasoning"]
+    comparisons = (
+        ("LLM-CoTReasoning", ("generation", "prompt_strategy")),
+        ("LLM-LargerModel", ("generation", "model")),
+    )
+    for other_name, allowed_path in comparisons:
+        differences = _differing_paths(base, configs[other_name])
+        unintended = sorted(path for path in differences if path != allowed_path)
+        if unintended:
+            formatted = ", ".join(".".join(path) for path in unintended)
+            raise AblationConfigError(
+                f"Unfair LLM ablation {other_name!r}; unintended differing fields: {formatted}."
+            )
+        if allowed_path not in differences:
+            raise AblationConfigError(
+                f"LLM ablation {other_name!r} must differ at {'.'.join(allowed_path)}."
+            )
+
+
+def validate_agent_ablation_fairness(configs: Mapping[str, dict[str, Any]]) -> None:
+    """Ensure Plain RAG and Simple Planner differ only in their agent section."""
+    missing = [name for name in AGENT_ABLATION_CONFIG_NAMES if name not in configs]
+    if missing:
+        raise AblationConfigError("Agent ablation fairness validation requires configs: " + ", ".join(missing))
+    plain = configs["Agent-None-PlainRAG"]
+    planner = configs["Agent-SimplePlanner"]
+    differences = _differing_paths(plain, planner)
+    unintended = sorted(path for path in differences if not path or path[0] != "agent")
+    if unintended:
+        formatted = ", ".join(".".join(path) for path in unintended)
+        raise AblationConfigError(f"Unfair agent ablation; unintended differing fields: {formatted}.")
+    if not differences:
+        raise AblationConfigError("Agent ablation configs must differ in their agent section.")
+
+
+def _differing_paths(
+    left: Any,
+    right: Any,
+    prefix: tuple[str, ...] = (),
+) -> set[tuple[str, ...]]:
+    if isinstance(left, Mapping) and isinstance(right, Mapping):
+        differences: set[tuple[str, ...]] = set()
+        for key in sorted(set(left) | set(right), key=str):
+            path = (*prefix, str(key))
+            if key not in left or key not in right:
+                differences.add(path)
+            else:
+                differences.update(_differing_paths(left[key], right[key], path))
+        return differences
+    return set() if left == right else {prefix}
 
 
 def validate_required_paths(config: dict[str, Any], *, project_root: Path = PROJECT_ROOT) -> None:
@@ -222,12 +359,6 @@ def build_ablation_stack(
             raise UnsupportedComponentError(
                 f"Configured {component} component {name!r} is not integrated with scripts/run_ablation_config.py."
             )
-    if config["agent"]["enabled"]:
-        agent_type = config["agent"].get("type") or "unspecified"
-        raise UnsupportedComponentError(
-            f"Configured agent {agent_type!r} is not integrated with scripts/run_ablation_config.py."
-        )
-
     dense = retrieval["dense"]
     if not dense["enabled"]:
         raise UnsupportedComponentError("The current runner requires retrieval.dense.enabled=true.")
@@ -252,6 +383,89 @@ def build_ablation_stack(
     return retriever, generator, judge, [*generator_secrets, *judge_secrets, qdrant_key]
 
 
+def resolve_runtime_config(config: Mapping[str, Any]) -> dict[str, Any]:
+    """Return a deep-copied config with environment-backed model selectors resolved."""
+
+    resolved = json.loads(json.dumps(config))
+    _resolve_environment_model(resolved)
+    return resolved
+
+
+def apply_runtime_path_overrides(
+    config: Mapping[str, Any],
+    *,
+    benchmark_source: Path | None = None,
+    corpus_source: Path | None = None,
+    faiss_index_source: Path | None = None,
+    faiss_payloads_source: Path | None = None,
+    faiss_manifest_source: Path | None = None,
+    graph_source: Path | None = None,
+    runs_root: Path | None = None,
+    selected_device: str | None = None,
+) -> dict[str, Any]:
+    """Apply validated, non-persistent runtime paths to a copied config.
+
+    This is the canonical bridge for notebook/hosted runtimes.  It never edits
+    the source YAML, and records every effective input identity in the resolved
+    config that the runner writes into the run directory.
+    """
+
+    resolved = json.loads(json.dumps(config))
+    supplied = {
+        "benchmark": benchmark_source,
+        "corpus": corpus_source,
+        "faiss_index": faiss_index_source,
+        "faiss_payloads": faiss_payloads_source,
+        "faiss_manifest": faiss_manifest_source,
+        "graph": graph_source,
+    }
+    for label, source in supplied.items():
+        if source is not None and not Path(source).is_file():
+            raise AblationConfigError(f"Runtime {label} source is not a file: {Path(source).name}")
+
+    if benchmark_source is not None:
+        resolved["benchmark"]["path"] = str(Path(benchmark_source).resolve())
+    if corpus_source is not None:
+        resolved["corpus"]["path"] = str(Path(corpus_source).resolve())
+
+    dense = resolved["retrieval"]["dense"]
+    if faiss_index_source is not None:
+        index_file = Path(faiss_index_source).resolve()
+        dense["index_path"] = str(index_file.parent)
+        dense["index_file"] = str(index_file)
+    if faiss_payloads_source is not None:
+        dense["payloads_path"] = str(Path(faiss_payloads_source).resolve())
+    if faiss_manifest_source is not None:
+        dense["manifest_path"] = str(Path(faiss_manifest_source).resolve())
+    if graph_source is not None:
+        resolved["retrieval"].setdefault("graph", {})["path"] = str(Path(graph_source).resolve())
+    if runs_root is not None:
+        resolved["output"]["root"] = str(Path(runs_root).resolve())
+    if selected_device is not None:
+        if selected_device not in {"cpu", "cuda"}:
+            raise AblationConfigError("selected_device must be 'cpu' or 'cuda'.")
+        resolved.setdefault("runtime", {})["selected_device"] = selected_device
+
+    identities = resolved.setdefault("metadata", {}).setdefault("runtime_path_overrides", {})
+    for label, source in supplied.items():
+        if source is not None:
+            identities[label] = str(Path(source).resolve())
+    if runs_root is not None:
+        identities["runs_root"] = str(Path(runs_root).resolve())
+    return resolved
+
+
+def build_case_executor(
+    config: dict[str, Any], *, retriever: Any, generator: GeneratorFunction,
+    sensitive_values: Sequence[str] = (),
+) -> Callable[[dict[str, Any]], Any] | None:
+    """Build the same optional per-case agent executor used by ablation runs."""
+
+    return _build_case_executor(
+        config, retriever=retriever, generator=generator, sensitive_values=sensitive_values
+    )
+
+
 def run_ablation_config(
     config_name: str,
     *,
@@ -265,19 +479,31 @@ def run_ablation_config(
     judge: JudgeFunction | None = None,
     command_args: Sequence[str] | None = None,
     project_root: Path = PROJECT_ROOT,
+    resolved_config_override: Mapping[str, Any] | None = None,
 ) -> AblationRunOutcome:
     configs = load_ablation_configs(config_file)
-    config = resolve_ablation_config(configs, config_name)
+    source_config = resolve_ablation_config(configs, config_name)
+    config = (
+        json.loads(json.dumps(resolved_config_override))
+        if resolved_config_override is not None
+        else source_config
+    )
     validate_ablation_config(config, config_name=config_name)
     if dry_run:
+        agent_mode = _agent_mode(config["agent"])
+        deferred_reason = None
+        if agent_mode is AgentMode.MULTI_TOOL:
+            deferred_reason = str(config["agent"].get("reason") or "MultiTool implementation is deferred.")
         return AblationRunOutcome(
             config_name=config_name,
-            status="completed",
+            status="deferred" if agent_mode is AgentMode.MULTI_TOOL else "completed",
             run_id=None,
             output_dir=None,
             artifacts={},
             counts={"total_input": 0, "successful": 0, "failed": 0, "skipped": 0, "evaluated": 0},
+            error=deferred_reason,
         )
+    _resolve_environment_model(config)
     validate_required_paths(config, project_root=project_root)
 
     config_hash = _config_hash(config)
@@ -302,6 +528,7 @@ def run_ablation_config(
         started=started,
         command_args=command_args,
         output_dir=output_dir,
+        case_limit=limit,
     )
     write_json(manifest_path, manifest)
 
@@ -320,6 +547,9 @@ def run_ablation_config(
             retriever = retriever or built_retriever
             generator = generator or built_generator
             judge = judge or built_judge
+        case_executor = _build_case_executor(
+            config, retriever=retriever, generator=generator, sensitive_values=sensitive_values
+        )
         benchmark_path = _resolved_path(config["benchmark"]["path"], project_root)
         result: E2ERunResult = run_e2e_evaluation(
             read_benchmark_records(benchmark_path, limit=limit),
@@ -331,6 +561,7 @@ def run_ablation_config(
             config=config,
             qa_path=str(benchmark_path),
             sensitive_values=sensitive_values,
+            case_executor=case_executor,
         )
         artifacts.update(write_e2e_artifacts(output_dir, result, report_name="report.md"))
         counts = result.counts
@@ -407,7 +638,7 @@ def main() -> int:
         print(f"Output: {outcome.output_dir}")
     if outcome.error:
         print(f"Error: {outcome.error}", file=sys.stderr)
-    return 0 if outcome.status == "completed" else 1
+    return 0 if outcome.status == "completed" or args.dry_run else 1
 
 
 def _build_generator(config: dict[str, Any]) -> tuple[GeneratorFunction, list[str]]:
@@ -423,21 +654,30 @@ def _build_generator(config: dict[str, Any]) -> tuple[GeneratorFunction, list[st
         raise AblationConfigError(f"Missing generation API key environment variable {api_key_env!r}.")
     model = str(config["model"])
     temperature = float(config.get("temperature", 0.0))
+    top_p = float(config.get("top_p", 1.0))
+    max_output_tokens = int(config.get("max_output_tokens", 1024))
+    timeout_seconds = float(config.get("timeout_seconds", 60.0))
+    max_retries = int(config.get("max_retries", 0))
+    prompt_strategy = coerce_prompt_strategy(config.get("prompt_strategy"))
     if provider == "gemini":
-        from scripts.evaluate_e2e import ANSWER_PROMPT, GeminiClient
+        from scripts.evaluate_e2e import GeminiClient
 
         gemini_client = GeminiClient(api_key=api_key, rpm=int(config.get("rpm", 15)))
 
         def gemini_generate(qa: dict[str, Any], context: str, chunks: Sequence[Any]) -> str:
             del chunks
-            return gemini_client.generate(
+            content = gemini_client.generate(
                 model=model,
-                prompt=ANSWER_PROMPT.format(
-                    question=qa.get("question") or "",
-                    answer_type=qa.get("answer_type") or "",
+                prompt=build_generation_prompt(
+                    question=str(qa.get("question") or ""),
+                    answer_type=str(qa.get("answer_type") or ""),
                     context=context,
+                    strategy=prompt_strategy,
                 ),
             )
+            return parse_generation_response(
+                RawGenerationResponse(content=content, reasoning_field=None)
+            ).answer
 
         return gemini_generate, [api_key]
 
@@ -455,6 +695,12 @@ def _build_generator(config: dict[str, Any]) -> tuple[GeneratorFunction, list[st
             chunks,
             qa_id=str(qa.get("qa_id") or ""),
             temperature=temperature,
+            top_p=top_p,
+            max_output_tokens=max_output_tokens,
+            timeout_seconds=timeout_seconds,
+            max_retries=max_retries,
+            answer_type=str(qa.get("answer_type") or ""),
+            prompt_strategy=prompt_strategy,
         )
         if outcome.error:
             raise RuntimeError(outcome.error)
@@ -498,10 +744,15 @@ def _initial_manifest(
     started: datetime,
     command_args: Sequence[str] | None,
     output_dir: Path,
+    case_limit: int | None = None,
 ) -> dict[str, Any]:
     git_commit, git_dirty = _git_state()
     dense = config["retrieval"]["dense"]
     graph = config["retrieval"].get("graph", {})
+    generation = config["generation"]
+    agent = config["agent"]
+    agent_mode = _agent_mode(agent)
+    strategy = coerce_prompt_strategy(generation.get("prompt_strategy"))
     return {
         "run_id": run_id,
         "config_name": config_name,
@@ -511,6 +762,7 @@ def _initial_manifest(
         "start_time": started.isoformat(),
         "end_time": None,
         "status": "running",
+        "case_limit": case_limit,
         "benchmark_path": config["benchmark"]["path"],
         "benchmark_version": config["benchmark"]["version"],
         "corpus_path": config["corpus"]["path"],
@@ -521,13 +773,39 @@ def _initial_manifest(
         "graph_version": graph.get("version"),
         "selected_retrieval_stack": config["retrieval"],
         "selected_generation_stack": config["generation"],
+        "generation_provider": generation["provider"],
+        "generation_model": generation["model"],
+        "prompt_strategy": strategy.value,
+        "prompt_template_version": generation.get(
+            "prompt_template_version", PROMPT_TEMPLATE_VERSION
+        ),
+        "prompt_template_hash": prompt_template_hash(strategy),
+        "generation_decoding": {
+            "temperature": float(generation.get("temperature", 0.0)),
+            "top_p": float(generation.get("top_p", 1.0)),
+            "max_output_tokens": int(generation.get("max_output_tokens", 1024)),
+            "timeout_seconds": float(generation.get("timeout_seconds", 60.0)),
+            "max_retries": int(generation.get("max_retries", 0)),
+        },
         "selected_agent_stack": config["agent"],
+        "agent_mode": agent_mode.value,
+        "agent_enabled": bool(agent.get("enabled")),
+        "agent_version": AGENT_VERSION,
+        "planner_policy": PLANNER_POLICY if agent_mode is AgentMode.SIMPLE_PLANNER else None,
+        "planner_policy_version": PLANNER_POLICY_VERSION if agent_mode is AgentMode.SIMPLE_PLANNER else None,
+        "planner_prompt_hash": None,
+        "max_steps": agent.get("max_steps"),
+        "max_tool_calls": agent.get("max_tool_calls"),
+        "allowed_tools": agent.get("allowed_tools", []),
+        "trace_schema_version": TRACE_SCHEMA_VERSION,
+        "tool_contract_version": TOOL_CONTRACT_VERSION,
         "seed": config.get("seed", 42),
         "hostname": socket.gethostname(),
         "execution_environment": {
             "platform": platform.platform(),
             "python_version": platform.python_version(),
             "packages": _package_versions(["PyYAML", "google-genai", "openai", "faiss-cpu", "sentence-transformers"]),
+            "selected_device": config.get("runtime", {}).get("selected_device", "cpu"),
         },
         "git_commit": git_commit,
         "git_dirty": git_dirty,
@@ -540,6 +818,35 @@ def _initial_manifest(
         "evaluated_case_count": 0,
         "error_summary": None,
     }
+
+
+def _agent_mode(agent: Mapping[str, Any]) -> AgentMode:
+    value = agent.get("mode", "none" if not agent.get("enabled") else agent.get("type"))
+    return AgentMode.NONE if value == "plain_rag" else coerce_agent_mode(value)
+
+
+def _build_case_executor(
+    config: dict[str, Any], *, retriever: Any, generator: GeneratorFunction,
+    sensitive_values: Sequence[str],
+) -> Callable[[dict[str, Any]], Any] | None:
+    agent = config["agent"]
+    mode = _agent_mode(agent)
+    if mode is AgentMode.NONE:
+        return None
+    if mode is AgentMode.MULTI_TOOL:
+        raise UnsupportedComponentError(
+            "Agent-MultiTool-Orchestrated is deferred: only the typed read-only retrieval tool is stable; "
+            "a second approved typed tool and bounded orchestration acceptance contract are missing."
+        )
+    tool = RetrievalTool(retriever, sensitive_values=sensitive_values)
+    planner = SimplePlanner(
+        retrieval_tool=tool, generator=generator, top_k=int(config["retrieval"]["top_k"]),
+        filter_profile=str(config["retrieval"].get("filter_profile") or "broad"),
+        max_steps=int(agent["max_steps"]), max_tool_calls=int(agent["max_tool_calls"]),
+        max_retries=int(agent.get("max_retries", 0)),
+        deadline_seconds=float(agent["deadline_seconds"]),
+    )
+    return planner.execute
 
 
 def _require_mapping(parent: dict[str, Any], key: str, context: str) -> dict[str, Any]:
@@ -559,6 +866,64 @@ def _require_non_empty_string(parent: dict[str, Any], key: str, context: str) ->
 def _require_bool(parent: dict[str, Any], key: str, context: str) -> None:
     if key not in parent or not isinstance(parent[key], bool):
         raise AblationConfigError(f"{context}.{key} must be a boolean.")
+
+
+def _validate_number(
+    parent: dict[str, Any],
+    key: str,
+    config_name: str,
+    *,
+    minimum: float,
+    maximum: float | None = None,
+    exclusive_minimum: bool = False,
+) -> None:
+    if key not in parent:
+        return
+    value = parent[key]
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise AblationConfigError(f"{config_name}.generation.{key} must be numeric.")
+    if (exclusive_minimum and value <= minimum) or (not exclusive_minimum and value < minimum):
+        operator = "greater than" if exclusive_minimum else "at least"
+        raise AblationConfigError(
+            f"{config_name}.generation.{key} must be {operator} {minimum}."
+        )
+    if maximum is not None and value > maximum:
+        raise AblationConfigError(
+            f"{config_name}.generation.{key} must be at most {maximum}."
+        )
+
+
+def _validate_integer(
+    parent: dict[str, Any],
+    key: str,
+    config_name: str,
+    *,
+    minimum: int,
+) -> None:
+    if key not in parent:
+        return
+    value = parent[key]
+    if not isinstance(value, int) or isinstance(value, bool) or value < minimum:
+        raise AblationConfigError(
+            f"{config_name}.generation.{key} must be an integer of at least {minimum}."
+        )
+
+
+def _resolve_environment_model(config: dict[str, Any]) -> None:
+    generation = config["generation"]
+    configured = str(generation["model"])
+    if not configured.startswith("env:"):
+        return
+    environment_name = configured.removeprefix("env:").strip()
+    if not environment_name:
+        raise AblationConfigError("Generation model environment selector is empty.")
+    resolved = os.environ.get(environment_name, "").strip()
+    if not resolved:
+        raise AblationConfigError(
+            f"Missing generation model environment variable {environment_name!r}."
+        )
+    generation["model"] = resolved
+    generation["model_env"] = environment_name
 
 
 def _resolved_path(value: str | Path, project_root: Path) -> Path:

@@ -24,6 +24,9 @@ LATENCY_STAGES = [
     "fusion",
     "reranker",
     "generation",
+    "planner_decision",
+    "tool_retrieval",
+    "agent_total",
     "judge",
     "serialization",
     "total",
@@ -36,6 +39,7 @@ _SECRET_PATTERNS = (
 
 GeneratorFunction = Callable[[dict[str, Any], str, Sequence[Any]], str]
 JudgeFunction = Callable[[dict[str, Any], str, str, str], dict[str, Any]]
+CaseExecutor = Callable[[dict[str, Any]], Any]
 
 
 @dataclass(frozen=True)
@@ -98,6 +102,7 @@ def run_e2e_evaluation(
     config: dict[str, Any] | None = None,
     qa_path: str | None = None,
     sensitive_values: Sequence[str] = (),
+    case_executor: CaseExecutor | None = None,
 ) -> E2ERunResult:
     predictions: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
@@ -108,6 +113,7 @@ def run_e2e_evaluation(
         row = record.row
         case_identifier = qa_id(row or {}, record.index)
         current_stage = "benchmark_parsing"
+        agent_payload: dict[str, Any] = {}
 
         if record.parse_error is not None:
             error_record = _error_record(
@@ -133,7 +139,7 @@ def run_e2e_evaluation(
         assert row is not None
         try:
             question = str(row.get("question") or "").strip()
-            if not question:
+            if not question and case_executor is None:
                 stage_latencies["total"] = _elapsed_ms(case_started)
                 predictions.append(
                     {
@@ -149,22 +155,55 @@ def run_e2e_evaluation(
                 )
                 continue
 
-            current_stage = "retrieval"
-            result, retrieval_latency = _retrieve_with_latency(
-                retriever,
-                question,
-                filter_profile=filter_profile,
-                top_k=retrieval_top_k,
-            )
-            stage_latencies.update(retrieval_latency)
-            chunks = list(result.chunks)
-            context = format_context(chunks)
+            if case_executor is not None:
+                current_stage = "agent_execution"
+                execution = case_executor(row)
+                stage_latencies.update(getattr(execution, "latency_ms", {}) or {})
+                status_value = getattr(getattr(execution, "status", None), "value", getattr(execution, "status", None))
+                agent_payload = {
+                    "agent_status": status_value,
+                    "agent_reason_code": getattr(execution, "reason_code", None),
+                    "agent_trace": execution.trace_dicts() if hasattr(execution, "trace_dicts") else [],
+                    "retrieval_invoked": bool(getattr(execution, "retrieval_invoked", False)),
+                    "tool_call_count": int(getattr(execution, "tool_call_count", 0)),
+                    "successful_tool_calls": int(getattr(execution, "successful_tool_calls", 0)),
+                }
+                chunks = list(getattr(execution, "retrieved_items", ()) or ())
+                context = format_context(chunks)
+                if status_value == "abstained":
+                    stage_latencies["total"] = _elapsed_ms(case_started)
+                    predictions.append(_json_safe({
+                        "qa_id": case_identifier, "question": row.get("question"),
+                        "category": row.get("category"), "difficulty": row.get("difficulty"),
+                        "answer_type": row.get("answer_type"), "status": "skipped",
+                        "skip_reason": getattr(execution, "reason_code", None) or "agent_abstained",
+                        "retrieved_context": [_chunk_to_dict(chunk, rank) for rank, chunk in enumerate(chunks, 1)],
+                        **agent_payload, "latency_ms": stage_latencies,
+                    }))
+                    continue
+                if status_value != "completed":
+                    raise RuntimeError(
+                        f"{getattr(execution, 'error_type', None) or 'AgentFailure'}: "
+                        f"{getattr(execution, 'error_message', None) or getattr(execution, 'reason_code', None) or 'agent failed'}"
+                    )
+                predicted = str(getattr(execution, "final_answer", ""))
+            else:
+                current_stage = "retrieval"
+                result, retrieval_latency = _retrieve_with_latency(
+                    retriever, question, filter_profile=filter_profile, top_k=retrieval_top_k,
+                )
+                stage_latencies.update(retrieval_latency)
+                chunks = list(result.chunks)
+                context = format_context(chunks)
+                current_stage = "generation"
+                generation_started = time.perf_counter()
+                predicted = generator(row, context, chunks)
+                stage_latencies["generation"] = _elapsed_ms(generation_started)
+                agent_payload = {
+                    "agent_status": "completed", "retrieval_invoked": True,
+                    "tool_call_count": 0, "successful_tool_calls": 0,
+                }
             reference_answer = str(row.get("reference_answer") or row.get("answer") or "")
-
-            current_stage = "generation"
-            generation_started = time.perf_counter()
-            predicted = generator(row, context, chunks)
-            stage_latencies["generation"] = _elapsed_ms(generation_started)
 
             current_stage = "metrics"
             scored = score_case(row, record.index, predicted, reference_answer, chunks)
@@ -185,6 +224,7 @@ def run_e2e_evaluation(
             scored["status"] = "success"
             scored["failed_stage"] = None
             scored["error"] = None
+            scored.update(agent_payload)
             stage_latencies["serialization"] = _elapsed_ms(serialization_started)
             stage_latencies["total"] = _elapsed_ms(case_started)
             scored["latency_ms"] = stage_latencies
@@ -197,15 +237,17 @@ def run_e2e_evaluation(
                 exc=exc,
                 sensitive_values=sensitive_values,
             )
-            predictions.append(
-                _failed_prediction(
+            failed_prediction = _failed_prediction(
                     case_identifier=case_identifier,
                     qa=row,
                     failed_stage=current_stage,
                     error_record=error_record,
                     latency=stage_latencies,
                 )
-            )
+            failed_prediction.update(agent_payload)
+            if current_stage == "agent_execution":
+                failed_prediction["agent_status"] = "failed"
+            predictions.append(failed_prediction)
             errors.append(error_record)
 
     successful = [row for row in predictions if row["status"] == "success"]
@@ -231,6 +273,7 @@ def run_e2e_evaluation(
         "by_answer_type": aggregate_by(successful, "answer_type", metric_keys),
         "by_difficulty": aggregate_by(successful, "difficulty", metric_keys),
         "metric_keys": metric_keys,
+        "agent_metrics": aggregate_agent_metrics(predictions),
     }
     latency = aggregate_latency(predictions)
     latency["denominator"] = (
@@ -271,6 +314,28 @@ def aggregate_latency(predictions: Sequence[dict[str, Any]]) -> dict[str, Any]:
         ]
         stages[stage] = _distribution(values) if values else None
     return {"unit": "milliseconds", "stages": stages}
+
+
+def aggregate_agent_metrics(predictions: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    """Derive agent metrics with explicit, stable denominators."""
+    total = len(predictions)
+    attempted = sum(int(row.get("tool_call_count") or 0) for row in predictions)
+    successful_calls = sum(int(row.get("successful_tool_calls") or 0) for row in predictions)
+    abstained = sum(row.get("agent_status") == "abstained" for row in predictions)
+    failures = sum(row.get("agent_status") == "failed" or row.get("failed_stage") == "agent_execution" for row in predictions)
+    step_limits = sum(row.get("agent_reason_code") == "step_limit_reached" for row in predictions)
+    empty = sum(row.get("agent_reason_code") == "empty_context" for row in predictions)
+    invoked = sum(bool(row.get("retrieval_invoked")) for row in predictions)
+    return {
+        "denominators": {"cases": total, "attempted_tool_calls": attempted},
+        "tool_call_success_rate": successful_calls / attempted if attempted else None,
+        "retrieval_invocation_rate": invoked / total if total else None,
+        "average_tool_calls_per_case": attempted / total if total else None,
+        "planner_abstention_rate": abstained / total if total else None,
+        "step_limit_failure_rate": step_limits / total if total else None,
+        "empty_context_rate": empty / total if total else None,
+        "agent_failure_rate": failures / total if total else None,
+    }
 
 
 def score_case(
@@ -441,13 +506,23 @@ def _latency_breakdown_to_ms(breakdown: Any, *, retriever: Any) -> dict[str, flo
 
 
 def _chunk_to_dict(chunk: Any, rank: int) -> dict[str, Any]:
+    rerank_score = getattr(chunk, "rerank_score", None)
+    vector_score = getattr(chunk, "vector_score", None)
     return {
         "rank": rank,
         "chunk_id": getattr(chunk, "chunk_id", None),
         "document_id": getattr(chunk, "id_str", None),
         "provision_id": getattr(chunk, "parent_unit_id", None),
+        "title": getattr(chunk, "title", None),
+        "article_number": getattr(chunk, "article_number", None),
+        "unit_type": getattr(chunk, "unit_type", None),
+        "path": getattr(chunk, "path", None),
         "text": getattr(chunk, "chunk_text", None),
-        "score": getattr(chunk, "rerank_score", None),
+        "score": rerank_score if rerank_score is not None else vector_score,
+        "vector_score": vector_score,
+        "rerank_score": rerank_score,
+        "citation_anchor": getattr(chunk, "citation_anchor", None),
+        "citation_label": getattr(chunk, "citation_label", None),
         "citation": getattr(chunk, "citation_anchor", None) or getattr(chunk, "citation_label", None),
     }
 
@@ -541,6 +616,12 @@ def _sanitize_text(text: str, sensitive_values: Sequence[str]) -> str:
     sanitized = _SECRET_PATTERNS[0].sub(r"\1\2***", sanitized)
     sanitized = _SECRET_PATTERNS[1].sub("Bearer ***", sanitized)
     return sanitized
+
+
+def sanitize_error_text(text: object, sensitive_values: Sequence[str] = ()) -> str:
+    """Public bounded redaction helper for non-runner service/UI diagnostics."""
+
+    return _sanitize_text(str(text), sensitive_values)[:1000]
 
 
 def _json_safe(payload: dict[str, Any]) -> dict[str, Any]:

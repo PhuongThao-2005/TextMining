@@ -188,11 +188,11 @@ Design rules:
 
 `parse_generation_response` normalizes provider-specific reasoning shapes with strict precedence:
 
-1. **Dedicated field:** non-empty `reasoning_content` or `reasoning` attribute/key on the response message → `reasoning_source="field"`, content unchanged as answer.
-2. **Think block:** first `<think>...</think>` match (case-insensitive, DOTALL) → reasoning is the block body, answer is the content with think blocks removed → `reasoning_source="think_block"`.
+1. **Dedicated field:** non-empty `reasoning_content` or `reasoning` attribute/key on the response message → `reasoning_source="field"`; the field is never copied into the answer.
+2. **Think block:** every `<think>...</think>` match (case-insensitive, DOTALL) is removed from the final answer → `reasoning_source="think_block"`.
 3. **Not returned:** neither shape present → `reasoning=None`, `reasoning_source="not_returned"`, full content is the answer.
 
-An unterminated `<think>` tag (open without close) intentionally falls through to `not_returned`, keeping the raw content visible as the answer instead of silently dropping text.
+For an unterminated `<think>` tag, only content after an explicit final-answer marker is retained. Without such a marker, the unsafe remainder is discarded rather than exposed in evaluation or UI artifacts.
 
 ---
 
@@ -201,7 +201,7 @@ An unterminated `<think>` tag (open without close) intentionally falls through t
 `GeneratorClient` wraps any OpenAI-compatible chat completions API:
 
 * **Lazy SDK import:** `openai` is imported inside the constructor; a missing package raises a `RuntimeError` with an actionable `pip install openai` message.
-* **Deterministic default:** `generate(prompt, temperature=0.0)`; legal answers default to greedy decoding.
+* **Deterministic default:** temperature, top-p, token limit, timeout, and retry count have explicit defaults and can be frozen by an ablation config.
 * **Reasoning capture:** both object-attribute and dict-style messages are inspected for dedicated reasoning fields.
 * **Secret hygiene:** the raw API key is held only to redact SDK errors. On failure, the client raises `RuntimeError("Generator call failed: ...")` with every occurrence of the raw key replaced by `***`. Key material never propagates into `GenerationOutcome.error` either.
 
@@ -255,7 +255,15 @@ The module depends on retrieval output but not on retrieval or graph internals:
 
 ```python
 GeneratorClient(*, base_url: str, api_key: str, model: str)
-generate(prompt: str, *, temperature: float = 0.0) -> RawGenerationResponse
+generate(
+    prompt: str,
+    *,
+    temperature: float = 0.0,
+    top_p: float = 1.0,
+    max_output_tokens: int = 1024,
+    timeout_seconds: float = 60.0,
+    max_retries: int = 0,
+) -> RawGenerationResponse
 ```
 
 ### Orchestration and helpers
@@ -268,11 +276,25 @@ generate_answer(
     *,
     qa_id: str | None = None,
     temperature: float = 0.0,
+    top_p: float = 1.0,
+    max_output_tokens: int = 1024,
+    timeout_seconds: float = 60.0,
+    max_retries: int = 0,
+    answer_type: str = "",
+    prompt_strategy: PromptStrategy | str | None = None,
 ) -> GenerationOutcome
 
 parse_generation_response(raw: RawGenerationResponse) -> ParsedAnswer
 
 format_context_for_prompt(chunks: Sequence[Any]) -> str
+
+build_generation_prompt(
+    *,
+    question: str,
+    answer_type: str,
+    context: str,
+    strategy: PromptStrategy | str | None = None,
+) -> str
 ```
 
 ### Constants and schemas
