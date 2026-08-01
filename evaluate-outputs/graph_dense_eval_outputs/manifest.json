@@ -1,0 +1,24 @@
+{
+  "run_name": "graph_dense_generate_eval",
+  "modes": [
+    "DenseOnly",
+    "DenseGraph"
+  ],
+  "benchmark_path": "/kaggle/input/datasets/nguyenlethienlyy/legalrag-text-mining-benchmark/qa_final.jsonl",
+  "faiss_dir": "/kaggle/input/datasets/kittrntunk/faiss-chunk-meta",
+  "graph_path": "/kaggle/input/datasets/nguyenlethienlyy/legalrag-knowledge-graph/knowledge_graph.gpickle",
+  "embedding_model": "intfloat/multilingual-e5-large",
+  "generation_model": "gpt-4o-mini",
+  "base_url": "https://api.shopaikey.com/v1",
+  "search_k": 50,
+  "final_top_n": 10,
+  "graph_seed_n": 5,
+  "graph_max_hop": 1,
+  "graph_context": 10,
+  "filter_profile": "broad",
+  "sample_limit": null,
+  "qa_total": 500,
+  "answerable_total": 400,
+  "unanswerable_total": 100,
+  "total_benchmark_time_sec": 3254.682771656
+}
