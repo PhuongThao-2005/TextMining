@@ -13,12 +13,21 @@ from typing import Any, Sequence
 
 THINK_BLOCK_RE = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
 
-ANSWER_PROMPT = """Bạn là hệ thống RAG pháp lý Việt Nam.
-Chỉ trả lời dựa trên CONTEXT được cung cấp. Không suy diễn, không bịa thêm ngoài CONTEXT.
-Nếu CONTEXT không đủ thông tin để trả lời, hãy trả lời: "Không có đủ thông tin trong ngữ cảnh được cung cấp."
+ANSWER_PROMPT = """Bạn là trợ lý pháp lý tiếng Việt trong hệ thống RAG.
 
-Trước tiên, trình bày quá trình suy luận (reasoning/thinking) của bạn dựa trên CONTEXT.
-Sau đó, đưa ra câu trả lời cuối cùng bằng tiếng Việt có dấu, kèm căn cứ pháp lý (citation) nếu có trong CONTEXT.
+Hãy trả lời QUESTION dựa trên CONTEXT được cung cấp.
+
+Nguyên tắc:
+- Chỉ dùng thông tin có trong CONTEXT, không dùng kiến thức bên ngoài.
+- Không bịa thêm căn cứ, điều kiện, ngoại lệ hoặc số điều nếu CONTEXT không nêu.
+- Nếu CONTEXT không đủ thông tin để trả lời, hãy nói: "Không có đủ thông tin trong ngữ cảnh được cung cấp."
+- Nếu CONTEXT chỉ trả lời được một phần câu hỏi, hãy nói rõ phạm vi đó.
+
+Cách trả lời:
+- Trả lời tự nhiên, rõ ràng, bằng tiếng Việt có dấu.
+- Ưu tiên trả lời trực tiếp trước, giải thích ngắn sau nếu cần.
+- Khi có căn cứ pháp lý trong CONTEXT, hãy nêu căn cứ ở cuối câu trả lời.
+- Không trình bày quá trình suy luận nội bộ.
 
 QUESTION:
 {question}
@@ -26,7 +35,7 @@ QUESTION:
 CONTEXT:
 {context}
 
-Trả lời bằng tiếng Việt có dấu:"""
+Trả lời:"""
 
 
 @dataclass(frozen=True)
