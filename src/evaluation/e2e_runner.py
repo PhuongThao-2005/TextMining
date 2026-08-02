@@ -18,10 +18,35 @@ from generation.reasoning_client import (
 )
 
 from .io_utils import qa_id, write_json, write_jsonl
-from .metrics import aggregate, aggregate_by, exact_match, is_unanswerable_text, rouge_l, token_f1
+from .metrics import (
+    aggregate,
+    aggregate_by,
+    exact_match,
+    hit_at_k,
+    is_unanswerable_text,
+    jaccard_at_k,
+    mrr_at_k,
+    ndcg_at_k,
+    recall_at_k,
+    rouge_l,
+    token_f1,
+)
 
 
-METRIC_KEYS = ["exact_match", "token_f1", "rouge_l", "unanswerable_accuracy", "context_recall@k"]
+RETRIEVAL_METRIC_TOP_K = (1, 5, 10)
+RETRIEVAL_METRIC_KEYS = [
+    f"{name}@{k}"
+    for k in RETRIEVAL_METRIC_TOP_K
+    for name in ("recall", "hit", "mrr", "ndcg", "jaccard")
+]
+METRIC_KEYS = [
+    "exact_match",
+    "token_f1",
+    "rouge_l",
+    "unanswerable_accuracy",
+    "context_recall@k",
+    *RETRIEVAL_METRIC_KEYS,
+]
 LATENCY_STAGES = [
     "dense_retrieval",
     "sparse_retrieval",
@@ -391,6 +416,7 @@ def score_case(
     ground_truth = qa.get("ground_truth") or {}
     ground_truth_chunks = {str(value) for value in ground_truth.get("chunk_ids") or [] if value}
     retrieved = {str(getattr(chunk, "chunk_id", "")) for chunk in chunks}
+    retrieved_ranked = [str(getattr(chunk, "chunk_id", "")) for chunk in chunks if getattr(chunk, "chunk_id", "")]
     unanswerable = answer_type == "unanswerable" or category == "unanswerable"
     unanswerable_ok = is_unanswerable_text(predicted) if unanswerable else not is_unanswerable_text(predicted)
     context_recall = (
@@ -398,6 +424,17 @@ def score_case(
         if ground_truth_chunks
         else (1.0 if unanswerable else 0.0)
     )
+    retrieval_metrics: dict[str, float] = {}
+    for k in RETRIEVAL_METRIC_TOP_K:
+        retrieval_metrics.update(
+            {
+                f"recall@{k}": recall_at_k(retrieved_ranked, ground_truth_chunks, k),
+                f"hit@{k}": hit_at_k(retrieved_ranked, ground_truth_chunks, k),
+                f"mrr@{k}": mrr_at_k(retrieved_ranked, ground_truth_chunks, k),
+                f"ndcg@{k}": ndcg_at_k(retrieved_ranked, ground_truth_chunks, k),
+                f"jaccard@{k}": jaccard_at_k(retrieved_ranked, ground_truth_chunks, k),
+            }
+        )
     return {
         "qa_id": qa_id(qa, index),
         "question": qa.get("question"),
@@ -415,6 +452,7 @@ def score_case(
         "rouge_l": rouge_l(predicted, reference_answer),
         "unanswerable_accuracy": 1.0 if unanswerable_ok else 0.0,
         "context_recall@k": context_recall,
+        **retrieval_metrics,
     }
 
 
@@ -450,6 +488,16 @@ def write_report(
     ]
     overall = metrics["overall"]
     lines.extend(f"| {key} | {overall.get(key, 0.0):.4f} |" for key in metrics["metric_keys"])
+    lines.extend(
+        [
+            "",
+            "## Retrieval Metrics",
+            "",
+            "| Metric | Value |",
+            "| --- | ---: |",
+        ]
+    )
+    lines.extend(f"| {key} | {overall.get(key, 0.0):.4f} |" for key in RETRIEVAL_METRIC_KEYS)
     for title, key in (
         ("By Category", "by_category"),
         ("By Answer Type", "by_answer_type"),
