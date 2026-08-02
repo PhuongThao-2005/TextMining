@@ -293,6 +293,7 @@ def test_artifact_loading_does_not_import_pandas(tmp_path: Path, monkeypatch: py
     monkeypatch.setattr(builtins, "__import__", guarded)
     artifacts = load_run_artifacts(run, require_completed=True)
     assert artifacts.status == "completed"
+    assert artifacts.predictions and "citations" not in artifacts.predictions[0]
 
 
 def test_runtime_path_overrides_are_validated_persisted_and_do_not_mutate_source(tmp_path: Path) -> None:

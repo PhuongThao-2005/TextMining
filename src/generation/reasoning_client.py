@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Sequence
 
 from .prompt_strategy import PromptStrategy, build_generation_prompt
+from .citations import format_sources_for_prompt, prepare_citation_sources
 
 THINK_BLOCK_RE = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
 OPEN_THINK_RE = re.compile(r"<think>", re.IGNORECASE)
@@ -194,22 +195,7 @@ def _safe_final_answer(content: str) -> tuple[str, str | None, bool]:
 
 def format_context_for_prompt(chunks: Sequence[Any]) -> str:
     """Build citation-bearing CONTEXT blocks from retrieved chunks."""
-    blocks: list[str] = []
-    for rank, chunk in enumerate(chunks, start=1):
-        citation = (
-            getattr(chunk, "citation_anchor", None)
-            or getattr(chunk, "citation_label", None)
-            or getattr(chunk, "chunk_id", None)
-            or f"chunk-{rank}"
-        )
-        title = getattr(chunk, "title", "") or ""
-        text = getattr(chunk, "chunk_text", None)
-        if text is None and isinstance(chunk, dict):
-            citation = chunk.get("citation_anchor") or chunk.get("citation_label") or chunk.get("chunk_id") or citation
-            title = chunk.get("title") or title
-            text = chunk.get("chunk_text") or ""
-        blocks.append(f"[{rank}] {citation} - {title}\n{text}")
-    return "\n\n".join(blocks)
+    return format_sources_for_prompt(prepare_citation_sources(chunks, max_text_chars=None))
 
 
 def generate_answer(

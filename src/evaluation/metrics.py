@@ -125,6 +125,11 @@ def aggregate_by(rows: list[dict[str, Any]], field: str, metric_keys: list[str])
 def is_unanswerable_text(text: str) -> bool:
     norm = normalize_text(text)
     markers = [
+        "không có đủ thông tin",
+        "không đủ thông tin",
+        "không đủ căn cứ",
+        "không tìm thấy",
+        "không có thông tin",
         "khong co du thong tin",
         "khong du thong tin",
         "khong du can cu",

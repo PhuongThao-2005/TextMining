@@ -205,6 +205,24 @@ def test_plain_service_success_preserves_context_rank_score_latency_and_strips_r
     assert (context.rank, context.score, context.vector_score, context.rerank_score) == (1, 0.9, 0.8, 0.9)
     assert context.citation == "Article 1" and response.latency["dense_retrieval"] is not None
     assert response.diagnostics["prompt_template_hash"]
+    assert [source.citation_id for source in response.citation_sources] == [1]
+    assert response.citation_references[0].marker == "[1]"
+    assert response.citation_metrics["citation_validity_rate"] == 1.0
+    assert response.suggested_followups
+
+
+def test_service_exposes_authoritative_invalid_citation_warning(tmp_path: Path) -> None:
+    config = _base_config(tmp_path)
+    response = answer_question(
+        QuestionRequest("invalid citation", "fixture"), registry={"fixture": config},
+        resources=_resources(_Retriever(), generator=lambda *_: "Claim with invalid source [99]."),
+        project_root=tmp_path,
+    )
+    assert response.status == "completed"
+    assert "[99]" not in (response.answer or "")
+    assert response.citation_sources == ()
+    assert "99" in response.citation_warnings[0]
+    assert response.diagnostics["citation_contract"]["invalid_ids"] == [99]
 
 
 def test_simple_planner_service_preserves_trace(tmp_path: Path) -> None:
@@ -235,6 +253,21 @@ def test_empty_input_and_empty_retrieval_abstain_without_generation(tmp_path: Pa
     )
     assert response.status == "abstained" and response.abstained and response.answer is None
     assert not called
+
+
+def test_fixed_insufficient_evidence_answer_is_an_abstention(tmp_path: Path) -> None:
+    config = _base_config(tmp_path)
+    response = answer_question(
+        QuestionRequest("insufficient", "fixture"), registry={"fixture": config},
+        resources=_resources(
+            _Retriever(), generator=lambda *_: "Không có đủ thông tin trong ngữ cảnh được cung cấp."
+        ),
+        project_root=tmp_path,
+    )
+    assert response.status == "abstained"
+    assert response.abstained is True
+    assert response.answer is None
+    assert response.citation_sources == ()
 
 
 def test_retrieval_and_generation_failures_are_sanitized(tmp_path: Path) -> None:

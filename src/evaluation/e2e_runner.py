@@ -12,6 +12,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Sequence
 
+from generation.citations import aggregate_citation_metrics, prepare_citation_sources, validate_answer_citations
+from generation.reasoning_client import (
+    RawGenerationResponse, format_context_for_prompt, parse_generation_response,
+)
+
 from .io_utils import qa_id, write_json, write_jsonl
 from .metrics import aggregate, aggregate_by, exact_match, is_unanswerable_text, rouge_l, token_f1
 
@@ -195,14 +200,44 @@ def run_e2e_evaluation(
                 stage_latencies.update(retrieval_latency)
                 chunks = list(result.chunks)
                 context = format_context(chunks)
-                current_stage = "generation"
-                generation_started = time.perf_counter()
-                predicted = generator(row, context, chunks)
-                stage_latencies["generation"] = _elapsed_ms(generation_started)
                 agent_payload = {
                     "agent_status": "completed", "retrieval_invoked": True,
                     "tool_call_count": 0, "successful_tool_calls": 0,
                 }
+                if not chunks:
+                    stage_latencies["total"] = _elapsed_ms(case_started)
+                    predictions.append(_json_safe({
+                        "qa_id": case_identifier, "question": row.get("question"),
+                        "category": row.get("category"), "difficulty": row.get("difficulty"),
+                        "answer_type": row.get("answer_type"), "status": "skipped",
+                        "skip_reason": "empty_context", "retrieved_context": [],
+                        "citations": [], "citation_references": [], "citation_warnings": [],
+                        "citation_metrics": None, "invalid_citation_ids": [],
+                        **agent_payload, "latency_ms": stage_latencies,
+                    }))
+                    continue
+                current_stage = "generation"
+                generation_started = time.perf_counter()
+                predicted = generator(row, context, chunks)
+                stage_latencies["generation"] = _elapsed_ms(generation_started)
+            if not chunks:
+                stage_latencies["total"] = _elapsed_ms(case_started)
+                predictions.append(_json_safe({
+                    "qa_id": case_identifier, "question": row.get("question"),
+                    "category": row.get("category"), "difficulty": row.get("difficulty"),
+                    "answer_type": row.get("answer_type"), "status": "skipped",
+                    "skip_reason": "empty_context", "retrieved_context": [],
+                    "citations": [], "citation_references": [], "citation_warnings": [],
+                    "citation_metrics": None, "invalid_citation_ids": [],
+                    **agent_payload, "latency_ms": stage_latencies,
+                }))
+                continue
+            sources = prepare_citation_sources(chunks)
+            safe_answer = parse_generation_response(
+                RawGenerationResponse(str(predicted), None)
+            ).answer
+            citation_result = validate_answer_citations(safe_answer, sources)
+            predicted = citation_result.answer
             reference_answer = str(row.get("reference_answer") or row.get("answer") or "")
 
             current_stage = "metrics"
@@ -221,6 +256,11 @@ def run_e2e_evaluation(
             current_stage = "serialization"
             serialization_started = time.perf_counter()
             scored["retrieved_context"] = [_chunk_to_dict(chunk, rank) for rank, chunk in enumerate(chunks, start=1)]
+            scored["citations"] = [source.to_dict(include_text=False) for source in citation_result.cited_sources]
+            scored["citation_references"] = [vars(reference) for reference in citation_result.references]
+            scored["citation_metrics"] = citation_result.metrics
+            scored["citation_warnings"] = list(citation_result.warnings)
+            scored["invalid_citation_ids"] = list(citation_result.invalid_ids)
             scored["status"] = "success"
             scored["failed_stage"] = None
             scored["error"] = None
@@ -274,6 +314,7 @@ def run_e2e_evaluation(
         "by_difficulty": aggregate_by(successful, "difficulty", metric_keys),
         "metric_keys": metric_keys,
         "agent_metrics": aggregate_agent_metrics(predictions),
+        "citation_metrics": aggregate_citation_metrics(successful),
     }
     latency = aggregate_latency(predictions)
     latency["denominator"] = (
@@ -378,22 +419,7 @@ def score_case(
 
 
 def format_context(chunks: Sequence[Any]) -> str:
-    blocks: list[str] = []
-    for rank, chunk in enumerate(chunks, start=1):
-        citation = (
-            getattr(chunk, "citation_anchor", None)
-            or getattr(chunk, "citation_label", None)
-            or getattr(chunk, "parent_unit_id", None)
-            or getattr(chunk, "chunk_id", None)
-            or f"chunk-{rank}"
-        )
-        blocks.append(
-            f"[{rank}] chunk_id={getattr(chunk, 'chunk_id', '')}; "
-            f"provision_id={getattr(chunk, 'parent_unit_id', '')}; "
-            f"document_id={getattr(chunk, 'id_str', '')}; citation={citation}\n"
-            f"{getattr(chunk, 'chunk_text', '')}"
-        )
-    return "\n\n".join(blocks)
+    return format_context_for_prompt(chunks)
 
 
 def write_report(
@@ -514,9 +540,13 @@ def _chunk_to_dict(chunk: Any, rank: int) -> dict[str, Any]:
         "document_id": getattr(chunk, "id_str", None),
         "provision_id": getattr(chunk, "parent_unit_id", None),
         "title": getattr(chunk, "title", None),
+        "section": getattr(chunk, "section", None),
         "article_number": getattr(chunk, "article_number", None),
+        "page": getattr(chunk, "page", None),
         "unit_type": getattr(chunk, "unit_type", None),
         "path": getattr(chunk, "path", None),
+        "source_path": getattr(chunk, "source_path", None) or getattr(chunk, "path", None),
+        "url": getattr(chunk, "url", None),
         "text": getattr(chunk, "chunk_text", None),
         "score": rerank_score if rerank_score is not None else vector_score,
         "vector_score": vector_score,

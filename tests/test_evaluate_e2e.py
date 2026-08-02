@@ -176,6 +176,10 @@ def test_artifacts_and_report_include_difficulty_latency_and_failures(tmp_path: 
     metrics = json.loads((tmp_path / "e2e_metrics.json").read_text(encoding="utf-8"))
     latency = json.loads((tmp_path / "latency.json").read_text(encoding="utf-8"))
     assert metrics["counts"]["evaluated"] == 2
+    assert metrics["citation_metrics"]["denominators"]["cases_with_citation_metrics"] == 2
+    predictions = [json.loads(line) for line in (tmp_path / "e2e_predictions.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert "citation_metrics" in predictions[0]
+    assert all("text" not in citation for citation in predictions[0]["citations"])
     assert latency["counts"] == metrics["counts"]
 
 
@@ -187,7 +191,6 @@ def test_latency_aggregation_uses_only_recorded_stage_values() -> None:
             {"latency_ms": {"dense_retrieval": None, "total": 100.0}},
         ]
     )
-
     assert summary["stages"]["dense_retrieval"] == {
         "count": 2,
         "mean": 20.0,
@@ -198,6 +201,54 @@ def test_latency_aggregation_uses_only_recorded_stage_values() -> None:
     }
     assert summary["stages"]["total"]["count"] == 3
     assert summary["stages"]["sparse_retrieval"] is None
+
+
+def test_prediction_records_invalid_citations_without_fake_sources() -> None:
+    result = run_e2e_evaluation(
+        records_from_rows([_rows()[0]]), retriever=_FakeRetriever(),
+        generator=lambda *_: "Grounded-looking claim [99].",
+        retrieval_top_k=5, filter_profile="broad",
+    )
+    prediction = result.predictions[0]
+    assert "[99]" not in prediction["predicted_answer"]
+    assert prediction["citations"] == []
+    assert prediction["citation_metrics"]["invalid_citation_count"] == 1
+    assert "99" in prediction["citation_warnings"][0]
+
+
+def test_citations_are_parsed_only_after_hidden_reasoning_is_removed() -> None:
+    result = run_e2e_evaluation(
+        records_from_rows([_rows()[0]]), retriever=_FakeRetriever(),
+        generator=lambda *_: "<think>Unsupported marker [1]</think>Safe final answer without a citation.",
+        retrieval_top_k=5, filter_profile="broad",
+    )
+    prediction = result.predictions[0]
+    assert "think" not in prediction["predicted_answer"]
+    assert prediction["citations"] == []
+    assert prediction["citation_metrics"]["citation_count"] == 0
+
+
+def test_empty_retrieval_skips_generation_and_citation_metrics() -> None:
+    class EmptyRetriever:
+        def retrieve(self, question: str, *, filter_profile: str, top_n: int) -> RetrievalResult:
+            del question, filter_profile, top_n
+            return RetrievalResult(chunks=[], total_candidates=0, filter_profile_used="broad")
+
+    called = False
+
+    def generator(*_: Any) -> str:
+        nonlocal called
+        called = True
+        return "Fabricated answer [1]."
+
+    result = run_e2e_evaluation(
+        records_from_rows([_rows()[0]]), retriever=EmptyRetriever(), generator=generator,
+        retrieval_top_k=5, filter_profile="broad",
+    )
+    assert called is False
+    assert result.predictions[0]["status"] == "skipped"
+    assert result.predictions[0]["skip_reason"] == "empty_context"
+    assert result.predictions[0]["citation_metrics"] is None
 
 
 def test_hybrid_breakdown_keeps_disabled_reranker_null() -> None:

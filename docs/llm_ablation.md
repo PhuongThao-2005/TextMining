@@ -18,7 +18,7 @@ answer format, and citation format are held constant.
 
 ## Prompt and output safety
 
-Both modes use template version `legal-grounded-answer-v1`, the same context
+Both modes use template version `legal-grounded-answer-v2-citations`, the same context
 formatting, abstention text, answer format, and `[n]` citation-label contract.
 The base strategy asks for a direct grounded answer. The reasoning strategy asks
 the model to reason internally and return only the final grounded answer.

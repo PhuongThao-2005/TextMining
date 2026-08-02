@@ -46,6 +46,7 @@ from generation.prompt_strategy import (  # noqa: E402
     coerce_prompt_strategy,
     prompt_template_hash,
 )
+from generation.citations import CITATION_CONTRACT_VERSION, citation_contract_hash  # noqa: E402
 from generation.reasoning_client import (  # noqa: E402
     GeneratorClient,
     RawGenerationResponse,
@@ -780,6 +781,8 @@ def _initial_manifest(
             "prompt_template_version", PROMPT_TEMPLATE_VERSION
         ),
         "prompt_template_hash": prompt_template_hash(strategy),
+        "citation_contract_version": CITATION_CONTRACT_VERSION,
+        "citation_contract_hash": citation_contract_hash(),
         "generation_decoding": {
             "temperature": float(generation.get("temperature", 0.0)),
             "top_p": float(generation.get("top_p", 1.0)),

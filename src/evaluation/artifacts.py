@@ -343,6 +343,26 @@ def _sanitize_prediction(row: Mapping[str, Any]) -> dict[str, Any]:
     trace = value.get("agent_trace")
     if isinstance(trace, list):
         value["agent_trace"] = normalize_trace_rows(trace)
+    citations = value.get("citations")
+    if isinstance(citations, list):
+        allowed = ("citation_id", "context_id", "document_id", "chunk_id", "title", "section", "article", "page", "source_path", "url", "rank", "score")
+        safe_citations = []
+        for item in citations:
+            if not isinstance(item, Mapping):
+                continue
+            safe_item = {key: item.get(key) for key in allowed if item.get(key) is not None}
+            evidence = item.get("evidence")
+            if isinstance(evidence, Mapping):
+                safe_item["evidence"] = {
+                    key: evidence.get(key) for key in
+                    ("context_id", "start_char", "end_char", "quote", "match_type", "confidence")
+                    if evidence.get(key) is not None
+                }
+            safe_citations.append(safe_item)
+        value["citations"] = safe_citations
+    warnings = value.get("citation_warnings")
+    if isinstance(warnings, list):
+        value["citation_warnings"] = [sanitize_error_text(item) for item in warnings]
     return value
 
 

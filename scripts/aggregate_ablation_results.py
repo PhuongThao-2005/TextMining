@@ -122,6 +122,11 @@ CSV_COLUMNS = [
     "step_limit_failure_rate",
     "empty_context_rate",
     "agent_failure_rate",
+    "citation_validity_rate",
+    "average_structural_citation_coverage",
+    "average_unique_cited_sources",
+    "cases_with_invalid_citations",
+    "cases_with_no_valid_citation",
     "successful_cases",
     "failed_cases",
     "skipped_cases",
@@ -386,6 +391,14 @@ def _load_completed_artifacts(record: RunRecord) -> None:
                 "planner_abstention_rate", "step_limit_failure_rate", "empty_context_rate", "agent_failure_rate",
             ):
                 _extract_number(agent_metrics, key, record, key, "agent metrics")
+        citation_metrics = e2e.get("citation_metrics")
+        if isinstance(citation_metrics, dict):
+            for key in (
+                "citation_validity_rate", "average_structural_citation_coverage",
+                "average_unique_cited_sources", "cases_with_invalid_citations",
+                "cases_with_no_valid_citation",
+            ):
+                _extract_number(citation_metrics, key, record, key, "citation metrics")
 
     if latency is not None:
         stages = latency.get("stages")
@@ -809,6 +822,8 @@ def _csv_row(record: RunRecord, runs_dir: Path) -> dict[str, Any]:
     for key in (
         "tool_call_success_rate", "retrieval_invocation_rate", "average_tool_calls_per_case",
         "planner_abstention_rate", "step_limit_failure_rate", "empty_context_rate", "agent_failure_rate",
+        "citation_validity_rate", "average_structural_citation_coverage",
+        "average_unique_cited_sources", "cases_with_invalid_citations", "cases_with_no_valid_citation",
     ):
         row[key] = _metric(record, key)
     return row

@@ -188,6 +188,27 @@ def test_optional_metrics_remain_blank_and_zero_is_preserved(tmp_path: Path) -> 
     assert "N/A" in result.output_report.read_text(encoding="utf-8")
 
 
+def test_optional_citation_metrics_are_exported_without_coercing_missing_values(tmp_path: Path) -> None:
+    runs = tmp_path / "runs"
+    runs.mkdir()
+    e2e = {
+        "counts": {"total_input": 1, "successful": 1, "failed": 0, "skipped": 0, "evaluated": 1},
+        "overall": {"exact_match": 0.0},
+        "citation_metrics": {
+            "citation_validity_rate": 0.5,
+            "average_structural_citation_coverage": None,
+            "average_unique_cited_sources": 1.0,
+            "cases_with_invalid_citations": 1,
+            "cases_with_no_valid_citation": 0,
+        },
+    }
+    _write_run(runs, "citation-run", e2e=e2e)
+    row = _rows(aggregate_ablation_results(runs).output_csv)[0]
+    assert row["citation_validity_rate"] == "0.5"
+    assert row["average_structural_citation_coverage"] == ""
+    assert row["cases_with_no_valid_citation"] == "0"
+
+
 def test_completed_missing_or_malformed_mandatory_artifact_is_invalid(tmp_path: Path) -> None:
     runs = tmp_path / "runs"
     runs.mkdir()

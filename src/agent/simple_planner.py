@@ -5,6 +5,8 @@ import re
 import time
 from typing import Any, Callable, Sequence
 
+from generation.reasoning_client import format_context_for_prompt
+
 from .contracts import (
     AgentAction, AgentExecutionResult, AgentStatus, AgentTraceEvent, PlannerDecision, ToolRequest,
 )
@@ -135,8 +137,4 @@ def _sanitize_error(message: str) -> str:
 
 
 def _format_context(chunks: Sequence[Any]) -> str:
-    blocks = []
-    for rank, chunk in enumerate(chunks, 1):
-        citation = getattr(chunk, "citation_anchor", None) or getattr(chunk, "citation_label", None) or getattr(chunk, "chunk_id", None)
-        blocks.append(f"[{rank}] chunk_id={getattr(chunk, 'chunk_id', '')}; citation={citation}\n{getattr(chunk, 'chunk_text', '')}")
-    return "\n\n".join(blocks)
+    return format_context_for_prompt(chunks)

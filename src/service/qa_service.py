@@ -18,8 +18,14 @@ from evaluation.e2e_runner import (
     run_e2e_evaluation,
     sanitize_error_text,
 )
+from evaluation.metrics import is_unanswerable_text
 from generation.reasoning_client import RawGenerationResponse, parse_generation_response
-from generation.prompt_strategy import prompt_template_hash
+from generation.prompt_strategy import INSUFFICIENT_CONTEXT_ANSWER, prompt_template_hash
+from generation.citations import (
+    CITATION_CONTRACT_VERSION, CitationReference, CitationSource, citation_contract_hash,
+    PRODUCTION_EVIDENCE_CAPABILITY, evidence_diagnostics, prepare_citation_sources,
+    validate_answer_citations,
+)
 from scripts.run_ablation_config import (
     AGENT_ABLATION_CONFIG_NAMES,
     DEFAULT_CONFIG_FILE,
@@ -80,6 +86,7 @@ class ContextRow:
     citation: str | None
     text: str
     preview: str
+    is_mock: bool = False
 
 
 @dataclass(frozen=True)
@@ -94,6 +101,14 @@ class QuestionResponse:
     error: SafeError | None
     resolved_config: dict[str, Any]
     diagnostics: dict[str, Any]
+    citation_sources: tuple[CitationSource, ...] = ()
+    citation_references: tuple[CitationReference, ...] = ()
+    citation_warnings: tuple[str, ...] = ()
+    citation_metrics: dict[str, Any] = field(default_factory=dict)
+    suggested_followups: tuple[str, ...] = ()
+    mode: str = "production"
+    question: str = ""
+    is_mock: bool = False
 
 
 @dataclass(frozen=True)
@@ -398,9 +413,16 @@ def answer_question(
                 ),
                 _safe_config(runtime_config), diagnostics,
             )
-        abstained = prediction.get("status") == "skipped" or not contexts
         raw_answer = str(prediction.get("predicted_answer") or "").strip()
         answer = parse_generation_response(RawGenerationResponse(raw_answer, None)).answer.strip() or None
+        abstained = (
+            prediction.get("status") == "skipped"
+            or not contexts
+            or bool(answer and (
+                answer.strip() == INSUFFICIENT_CONTEXT_ANSWER
+                or is_unanswerable_text(answer)
+            ))
+        )
         if abstained:
             answer = None
         elif not answer:
@@ -410,9 +432,24 @@ def answer_question(
                           "Check provider compatibility and response formatting."),
                 _safe_config(runtime_config), diagnostics,
             )
+        citation_sources = prepare_citation_sources(prediction.get("retrieved_context") or [])
+        citation_result = validate_answer_citations(answer or "", citation_sources)
+        answer = citation_result.answer or None
+        citation_warnings = tuple(str(value) for value in prediction.get("citation_warnings") or citation_result.warnings)
+        citation_metrics = dict(prediction.get("citation_metrics") or citation_result.metrics)
+        diagnostics["citation_contract"] = {
+            "invalid_ids": list(prediction.get("invalid_citation_ids") or citation_result.invalid_ids),
+            "uncited_source_ids": list(citation_result.uncited_source_ids),
+        }
+        diagnostics.update(evidence_diagnostics(
+            citation_result.cited_sources, capability=PRODUCTION_EVIDENCE_CAPABILITY,
+        ))
         return QuestionResponse(
             "abstained" if abstained else "completed", answer, abstained, contexts, latency, trace,
             preflight.warnings, None, _safe_config(runtime_config), diagnostics,
+            citation_result.cited_sources, citation_result.references, citation_warnings,
+            citation_metrics, build_followup_suggestions(question, citation_result.cited_sources),
+            "production", question, False,
         )
     except (AblationConfigError, UIConfigError, UnsupportedComponentError) as exc:
         return _error_response(
@@ -443,6 +480,7 @@ def normalize_context_rows(items: Sequence[Any], *, preview_chars: int = 300) ->
             article_number=_optional_text(data.get("article_number")), unit_type=_optional_text(data.get("unit_type")),
             path=_optional_text(data.get("path")), citation=_optional_text(citation), text=text,
             preview=text if len(text) <= preview_chars else text[: max(0, preview_chars - 1)].rstrip() + "…",
+            is_mock=bool(data.get("is_mock", False)),
         ))
     return sorted(rows, key=lambda row: row.rank)
 
@@ -478,6 +516,8 @@ def build_diagnostics(config_name: str, config: Mapping[str, Any], preflight: Pr
         "prompt_strategy": generation.get("prompt_strategy") or "base",
         "prompt_template_version": generation.get("prompt_template_version"),
         "prompt_template_hash": prompt_template_hash(generation.get("prompt_strategy")),
+        "citation_contract_version": CITATION_CONTRACT_VERSION,
+        "citation_contract_hash": citation_contract_hash(),
         "agent_mode": agent.get("mode") or ("none" if not agent.get("enabled") else agent.get("type")),
         "retrieval_backend": dense.get("backend"),
         "index_identity": dense.get("index_version"),
@@ -492,6 +532,18 @@ def build_diagnostics(config_name: str, config: Mapping[str, Any], preflight: Pr
 
 def format_safe_error(error: object, sensitive_values: Sequence[str] = ()) -> str:
     return sanitize_error_text(error, sensitive_values)
+
+
+def build_followup_suggestions(question: str, sources: Sequence[CitationSource]) -> tuple[str, ...]:
+    """Return bounded deterministic UI helpers; these are questions, not factual claims."""
+    suggestions = ["What exceptions or limitations should I check?"]
+    if sources:
+        suggestions.append("Which retrieved source most directly supports this answer?")
+        if any(source.article or source.section for source in sources):
+            suggestions.append("How do the cited articles or sections relate to each other?")
+    else:
+        suggestions.append("How could I narrow this question to find relevant evidence?")
+    return tuple(suggestions[:3])
 
 
 def _error_response(*, status: str, stage: str, error_type: str, message: str, next_step: str) -> QuestionResponse:
@@ -578,7 +630,7 @@ def _optional_float(value: object) -> float | None:
 __all__ = [
     "ConfigOption", "ContextRow", "FILTER_PROFILES", "PreflightCheck", "PreflightResult",
     "QAResources", "QuestionRequest", "QuestionResponse", "SafeError", "TOP_K_MAX", "TOP_K_MIN",
-    "UIConfigError", "answer_question", "apply_safe_overrides", "build_diagnostics",
+    "UIConfigError", "answer_question", "apply_safe_overrides", "build_diagnostics", "build_followup_suggestions",
     "build_question_resources", "classify_config_availability", "format_safe_error",
     "list_interactive_configs", "load_ui_config_registry", "normalize_context_rows",
     "normalize_latency_rows", "normalize_trace_rows", "run_preflight", "validate_override_compatibility",

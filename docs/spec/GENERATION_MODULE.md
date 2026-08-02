@@ -152,8 +152,8 @@ This contract is satisfied by `RetrievedChunk` from `src/retrieval/schema.py`; d
 
 1. Answer **only** from the supplied CONTEXT; do not infer or invent beyond it.
 2. If CONTEXT is insufficient, reply exactly: `"Không có đủ thông tin trong ngữ cảnh được cung cấp."`
-3. Present the reasoning process first, then the final answer.
-4. Write the final answer in Vietnamese with diacritics, including the legal basis (citation) when present in CONTEXT.
+3. Reason internally when the selected strategy requests it, but return only the final answer.
+4. Cite each factual claim with only supplied source IDs (`[1]`, `[2]`, `[1][3]`); never invent an ID or add a bibliography.
 
 Placeholders: `{question}` for the user query and `{context}` for the formatted evidence blocks.
 
@@ -164,23 +164,21 @@ Placeholders: `{question}` for the user query and `{context}` for the formatted 
 `format_context_for_prompt` renders each chunk as:
 
 ```text
-[rank] citation - title
+[SOURCE 1]
+Title: title (when available)
+Section: section (when available)
+Document ID: real document ID (when available)
+Content:
 chunk_text
 ```
 
-Blocks are numbered from 1 in retrieval rank order and joined with blank lines.
-
-Citation label fallback chain:
-
-```text
-citation_anchor → citation_label → chunk_id → "chunk-{rank}"
-```
+Exact duplicate chunks are removed first. Blocks then receive sequential one-based citation IDs in deterministic retrieval order; original retrieval rank remains separate metadata.
 
 Design rules:
 
-1. **Citation-first layout:** the label precedes the body so the model can attribute statements to `Điều`-level anchors without reading to the end of the block.
-2. **Never emit an unlabeled block:** the fallback chain guarantees every block carries some stable identifier.
-3. **Clean text only:** chunks contribute `chunk_text`; retrieval-time wrapper strings (identity headers) are not forwarded to the generator.
+1. **Citation-first layout:** `[SOURCE n]` is a production-assigned display ID, not a model-selected identifier.
+2. **No invented metadata:** optional title, section, article, document, chunk, and page lines are omitted when unavailable.
+3. **Complete internal context:** prompt construction receives the complete retrieved chunk; only response-facing citation objects are bounded.
 
 ---
 
@@ -242,7 +240,7 @@ The empty-context check runs **before** any client interaction, so a missing or 
 
 The module depends on retrieval output but not on retrieval or graph internals:
 
-1. **Citation handoff:** the Retrieve module guarantees every returned chunk carries `citation_anchor` plus document/provision metadata (see `RETRIEVE_MODULE.md` §13); the Generation module renders those fields verbatim into context blocks.
+1. **Citation handoff:** retrieval returns ordered chunks; generation deduplicates exact matches, assigns `[SOURCE n]`, and renders only actual allow-listed metadata.
 2. **Evidence selection:** callers choose baseline or hybrid-expanded chunk lists; the module is agnostic to how the list was produced.
 3. **End-to-end evaluation:** the Evaluation module's Track B drives this client over frozen QA rows, using `qa_id` pass-through and `GenerationOutcome` states for per-case accounting (see `EVALUATION_MODULE.md` §6).
 4. **Notebook demos:** the FAISS hybrid notebooks run generation as an optional final stage, enabled only when the env credentials in §9 are present.
@@ -311,7 +309,7 @@ All of the above are re-exported from `generation/__init__.py`.
 The generation module should satisfy these acceptance conditions:
 
 * All three reasoning response shapes (field, think block, not returned) parse correctly, including the unterminated-`<think>` edge case.
-* Every formatted context block carries a non-empty citation label via the fallback chain.
+* Every formatted context block carries a deterministic `[SOURCE n]` ID even when optional legal metadata is absent.
 * The abstention phrase and CONTEXT-only rules are present verbatim in `ANSWER_PROMPT`.
 * Raw API keys never appear in `masked_key()` output, raised exceptions, or `GenerationOutcome.error`.
 * Empty chunk lists short-circuit with `skipped_empty_context=True` and no API call.
@@ -331,7 +329,15 @@ In scope:
 
 Out of scope:
 
-* Citation-faithfulness verification — citations are prompt-encouraged; generated citation text is not parsed or checked against retrieved chunks
+* Semantic-entailment verification — generated markers are parsed and checked against retrieved source IDs, but no claim/source entailment judge runs by default
+
+## Retrieved-context citation validation
+
+`src/generation/citations.py` owns the display citation contract. It accepts `[1]`, adjacent markers such as `[1][2]`, and comma groups such as `[1, 2]`; comma groups normalize to adjacent markers. Markers in fenced code are ignored. Zero, negative, and out-of-range IDs are removed without remapping, while the surrounding answer is preserved and a deterministic warning is recorded.
+
+Structural citation coverage counts meaningful factual sentences after ignoring headings, short fragments, empty text, and abstention text. A sentence is structurally covered when a valid marker occurs at its end or immediately before terminal punctuation. The denominator is the number of meaningful factual sentences. This metric does not prove semantic entailment or legal correctness.
+
+The E2E prediction artifact stores bounded citation metadata, references, warnings, and metrics. Full retrieved text remains in `retrieved_context`; it is not duplicated in `citations`. Older artifacts without these optional fields remain readable.
 * Streaming responses, retries, and rate-limit handling
 * Multi-turn dialogue state and query decomposition
 * Answer-quality scoring, hallucination metrics, and judging (owned by the Evaluation module)

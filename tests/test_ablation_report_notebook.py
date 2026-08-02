@@ -83,7 +83,7 @@ def test_notebook_is_clone_first_safe_and_defaults_to_no_aggregation() -> None:
     notebook = json.loads(raw)
     sources = ["".join(cell.get("source", [])) for cell in notebook["cells"]]
     joined = "\n".join(sources)
-    assert 'REPO_URL = "https://github.com/<OWNER>/<REPOSITORY>.git"' in joined
+    assert 'REPO_URL = "https://github.com/PhuongThao-2005/TextMining.git"' in joined
     assert "RUN_AGGREGATOR = False" in joined
     assert "subprocess.run([" in joined
     clone_index = next(index for index, source in enumerate(sources) if '"clone"' in source)

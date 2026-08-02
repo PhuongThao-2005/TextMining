@@ -10,12 +10,13 @@ class PromptStrategy(str, Enum):
     REASONING = "reasoning"
 
 
-PROMPT_TEMPLATE_VERSION = "legal-grounded-answer-v1"
+PROMPT_TEMPLATE_VERSION = "legal-grounded-answer-v2-citations"
+INSUFFICIENT_CONTEXT_ANSWER = "Không có đủ thông tin trong ngữ cảnh được cung cấp."
 
 _SHARED_TEMPLATE = """You are a Vietnamese legal retrieval-augmented answering system.
 Use only the supplied CONTEXT. Do not invent facts outside it.
 If the context is insufficient, answer exactly:
-"Không có đủ thông tin trong ngữ cảnh được cung cấp."
+"{insufficient_context_answer}"
 
 {strategy_instruction}
 
@@ -25,7 +26,9 @@ Output contract:
   any explanation follows a line beginning "Giải thích:".
 - For answer_type "unanswerable", return only the insufficient-context statement.
 - Otherwise answer concisely in Vietnamese.
-- Cite supporting context labels such as [1] when the context provides them.
+- Cite supporting context for every factual claim with only the supplied source IDs, using [1], [2], or [1][3].
+- Put citations immediately after the supported claim. Never invent a source number.
+- Do not add a bibliography. Cite only a source that supports the claim.
 
 QUESTION:
 {question}
@@ -72,6 +75,7 @@ def build_generation_prompt(
 
     selected = coerce_prompt_strategy(strategy)
     return _SHARED_TEMPLATE.format(
+        insufficient_context_answer=INSUFFICIENT_CONTEXT_ANSWER,
         strategy_instruction=_STRATEGY_INSTRUCTIONS[selected],
         question=question.strip(),
         answer_type=answer_type.strip(),
@@ -84,6 +88,7 @@ def prompt_template_hash(strategy: PromptStrategy | str | None = None) -> str:
 
     selected = coerce_prompt_strategy(strategy)
     template = _SHARED_TEMPLATE.format(
+        insufficient_context_answer=INSUFFICIENT_CONTEXT_ANSWER,
         strategy_instruction=_STRATEGY_INSTRUCTIONS[selected],
         question="{question}",
         answer_type="{answer_type}",
@@ -94,6 +99,7 @@ def prompt_template_hash(strategy: PromptStrategy | str | None = None) -> str:
 
 __all__ = [
     "PROMPT_TEMPLATE_VERSION",
+    "INSUFFICIENT_CONTEXT_ANSWER",
     "PromptStrategy",
     "build_generation_prompt",
     "coerce_prompt_strategy",
