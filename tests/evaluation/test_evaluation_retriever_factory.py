@@ -145,3 +145,26 @@ def test_unknown_store_value_raises_value_error(fake_sentence_transformer_embedd
 
     with pytest.raises(ValueError):
         build_vector_retriever(runtime)
+
+
+def test_dimension_mismatch_is_rejected_before_retrieval(monkeypatch: pytest.MonkeyPatch) -> None:
+    class DimensionEmbedder:
+        dimension = 8
+
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+    class DimensionStore:
+        dimension = 7
+
+        @classmethod
+        def load(cls, index_dir: Path):
+            del index_dir
+            return cls()
+
+    monkeypatch.setattr(retriever_factory, "SentenceTransformerEmbedder", DimensionEmbedder)
+    monkeypatch.setattr(retriever_factory, "SQLitePayloadFaissVectorStore", DimensionStore)
+    runtime = RetrieverRuntimeConfig(store="faiss", index_dir="fixture", model="fixture-model")
+
+    with pytest.raises(ValueError, match="dimension mismatch"):
+        build_vector_retriever(runtime)
