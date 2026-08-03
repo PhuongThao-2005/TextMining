@@ -20,11 +20,35 @@
 #   generation.provider: reference | gemini | openai_compatible
 #   judge.provider: none | gemini
 #
-# Sparse, graph, fusion, reranker, and agent sections are explicit extension
-# points. Enabling an unwired component causes a clear deferred result; the
-# runner never silently substitutes another stack.
+# Sparse BM25, RRF fusion, Cross-Encoder reranking and structural graph
+# expansion are integrated by the canonical full-stack adapter. Unsupported
+# backends/strategies fail validation; the runner never silently substitutes.
 
 schema_version: 1
+
+# Shared official retrieval stack consumed by My's LLM/Agent ablations.  These
+# aliases ensure every comparison uses byte-for-byte identical upstream values.
+full_stack_components:
+  sparse: &full_stack_sparse
+    enabled: true
+    backend: bm25
+    index_path: data/sparse_index
+    version: official-bm25-pending
+  graph: &full_stack_graph
+    enabled: true
+    backend: structural_pickle
+    path: data/graph/knowledge_graph.gpickle
+    version: official-kg-pending
+    max_seeds: 3
+    max_hop: 2
+    max_chunks: 10
+  fusion: &full_stack_fusion
+    enabled: true
+    strategy: rrf
+    rrf_k: 60
+  reranker: &full_stack_reranker
+    enabled: true
+    model: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
 
 configs:
   Example-Reference-Hashing:
@@ -90,14 +114,10 @@ configs:
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
-      sparse:
-        enabled: false
-      graph:
-        enabled: false
-      fusion:
-        enabled: false
-      reranker:
-        enabled: false
+      sparse: *full_stack_sparse
+      graph: *full_stack_graph
+      fusion: *full_stack_fusion
+      reranker: *full_stack_reranker
     generation:
       provider: openai_compatible
       model: env:LLM_BASE_MODEL
@@ -140,14 +160,10 @@ configs:
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
-      sparse:
-        enabled: false
-      graph:
-        enabled: false
-      fusion:
-        enabled: false
-      reranker:
-        enabled: false
+      sparse: *full_stack_sparse
+      graph: *full_stack_graph
+      fusion: *full_stack_fusion
+      reranker: *full_stack_reranker
     generation:
       provider: openai_compatible
       model: env:LLM_BASE_MODEL
@@ -190,18 +206,60 @@ configs:
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
-      sparse:
-        enabled: false
-      graph:
-        enabled: false
-      fusion:
-        enabled: false
-      reranker:
-        enabled: false
+      sparse: *full_stack_sparse
+      graph: *full_stack_graph
+      fusion: *full_stack_fusion
+      reranker: *full_stack_reranker
     generation:
       provider: openai_compatible
       model: env:LLM_LARGER_MODEL
       prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge:
+      provider: none
+    agent:
+      enabled: false
+      type: plain_rag
+    output:
+      root: evaluation_runs/ablation
+    seed: 42
+    metadata:
+      purpose: controlled production-intent LLM ablation; execution pending verified dependencies
+      experiment_family: llm-reasoning-model
+
+  LLM-LargerModel-CoTReasoning:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: faiss
+        index_path: data/faiss_index
+        index_version: official-faiss-pending
+        model: intfloat/multilingual-e5-large
+        score_threshold: 0.3
+        expand_units: true
+      sparse: *full_stack_sparse
+      graph: *full_stack_graph
+      fusion: *full_stack_fusion
+      reranker: *full_stack_reranker
+    generation:
+      provider: openai_compatible
+      model: env:LLM_LARGER_MODEL
+      prompt_strategy: reasoning
       prompt_template_version: legal-grounded-answer-v2-citations
       temperature: 0.0
       top_p: 1.0
@@ -242,10 +300,10 @@ configs:
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
-      sparse: {enabled: false}
-      graph: {enabled: false}
-      fusion: {enabled: false}
-      reranker: {enabled: false}
+      sparse: *full_stack_sparse
+      graph: *full_stack_graph
+      fusion: *full_stack_fusion
+      reranker: *full_stack_reranker
     generation:
       provider: openai_compatible
       model: env:LLM_BASE_MODEL
@@ -287,10 +345,10 @@ configs:
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
-      sparse: {enabled: false}
-      graph: {enabled: false}
-      fusion: {enabled: false}
-      reranker: {enabled: false}
+      sparse: *full_stack_sparse
+      graph: *full_stack_graph
+      fusion: *full_stack_fusion
+      reranker: *full_stack_reranker
     generation:
       provider: openai_compatible
       model: env:LLM_BASE_MODEL
@@ -339,10 +397,10 @@ configs:
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
-      sparse: {enabled: false}
-      graph: {enabled: false}
-      fusion: {enabled: false}
-      reranker: {enabled: false}
+      sparse: *full_stack_sparse
+      graph: *full_stack_graph
+      fusion: *full_stack_fusion
+      reranker: *full_stack_reranker
     generation:
       provider: openai_compatible
       model: env:LLM_BASE_MODEL

@@ -40,6 +40,10 @@ from agent.simple_planner import PLANNER_POLICY, PLANNER_POLICY_VERSION, SimpleP
 from agent.tools import RetrievalTool  # noqa: E402
 from evaluation.io_utils import write_json  # noqa: E402
 from evaluation.retriever_factory import RetrieverRuntimeConfig, build_vector_retriever  # noqa: E402
+from knowledge_graph import GraphExpansion, load_knowledge_graph  # noqa: E402
+from retrieval.full_stack_retriever import FullStackRetriever  # noqa: E402
+from retrieval.hybrid_retriever import HybridRetriever  # noqa: E402
+from retrieval.sparse_retriever import BM25SparseRetriever  # noqa: E402
 from generation.prompt_strategy import (  # noqa: E402
     PROMPT_TEMPLATE_VERSION,
     build_generation_prompt,
@@ -65,6 +69,7 @@ LLM_ABLATION_CONFIG_NAMES = (
     "LLM-BaseReasoning",
     "LLM-CoTReasoning",
     "LLM-LargerModel",
+    "LLM-LargerModel-CoTReasoning",
 )
 AGENT_ABLATION_CONFIG_NAMES = (
     "Agent-None-PlainRAG",
@@ -193,6 +198,31 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
     if not enabled_retrievers:
         raise AblationConfigError(f"{config_name} must enable at least one retriever.")
 
+    sparse = retrieval.get("sparse", {})
+    graph = retrieval.get("graph", {})
+    fusion = retrieval.get("fusion", {})
+    reranker = retrieval.get("reranker", {})
+    if sparse.get("enabled"):
+        if _require_non_empty_string(sparse, "backend", f"{config_name}.retrieval.sparse") != "bm25":
+            raise AblationConfigError(f"{config_name}.retrieval.sparse.backend must be 'bm25'.")
+        _require_non_empty_string(sparse, "index_path", f"{config_name}.retrieval.sparse")
+    if graph.get("enabled"):
+        if not dense.get("enabled"):
+            raise AblationConfigError(f"{config_name} graph expansion requires Dense retrieval seeds.")
+        _require_non_empty_string(graph, "path", f"{config_name}.retrieval.graph")
+        for field, minimum in (("max_seeds", 1), ("max_hop", 1), ("max_chunks", 0)):
+            _validate_integer(graph, field, f"{config_name}.retrieval.graph", minimum=minimum)
+    if fusion.get("enabled"):
+        if not sparse.get("enabled"):
+            raise AblationConfigError(f"{config_name} fusion requires Sparse retrieval.")
+        if _require_non_empty_string(fusion, "strategy", f"{config_name}.retrieval.fusion") != "rrf":
+            raise AblationConfigError(f"{config_name}.retrieval.fusion.strategy must be 'rrf'.")
+        _validate_integer(fusion, "rrf_k", f"{config_name}.retrieval.fusion", minimum=1)
+    if reranker.get("enabled"):
+        if not sparse.get("enabled"):
+            raise AblationConfigError(f"{config_name} Cross-Encoder reranking requires the Hybrid candidate stack.")
+        _require_non_empty_string(reranker, "model", f"{config_name}.retrieval.reranker")
+
     provider = _require_non_empty_string(generation, "provider", f"{config_name}.generation")
     if provider not in SUPPORTED_GENERATORS:
         raise AblationConfigError(
@@ -274,20 +304,26 @@ def validate_llm_ablation_fairness(configs: Mapping[str, dict[str, Any]]) -> Non
         )
     base = configs["LLM-BaseReasoning"]
     comparisons = (
-        ("LLM-CoTReasoning", ("generation", "prompt_strategy")),
-        ("LLM-LargerModel", ("generation", "model")),
+        ("LLM-CoTReasoning", {("generation", "prompt_strategy")}),
+        ("LLM-LargerModel", {("generation", "model")}),
+        (
+            "LLM-LargerModel-CoTReasoning",
+            {("generation", "model"), ("generation", "prompt_strategy")},
+        ),
     )
-    for other_name, allowed_path in comparisons:
+    for other_name, allowed_paths in comparisons:
         differences = _differing_paths(base, configs[other_name])
-        unintended = sorted(path for path in differences if path != allowed_path)
+        unintended = sorted(differences - allowed_paths)
         if unintended:
             formatted = ", ".join(".".join(path) for path in unintended)
             raise AblationConfigError(
                 f"Unfair LLM ablation {other_name!r}; unintended differing fields: {formatted}."
             )
-        if allowed_path not in differences:
+        missing = sorted(allowed_paths - differences)
+        if missing:
+            formatted = ", ".join(".".join(path) for path in missing)
             raise AblationConfigError(
-                f"LLM ablation {other_name!r} must differ at {'.'.join(allowed_path)}."
+                f"LLM ablation {other_name!r} must differ at: {formatted}."
             )
 
 
@@ -353,13 +389,6 @@ def build_ablation_stack(
     project_root: Path = PROJECT_ROOT,
 ) -> tuple[Any, GeneratorFunction, JudgeFunction | None, list[str]]:
     retrieval = config["retrieval"]
-    for component in ("sparse", "graph", "fusion", "reranker"):
-        section = retrieval.get(component, {})
-        if section.get("enabled"):
-            name = section.get("backend") or section.get("strategy") or section.get("model") or component
-            raise UnsupportedComponentError(
-                f"Configured {component} component {name!r} is not integrated with scripts/run_ablation_config.py."
-            )
     dense = retrieval["dense"]
     if not dense["enabled"]:
         raise UnsupportedComponentError("The current runner requires retrieval.dense.enabled=true.")
@@ -375,9 +404,38 @@ def build_ablation_stack(
         top_k=max(int(retrieval["top_k"]) * 3, int(retrieval["top_k"])),
         top_n=int(retrieval["top_k"]),
         score_threshold=dense.get("score_threshold", 0.3),
-        expand_units=bool(dense.get("expand_units", True)),
+        expand_units=bool(dense.get("expand_units", True)) and not bool(retrieval.get("graph", {}).get("enabled")),
     )
-    retriever = build_vector_retriever(runtime)
+    dense_retriever = build_vector_retriever(runtime)
+    retriever: Any = dense_retriever
+
+    sparse = retrieval.get("sparse", {})
+    fusion = retrieval.get("fusion", {})
+    reranker = retrieval.get("reranker", {})
+    if sparse.get("enabled"):
+        sparse_retriever = BM25SparseRetriever.load(
+            _resolved_path(sparse["index_path"], project_root)
+        )
+        retriever = HybridRetriever(
+            dense_retriever=dense_retriever,
+            sparse_retriever=sparse_retriever,
+            use_rrf=bool(fusion.get("enabled")),
+            rrf_k=int(fusion.get("rrf_k", 60)),
+            use_cross_encoder=bool(reranker.get("enabled")),
+            cross_encoder_name=reranker.get("model"),
+        )
+
+    graph = retrieval.get("graph", {})
+    if graph.get("enabled"):
+        graph_result = load_knowledge_graph(_resolved_path(graph["path"], project_root))
+        retriever = FullStackRetriever(
+            base_retriever=retriever,
+            dense_retriever=dense_retriever,
+            graph_expansion=GraphExpansion(graph_result.graph),
+            max_graph_seeds=int(graph.get("max_seeds", 3)),
+            max_graph_hop=int(graph.get("max_hop", 1)),
+            max_graph_chunks=int(graph.get("max_chunks", 10)),
+        )
     generator, generator_secrets = _build_generator(config["generation"])
     judge, judge_secrets = _build_judge(config.get("judge", {"provider": "none"}))
     qdrant_key = runtime.qdrant_api_key or ""
@@ -400,6 +458,8 @@ def apply_runtime_path_overrides(
     faiss_index_source: Path | None = None,
     faiss_payloads_source: Path | None = None,
     faiss_manifest_source: Path | None = None,
+    bm25_index_source: Path | None = None,
+    bm25_metadata_source: Path | None = None,
     graph_source: Path | None = None,
     runs_root: Path | None = None,
     selected_device: str | None = None,
@@ -418,6 +478,8 @@ def apply_runtime_path_overrides(
         "faiss_index": faiss_index_source,
         "faiss_payloads": faiss_payloads_source,
         "faiss_manifest": faiss_manifest_source,
+        "bm25_index": bm25_index_source,
+        "bm25_metadata": bm25_metadata_source,
         "graph": graph_source,
     }
     for label, source in supplied.items():
@@ -438,6 +500,14 @@ def apply_runtime_path_overrides(
         dense["payloads_path"] = str(Path(faiss_payloads_source).resolve())
     if faiss_manifest_source is not None:
         dense["manifest_path"] = str(Path(faiss_manifest_source).resolve())
+    if bm25_index_source is not None or bm25_metadata_source is not None:
+        if bm25_index_source is None or bm25_metadata_source is None:
+            raise AblationConfigError("BM25 runtime override requires both index and metadata files.")
+        index_file = Path(bm25_index_source).resolve()
+        metadata_file = Path(bm25_metadata_source).resolve()
+        if index_file.parent != metadata_file.parent:
+            raise AblationConfigError("BM25 index and metadata runtime files must share one directory.")
+        resolved["retrieval"].setdefault("sparse", {})["index_path"] = str(index_file.parent)
     if graph_source is not None:
         resolved["retrieval"].setdefault("graph", {})["path"] = str(Path(graph_source).resolve())
     if runs_root is not None:
@@ -807,7 +877,10 @@ def _initial_manifest(
         "execution_environment": {
             "platform": platform.platform(),
             "python_version": platform.python_version(),
-            "packages": _package_versions(["PyYAML", "google-genai", "openai", "faiss-cpu", "sentence-transformers"]),
+            "packages": _package_versions([
+                "PyYAML", "google-genai", "openai", "faiss-cpu",
+                "rank-bm25", "sentence-transformers",
+            ]),
             "selected_device": config.get("runtime", {}).get("selected_device", "cpu"),
         },
         "git_commit": git_commit,

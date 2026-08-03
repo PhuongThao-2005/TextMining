@@ -76,6 +76,7 @@ docs/ablation_runbook.md
 * `LLM-BaseReasoning`
 * `LLM-CoTReasoning`
 * `LLM-LargerModel`
+* `LLM-LargerModel-CoTReasoning`
 * `Agent-None-PlainRAG`
 * `Agent-SimplePlanner`
 * `Agent-MultiTool-Orchestrated`
@@ -477,6 +478,10 @@ Người 4 viết nhận xét cho phần Graph:
 
 Người 5 chịu trách nhiệm chạy E2E, LLM/Agent ablation, UI demo và tổng hợp kết quả cuối.
 
+Người 5 chạy LLM/Agent trên cùng official Dense+BM25+RRF+Cross-Encoder+Graph
+stack đã bàn giao và được canonical full-stack adapter tích hợp. Mọi config phải
+dùng cùng benchmark, corpus, FAISS, BM25, graph artifact và retrieval parameters.
+
 ## Giai đoạn 1 — Chuẩn bị trong 3 ngày
 
 ### Công việc
@@ -568,6 +573,7 @@ Người 5 trực tiếp chạy các ablation:
 | `LLM-BaseReasoning` | Baseline LLM/prompt |
 | `LLM-CoTReasoning` | Đo tác động reasoning prompt |
 | `LLM-LargerModel` | Đo tác động model mạnh hơn |
+| `LLM-LargerModel-CoTReasoning` | Đo tương tác giữa model mạnh hơn và reasoning prompt |
 | `Agent-None-PlainRAG` | Plain RAG baseline |
 | `Agent-SimplePlanner` | Agent planner đơn giản |
 | `Agent-MultiTool-Orchestrated` | Agent nhiều tool nếu kịp |
@@ -578,6 +584,7 @@ Người 5 trực tiếp chạy các ablation:
 python scripts/run_ablation_config.py --config LLM-BaseReasoning
 python scripts/run_ablation_config.py --config LLM-CoTReasoning
 python scripts/run_ablation_config.py --config LLM-LargerModel
+python scripts/run_ablation_config.py --config LLM-LargerModel-CoTReasoning
 python scripts/run_ablation_config.py --config Agent-None-PlainRAG
 python scripts/run_ablation_config.py --config Agent-SimplePlanner
 python scripts/run_ablation_config.py --config Agent-MultiTool-Orchestrated
@@ -597,6 +604,8 @@ python scripts/run_ablation_batch.py --configs Retrieval-DenseOnly Retrieval-Hyb
 * Latency generation có quá cao không.
 * Agent có gọi retrieval đúng không.
 * UI có dùng được config main pipeline không.
+* Preflight phải xác nhận đủ FAISS, BM25 và graph artifacts trước khi gọi provider.
+* Manifest phải xác nhận benchmark/corpus/index và retrieval stack đã freeze.
 
 ## Giai đoạn 3 — Tổng hợp và viết report cuối
 
@@ -698,6 +707,7 @@ Report cuối cần có:
 | `LLM-BaseReasoning` result | Người 5 |
 | `LLM-CoTReasoning` result | Người 5 |
 | `LLM-LargerModel` result | Người 5 |
+| `LLM-LargerModel-CoTReasoning` result | Người 5 |
 | Agent results/defer note | Người 5 |
 | UI demo | Người 5 |
 | `ablation_summary.csv` | Người 5 |

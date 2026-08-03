@@ -57,14 +57,21 @@ def test_required_configs_exist_validate_and_have_controlled_differences() -> No
     base = configs["LLM-BaseReasoning"]
     cot = configs["LLM-CoTReasoning"]
     larger = configs["LLM-LargerModel"]
+    larger_cot = configs["LLM-LargerModel-CoTReasoning"]
     cot_normalized = copy.deepcopy(cot)
     cot_normalized["generation"]["prompt_strategy"] = base["generation"]["prompt_strategy"]
     larger_normalized = copy.deepcopy(larger)
     larger_normalized["generation"]["model"] = base["generation"]["model"]
+    larger_cot_normalized = copy.deepcopy(larger_cot)
+    larger_cot_normalized["generation"]["model"] = base["generation"]["model"]
+    larger_cot_normalized["generation"]["prompt_strategy"] = base["generation"]["prompt_strategy"]
     assert cot_normalized == base
     assert larger_normalized == base
+    assert larger_cot_normalized == base
     assert cot["generation"]["prompt_strategy"] == "reasoning"
     assert larger["generation"]["model"] == "env:LLM_LARGER_MODEL"
+    assert larger_cot["generation"]["model"] == "env:LLM_LARGER_MODEL"
+    assert larger_cot["generation"]["prompt_strategy"] == "reasoning"
 
 
 def test_fairness_validator_rejects_unintended_change() -> None:
@@ -132,6 +139,7 @@ def test_reasoning_fields_and_tags_never_enter_final_answer() -> None:
         ("LLM-BaseReasoning", "base-model", False),
         ("LLM-CoTReasoning", "base-model", True),
         ("LLM-LargerModel", "larger-model", False),
+        ("LLM-LargerModel-CoTReasoning", "larger-model", True),
     ],
 )
 def test_named_configs_construct_expected_generator(

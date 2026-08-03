@@ -209,12 +209,6 @@ def validate_override_compatibility(config: Mapping[str, Any]) -> None:
     retrieval = config.get("retrieval")
     if not isinstance(retrieval, Mapping):
         raise UIConfigError("Retrieval configuration is missing.")
-    for component in ("graph", "reranker"):
-        section = retrieval.get(component)
-        if isinstance(section, Mapping) and section.get("enabled"):
-            raise UIConfigError(
-                f"{component.capitalize()} cannot be enabled interactively: the production ablation stack has no integrated {component} adapter."
-            )
 
 
 def run_preflight(
@@ -297,12 +291,36 @@ def run_preflight(
     elif backend == "qdrant":
         _check_package("qdrant_client", "qdrant-client", has_package, checks, blockers)
 
-    for component in ("graph", "reranker", "sparse", "fusion"):
-        section = retrieval.get(component, {})
-        if isinstance(section, Mapping) and section.get("enabled"):
-            message = f"{component.capitalize()} is enabled but is not integrated with the production ablation stack."
+    sparse = retrieval.get("sparse", {})
+    if isinstance(sparse, Mapping) and sparse.get("enabled"):
+        sparse_dir = _resolve_path(sparse.get("index_path", "data/sparse_index"), project_root)
+        missing_sparse = [name for name in ("bm25_index.pkl", "bm25_metadata.pkl") if not (sparse_dir / name).is_file()]
+        if missing_sparse:
+            message = "Missing BM25 artifact(s): " + ", ".join(missing_sparse) + "."
             blockers.append(message)
-            checks.append(PreflightCheck(component, "blocked", message))
+            checks.append(PreflightCheck("sparse", "blocked", message))
+        else:
+            checks.append(PreflightCheck("sparse", "ready", f"BM25 index is available at {_display_path(sparse_dir, project_root)}."))
+        _check_package("rank_bm25", "rank-bm25", has_package, checks, blockers)
+
+    graph = retrieval.get("graph", {})
+    if isinstance(graph, Mapping) and graph.get("enabled"):
+        graph_path = _resolve_path(graph.get("path", "data/graph/knowledge_graph.gpickle"), project_root)
+        if graph_path.is_file():
+            checks.append(PreflightCheck("graph", "ready", f"Graph pickle is available at {_display_path(graph_path, project_root)}."))
+        else:
+            message = f"Missing graph artifact: {_display_path(graph_path, project_root)}."
+            blockers.append(message)
+            checks.append(PreflightCheck("graph", "blocked", message))
+
+    fusion = retrieval.get("fusion", {})
+    if isinstance(fusion, Mapping) and fusion.get("enabled"):
+        checks.append(PreflightCheck("fusion", "ready", f"RRF fusion configured with k={fusion.get('rrf_k', 60)}."))
+
+    reranker = retrieval.get("reranker", {})
+    if isinstance(reranker, Mapping) and reranker.get("enabled"):
+        _check_package("sentence_transformers", "sentence-transformers", has_package, checks, blockers)
+        checks.append(PreflightCheck("reranker", "ready", f"Cross-Encoder configured: {reranker.get('model')}."))
 
     for identity in ("benchmark", "corpus"):
         value = resolved.get(identity, {}).get("path")
@@ -321,6 +339,8 @@ def run_preflight(
         blockers.append(message)
         checks.append(PreflightCheck("temporary_directory", "blocked", message))
 
+    blockers = list(dict.fromkeys(blockers))
+    warnings = list(dict.fromkeys(warnings))
     status = "runtime-ready" if not blockers else "runtime-blocked"
     return PreflightResult(not blockers, status, tuple(checks), tuple(warnings), tuple(blockers), _safe_config(resolved))
 

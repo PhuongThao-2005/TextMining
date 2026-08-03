@@ -57,7 +57,7 @@ data/benchmark/qa_final.jsonl
 data/v2/documents.jsonl
 ```
 
-They are checked for diagnostic completeness but are not read to answer one interactive question. Full evaluation still requires them. Qdrant configs require their real collection/server contract. An enabled graph requires its configured graph artifact, and a reranker requires its model/dependency and an integrated adapter; neither adapter is currently executable through the canonical stack.
+They are checked for diagnostic completeness but are not read to answer one interactive question. Full evaluation still requires them. Qdrant configs require their real collection/server contract. Full-stack configs additionally require BM25 index/metadata, a compatible graph pickle, `rank-bm25`, and the configured Cross-Encoder dependency/model.
 
 ## Launch
 
@@ -79,8 +79,8 @@ The app adds only repository-relative import paths derived from `ui/app.py`; it 
 - **Pipeline config:** sourced from `configs/ablation_configs.yaml`. Supported LLM/Plain RAG/Simple Planner identities are shown with current readiness. MultiTool is visible as deferred.
 - **Top-k:** temporary in-memory override from 1 through 50. It never edits YAML.
 - **Filter profile:** uses the real `current_law`, `broad`, and `historical` schema values.
-- **Graph:** schema-visible, but enabling it blocks execution with an actionable message because no graph adapter is integrated with `build_ablation_stack`.
-- **Reranker:** behaves the same way; it is never silently ignored.
+- **Graph:** enables the integrated bounded structural expansion stage when its compatible pickle is available.
+- **Reranker:** enables the configured Cross-Encoder after Hybrid/RRF candidate fusion.
 - **Question:** a dominant landing-page search field. After the first turn, `st.chat_input` submits follow-ups.
 - **Ask:** explicit form submission; no request occurs on each keystroke.
 - **Reset cache:** clears parsed registry and lazily constructed stack resources. **New search** clears the bounded in-memory thread.
@@ -128,7 +128,7 @@ Temporarily select a config whose model selector, credential, provider URL, pack
 - **Missing API key:** set the config's named key variable, normally `LLM_API_KEY`; the UI never displays its value.
 - **Missing base URL/provider failure:** set `LLM_BASE_URL`, verify endpoint/model compatibility, and inspect the sanitized failed stage.
 - **Deferred MultiTool:** expected; approve another typed read-only tool and bounded routing acceptance contract before implementation.
-- **Graph/Reranker unavailable:** expected with the current stack builder. Turning either on blocks instead of silently falling back.
+- **Graph/Reranker unavailable:** verify graph/BM25 artifacts, `rank-bm25`, `sentence-transformers`, model download access and the resolved config; preflight blocks rather than silently falling back.
 - **Cache still uses an old resource:** use **Clear resource cache** after changing artifacts or environment configuration.
 
 ## Security notes

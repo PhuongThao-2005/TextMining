@@ -50,7 +50,7 @@ These validation counts overlap implementation counts: an implementation-complet
 - The runner writes resolved config, manifest, predictions, metrics, latency, errors, and report, and records `case_limit` in the manifest.
 - `tests/test_ablation_config.py` has seven passing tests for parsing, validation, paths, artifacts, collision refusal, and run IDs.
 
-**Why this status:** The supported execution contract is present and tested. Unsupported MultiTool or unwired components return explicit statuses instead of false success. No official benchmark/index run exists.
+**Why this status:** The full Dense+BM25+RRF+Cross-Encoder+Graph execution contract is present and tested offline. Unsupported MultiTool returns an explicit deferred status instead of false success. No official live benchmark/provider run exists.
 
 **Detailed checklist:**
 
@@ -247,11 +247,11 @@ These validation counts overlap implementation counts: an implementation-complet
 ### 8. LLM Ablation Runs
 
 **Overall implementation status:** [x] Implementation Complete for configuration/execution support
-**Validation status:** 11 LLM tests plus nine generation-client tests pass; structural dry-runs pass; [B] three comparable production runs pending.
+**Validation status:** LLM/generation offline tests and structural dry-runs pass; [B] four comparable production runs pending.
 
 **Implementation evidence:**
 
-- `configs/ablation_configs.yaml:75`, `:125`, and `:175` define `LLM-BaseReasoning`, `LLM-CoTReasoning`, and `LLM-LargerModel`.
+- `configs/ablation_configs.yaml` defines `LLM-BaseReasoning`, `LLM-CoTReasoning`, `LLM-LargerModel`, and `LLM-LargerModel-CoTReasoning`.
 - `scripts/run_ablation_config.py:266` enforces controlled LLM comparison differences.
 - `src/generation/prompt_strategy.py` defines deterministic Base/Reasoning prompts with a shared answer/citation contract and prompt hash.
 - `src/generation/reasoning_client.py:143-192` strips provider reasoning fields and `<think>` content from serialized answers.
@@ -267,10 +267,10 @@ These validation counts overlap implementation counts: an implementation-complet
 - [x] Automated fairness validation and safe metadata.
 - [x] Hidden-reasoning removal and offline tests.
 - [x] Structural dry-runs.
-- [B] Execute all three on the same official case set.
+- [B] Execute all four on the same official case set.
 
 **Dependencies:** official benchmark, compatible index, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_BASE_MODEL`, `LLM_LARGER_MODEL`, model availability, and quota.
-**Acceptance criteria:** implementation passes; three comparable completed production artifacts are still required.
+**Acceptance criteria:** implementation passes; four comparable completed production artifacts are still required.
 **Next action:** obtain provider/model confirmation and run a same-limit smoke matrix before any full run.
 
 ### 9. Agent Ablation Runs
@@ -330,7 +330,7 @@ These validation counts overlap implementation counts: an implementation-complet
 - Tasks 1–8 implementation is present.
 - The current non-Task-7 focused audit suite passed 94 tests.
 - Both notebooks are structurally valid, Python 3, output-clean, and have null execution counts.
-- Six LLM/agent config dry-runs resolved as intended; MultiTool returned deferred.
+- Seven LLM/agent config dry-runs must resolve as intended; MultiTool returns deferred.
 - `ui.app` imports successfully.
 - Compile validation passed for `ui`, `scripts`, `src`, and `tests`.
 
@@ -342,7 +342,7 @@ These validation counts overlap implementation counts: an implementation-complet
 ## Missing Work
 
 - No production run directory or canonical aggregate/report artifacts exist locally.
-- No three-run LLM result set exists.
+- No four-run LLM result set exists.
 - No comparable Plain RAG/Simple Planner production pair exists.
 - No final evidence-backed Task 10 report/recommendation exists.
 
@@ -401,7 +401,7 @@ These are actual missing deliverables. Official data, credentials, and quota are
 | `python -m compileall -q ui scripts src tests` | **Passed.** |
 | `nbformat` validation of `notebooks/e2e_rag_eval.ipynb` | **Passed:** 29 cells, Python 3, zero outputs, 14/14 code execution counts null. |
 | `nbformat` validation of `notebooks/ablation_report.ipynb` | **Passed:** 29 cells, Python 3, zero outputs, 14/14 code execution counts null. |
-| Six `run_ablation_config.py --dry-run` commands | LLM Base/CoT/Larger, Agent None/Simple: **completed**; Agent MultiTool: **deferred** as designed. |
+| Seven `run_ablation_config.py --dry-run` commands | Four LLM configs and Agent None/Simple: **completed**; Agent MultiTool: **deferred** as designed. |
 | `python -c "import ui.app"` | **Passed.** |
 
 ### Test interpretation

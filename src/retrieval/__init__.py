@@ -5,6 +5,7 @@ from .embeddings import HashingEmbedder, SentenceTransformerEmbedder
 from .indexer import VectorIndexer
 from .retriever import VectorRetriever
 from .schema import RetrievalResult, RetrievedChunk
+from .full_stack_retriever import FullStackLatencyBreakdown, FullStackRetriever
 from .shard_loader import ShardLoader, LoadStats
 from .stores import InMemoryVectorStore, QdrantVectorStore
 
@@ -15,6 +16,8 @@ __all__ = [
     "QdrantVectorStore",
     "RetrievalResult",
     "RetrievedChunk",
+    "FullStackLatencyBreakdown",
+    "FullStackRetriever",
     "SentenceTransformerEmbedder",
     "ShardLoader",
     "VectorIndexer",

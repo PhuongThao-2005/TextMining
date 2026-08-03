@@ -6,6 +6,11 @@ Task 9 isolates one intended variable: direct retrieve-then-generate execution v
 
 Implementation-complete means the repository contracts, offline tests, structural dry-runs, artifacts, and aggregation support exist. Production-validated requires both executable configurations to finish on the same official benchmark, corpus, index, model, case set, and judge contract; no such result is claimed here.
 
+The committed Plain RAG and Simple Planner configs use the same canonical
+Dense+BM25+RRF+Cross-Encoder+Graph stack. My can run this controlled pair in the
+Kaggle notebook after the FAISS, BM25, graph and provider inputs are attached.
+MultiTool remains deferred.
+
 ## Experiment flows
 
 `Agent-None-PlainRAG` uses the existing E2E path:
@@ -109,4 +114,7 @@ python scripts/run_ablation_batch.py --configs Agent-None-PlainRAG Agent-SimpleP
 python scripts/aggregate_ablation_results.py --runs-dir evaluation_runs/ablation
 ```
 
-Real execution still requires the configured official benchmark, corpus, FAISS index, `LLM_BASE_MODEL`, `LLM_API_KEY`, and `LLM_BASE_URL`. Missing dependencies must produce diagnostics, never a fake production result.
+Real execution still requires the configured official benchmark, corpus, FAISS
+index/payloads, BM25 index/metadata, graph pickle, `LLM_BASE_MODEL`, `LLM_API_KEY`,
+and `LLM_BASE_URL`. Missing dependencies must produce diagnostics, never a fake
+production result.

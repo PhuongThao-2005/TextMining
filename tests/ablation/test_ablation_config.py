@@ -8,8 +8,11 @@ from typing import Any
 import pytest
 
 from retrieval.schema import RetrievalResult
+import scripts.run_ablation_config as runner_module
 from scripts.run_ablation_config import (
     AblationConfigError,
+    DEFAULT_CONFIG_FILE,
+    build_ablation_stack,
     create_run_id,
     load_ablation_configs,
     resolve_ablation_config,
@@ -203,3 +206,43 @@ def test_run_id_is_sanitized_and_deterministic_for_supplied_time() -> None:
     run_id = create_run_id("LLM Base/Reasoning", config_hash="abcdef123456", now=now)
 
     assert run_id == "20260728T010203456789Z_llm-base-reasoning_abcdef12"
+
+
+def test_official_llm_config_builds_full_stack_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
+    config = resolve_ablation_config(load_ablation_configs(DEFAULT_CONFIG_FILE), "LLM-BaseReasoning")
+    dense = object()
+    sparse = object()
+    hybrid = object()
+    graph = object()
+    expansion = object()
+    full_stack = object()
+    captured: dict[str, Any] = {}
+
+    monkeypatch.setattr(runner_module, "build_vector_retriever", lambda runtime: dense)
+    monkeypatch.setattr(runner_module.BM25SparseRetriever, "load", lambda path: sparse)
+
+    def build_hybrid(**kwargs):
+        captured["hybrid"] = kwargs
+        return hybrid
+
+    monkeypatch.setattr(runner_module, "HybridRetriever", build_hybrid)
+    monkeypatch.setattr(runner_module, "load_knowledge_graph", lambda path: type("Loaded", (), {"graph": graph})())
+    monkeypatch.setattr(runner_module, "GraphExpansion", lambda value: expansion if value is graph else None)
+
+    def build_full_stack(**kwargs):
+        captured["full_stack"] = kwargs
+        return full_stack
+
+    monkeypatch.setattr(runner_module, "FullStackRetriever", build_full_stack)
+    monkeypatch.setattr(runner_module, "_build_generator", lambda value: (lambda *_: "answer", []))
+    monkeypatch.setattr(runner_module, "_build_judge", lambda value: (None, []))
+
+    retriever, _, _, _ = build_ablation_stack(config)
+    assert retriever is full_stack
+    assert captured["hybrid"]["dense_retriever"] is dense
+    assert captured["hybrid"]["sparse_retriever"] is sparse
+    assert captured["hybrid"]["use_rrf"] is True
+    assert captured["hybrid"]["use_cross_encoder"] is True
+    assert captured["full_stack"]["base_retriever"] is hybrid
+    assert captured["full_stack"]["dense_retriever"] is dense
+    assert captured["full_stack"]["graph_expansion"] is expansion

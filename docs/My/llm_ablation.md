@@ -9,12 +9,19 @@ These production-intent configurations evaluate one controlled variable at a tim
 | `LLM-BaseReasoning` | `base` | `env:LLM_BASE_MODEL` | Reference condition |
 | `LLM-CoTReasoning` | `reasoning` | `env:LLM_BASE_MODEL` | Prompt strategy only |
 | `LLM-LargerModel` | `base` | `env:LLM_LARGER_MODEL` | Model only |
+| `LLM-LargerModel-CoTReasoning` | `reasoning` | `env:LLM_LARGER_MODEL` | Model and prompt interaction |
 
 The config loader runs an automated fairness check. Base versus CoT may differ only
 at `generation.prompt_strategy`; Base versus Larger may differ only at
-`generation.model`. Benchmark, corpus, retrieval/index/embedding settings, top-k,
+`generation.model`; Larger+CoT must differ at exactly those two fields. Benchmark,
+corpus, retrieval/index/embedding settings, top-k,
 filters, agent and judge settings, decoding controls, retry/timeout policy, seed,
 answer format, and citation format are held constant.
+
+The committed configs use the same official Dense+BM25+RRF+Cross-Encoder+Graph
+retrieval stack. The canonical full-stack adapter loads the handed-over BM25 and
+graph artifacts, applies Graph expansion after fusion/reranking, and exposes one
+retrieval contract to all four LLM comparisons.
 
 ## Prompt and output safety
 
@@ -48,6 +55,9 @@ data/benchmark/qa_final.jsonl
 data/v2/documents.jsonl
 data/faiss_index/index.faiss
 data/faiss_index/payloads.jsonl
+data/sparse_index/bm25_index.pkl
+data/sparse_index/bm25_metadata.pkl
+data/graph/knowledge_graph.gpickle
 ```
 
 The benchmark, corpus, and index versions must describe the same frozen
@@ -62,6 +72,7 @@ Structural validation does not call APIs or claim model availability:
 python scripts/run_ablation_config.py --config LLM-BaseReasoning --dry-run
 python scripts/run_ablation_config.py --config LLM-CoTReasoning --dry-run
 python scripts/run_ablation_config.py --config LLM-LargerModel --dry-run
+python scripts/run_ablation_config.py --config LLM-LargerModel-CoTReasoning --dry-run
 ```
 
 After artifact, credential, model, and quota checks, run a bounded smoke test:
@@ -70,16 +81,16 @@ After artifact, credential, model, and quota checks, run a bounded smoke test:
 python scripts/run_ablation_config.py --config LLM-BaseReasoning --limit 5
 ```
 
-Then use the identical limit and case set for the other two configs. The existing
+Then use the identical limit and case set for the other three configs. The existing
 batch runner preserves requested order and independent statuses:
 
 ```bash
 python scripts/run_ablation_batch.py \
-  --configs LLM-BaseReasoning,LLM-CoTReasoning,LLM-LargerModel \
+  --configs LLM-BaseReasoning LLM-CoTReasoning LLM-LargerModel LLM-LargerModel-CoTReasoning \
   --limit 5
 ```
 
-Do not start a full benchmark until all three model selectors resolve, the
+Do not start a full benchmark until all four configs resolve, the
 provider confirms model access, and quota is sufficient. Client calls use the
 configured timeout and retry count. Missing model environment variables fail
 preflight clearly; missing credentials or runtime API failures are recorded by

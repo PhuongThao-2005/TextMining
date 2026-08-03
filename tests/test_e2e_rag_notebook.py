@@ -298,7 +298,10 @@ def test_artifact_loading_does_not_import_pandas(tmp_path: Path, monkeypatch: py
 
 def test_runtime_path_overrides_are_validated_persisted_and_do_not_mutate_source(tmp_path: Path) -> None:
     paths = {}
-    for name in ("benchmark.jsonl", "corpus.jsonl", "index.faiss", "payloads.jsonl", "manifest.json", "graph.pkl"):
+    for name in (
+        "benchmark.jsonl", "corpus.jsonl", "index.faiss", "payloads.jsonl",
+        "manifest.json", "bm25_index.pkl", "bm25_metadata.pkl", "graph.pkl",
+    ):
         path = tmp_path / name
         path.write_text("{}", encoding="utf-8")
         paths[name] = path
@@ -311,6 +314,8 @@ def test_runtime_path_overrides_are_validated_persisted_and_do_not_mutate_source
         faiss_index_source=paths["index.faiss"],
         faiss_payloads_source=paths["payloads.jsonl"],
         faiss_manifest_source=paths["manifest.json"],
+        bm25_index_source=paths["bm25_index.pkl"],
+        bm25_metadata_source=paths["bm25_metadata.pkl"],
         graph_source=paths["graph.pkl"],
         runs_root=tmp_path / "runs",
         selected_device="cpu",
@@ -321,14 +326,20 @@ def test_runtime_path_overrides_are_validated_persisted_and_do_not_mutate_source
     assert resolved["retrieval"]["dense"]["index_file"] == str(paths["index.faiss"].resolve())
     assert resolved["retrieval"]["dense"]["payloads_path"] == str(paths["payloads.jsonl"].resolve())
     assert resolved["retrieval"]["dense"]["manifest_path"] == str(paths["manifest.json"].resolve())
+    assert resolved["retrieval"]["sparse"]["index_path"] == str(tmp_path.resolve())
     assert resolved["retrieval"]["graph"]["path"] == str(paths["graph.pkl"].resolve())
     assert resolved["output"]["root"] == str((tmp_path / "runs").resolve())
     assert resolved["metadata"]["runtime_path_overrides"]["faiss_index"] == str(paths["index.faiss"].resolve())
+    assert resolved["metadata"]["runtime_path_overrides"]["bm25_index"] == str(paths["bm25_index.pkl"].resolve())
 
 
 def test_missing_runtime_override_is_rejected(tmp_path: Path) -> None:
     with pytest.raises(Exception, match="not a file"):
         apply_runtime_path_overrides(_config(), benchmark_source=tmp_path / "missing.jsonl")
+    bm25 = tmp_path / "bm25_index.pkl"
+    bm25.write_bytes(b"fixture")
+    with pytest.raises(Exception, match="requires both"):
+        apply_runtime_path_overrides(_config(), bm25_index_source=bm25)
 
 
 def test_run_modes_do_not_silently_execute_or_downgrade() -> None:

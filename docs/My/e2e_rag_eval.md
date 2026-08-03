@@ -47,13 +47,15 @@ Set these values when unique-name discovery is insufficient:
 - `FAISS_INDEX_SOURCE`: `index.faiss`.
 - `FAISS_PAYLOADS_SOURCE`: `payloads.jsonl`.
 - `FAISS_MANIFEST_SOURCE`: optional index manifest.
+- `BM25_INDEX_SOURCE`: `bm25_index.pkl` from the frozen Sparse build.
+- `BM25_METADATA_SOURCE`: matching `bm25_metadata.pkl` from the same build.
 - `GRAPH_SOURCE`: graph artifact when graph retrieval is enabled.
 
 Real files are required; placeholders and fixture substitution are prohibited. FAISS index/payload artifacts must come from the same compatible build and match the corpus/benchmark identity. When files are mounted in different dataset directories, the notebook creates canonical links under `/kaggle/working/e2e_runtime_inputs/faiss`. The effective paths and original Kaggle input identities are persisted in the resolved run config; `configs/ablation_configs.yaml` is never modified.
 
 ## Dependencies and CPU/GPU behavior
 
-The current `pyproject.toml` contains tool settings but no complete install metadata, so the notebook installs PyYAML and, only for smoke/full, missing packages required by the selected FAISS/OpenAI-compatible production path. It does not request Streamlit, pandas, pyarrow, CUDA, or PyTorch.
+The current `pyproject.toml` contains tool settings but no complete install metadata, so the notebook installs PyYAML and, only for smoke/full, missing packages required by the selected FAISS/BM25/Cross-Encoder/OpenAI-compatible production path. It does not request Streamlit, pandas, pyarrow, CUDA, or PyTorch directly.
 
 Pandas is optional and imported only in the final display cell. If pandas, NumPy, or pyarrow are incompatible, tables fall back to Python dictionaries and production execution/artifact export continue. If newly installed imports are not visible, the notebook prints exactly:
 

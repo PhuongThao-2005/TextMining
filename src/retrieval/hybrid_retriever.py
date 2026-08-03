@@ -155,9 +155,21 @@ class HybridRetriever:
         query: str,
         *,
         top_k: int,
+        filter_profile: str = "broad",
     ) -> tuple[list[SearchHit], float]:
         """Run Sparse (BM25) search, return ``(hits, latency)``."""
-        return self.sparse_retriever.search_with_latency(query, top_k=top_k)
+        hits, latency = self.sparse_retriever.search_with_latency(query, top_k=max(top_k * 3, top_k))
+        allowed = {
+            "current_law": {"active", "partial", "future"},
+            "broad": {"active", "partial", "future", "expired", "unknown"},
+            "historical": {"expired", "active", "partial"},
+        }.get(filter_profile)
+        if allowed is not None:
+            hits = [
+                hit for hit in hits
+                if str(hit.payload.get("validity_group") or "unknown") in allowed
+            ]
+        return hits[:top_k], latency
 
     # ------------------------------------------------------------------
     # Fusion methods
@@ -359,7 +371,9 @@ class HybridRetriever:
         )
 
         # Stage 2: Sparse search
-        sparse_hits, sparse_latency = self._sparse_search(query, top_k=top_k)
+        sparse_hits, sparse_latency = self._sparse_search(
+            query, top_k=top_k, filter_profile=filter_profile
+        )
 
         # Stage 3: Fusion
         fusion_t0 = time.perf_counter()

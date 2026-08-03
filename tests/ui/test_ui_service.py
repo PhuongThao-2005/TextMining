@@ -157,17 +157,19 @@ def test_preflight_missing_faiss_artifacts_and_dependency(tmp_path: Path) -> Non
     assert "faiss-cpu" in text and "sentence-transformers" in text
 
 
-def test_preflight_deferred_graph_and_reranker_states(tmp_path: Path) -> None:
+def test_preflight_deferred_multitool_and_missing_full_stack_artifacts(tmp_path: Path) -> None:
     deferred = _base_config(tmp_path)
     deferred["agent"] = {"enabled": False, "mode": "multi_tool", "implementation_status": "deferred", "reason": "needs tools"}
     result = run_preflight(deferred, config_name="multi", project_root=tmp_path)
     assert result.status == "deferred" and "needs tools" in result.blockers
 
-    for component in ("graph", "reranker"):
-        config = _base_config(tmp_path)
-        config["retrieval"][component]["enabled"] = True
-        blocked = run_preflight(config, config_name=component, project_root=tmp_path)
-        assert not blocked.runnable and any(component.capitalize() in value for value in blocked.blockers)
+    config = _base_config(tmp_path)
+    config["retrieval"]["graph"] = {
+        "enabled": True, "path": "missing.gpickle", "max_seeds": 3,
+        "max_hop": 1, "max_chunks": 10,
+    }
+    blocked = run_preflight(config, config_name="graph", project_root=tmp_path)
+    assert not blocked.runnable and any("graph artifact" in value for value in blocked.blockers)
 
 
 def test_overrides_are_bounded_deterministic_and_non_mutating(tmp_path: Path) -> None:
@@ -185,12 +187,14 @@ def test_overrides_are_bounded_deterministic_and_non_mutating(tmp_path: Path) ->
             apply_safe_overrides(source, QuestionRequest("q", "fixture", top_k_override=invalid))
 
 
-def test_graph_and_reranker_true_overrides_are_rejected(tmp_path: Path) -> None:
+def test_graph_and_reranker_true_overrides_are_applied_for_integrated_stack(tmp_path: Path) -> None:
     config = _base_config(tmp_path)
-    with pytest.raises(UIConfigError, match="Graph cannot be enabled"):
-        apply_safe_overrides(config, QuestionRequest("q", "fixture", graph_enabled_override=True))
-    with pytest.raises(UIConfigError, match="Reranker cannot be enabled"):
-        apply_safe_overrides(config, QuestionRequest("q", "fixture", reranker_enabled_override=True))
+    updated = apply_safe_overrides(
+        config,
+        QuestionRequest("q", "fixture", graph_enabled_override=True, reranker_enabled_override=True),
+    )
+    assert updated["retrieval"]["graph"]["enabled"] is True
+    assert updated["retrieval"]["reranker"]["enabled"] is True
 
 
 def test_plain_service_success_preserves_context_rank_score_latency_and_strips_reasoning(tmp_path: Path) -> None:
