@@ -16,6 +16,8 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from evaluation.io_utils import qa_id, read_jsonl, write_json, write_jsonl  # noqa: E402
 from evaluation.metrics import aggregate, aggregate_by, hit_at_k, jaccard_at_k, mrr_at_k, ndcg_at_k, recall_at_k  # noqa: E402
 from evaluation.retriever_factory import RetrieverRuntimeConfig, build_vector_retriever  # noqa: E402
+from retrieval.embeddings import SentenceTransformerEmbedder  # noqa: E402
+from retrieval.sqlite_faiss_store import SQLitePayloadFaissVectorStore  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
@@ -25,6 +27,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top-k", type=int, nargs="+", default=[1, 5, 10])
     parser.add_argument("--store", choices=["faiss", "qdrant"], default="faiss")
     parser.add_argument("--index-dir", type=Path, default=Path("data/faiss_index"))
+    parser.add_argument(
+        "--raw-faiss",
+        action="store_true",
+        help="Bypass VectorRetriever and evaluate direct FAISS search like dense-embedding-ablation.ipynb.",
+    )
     parser.add_argument(
         "--runtime-index-dir",
         type=Path,
@@ -61,20 +68,29 @@ def main() -> int:
         if args.store == "faiss" and args.runtime_index_dir is not None
         else args.index_dir
     )
-    retriever = build_vector_retriever(
-        RetrieverRuntimeConfig(
-            store=args.store,
-            index_dir=runtime_index_dir,
-            qdrant_url=args.qdrant_url,
-            qdrant_api_key=args.qdrant_api_key,
-            collection_name=args.collection,
-            model=args.model,
-            top_k=max(max_k * 3, 30),
-            top_n=max_k,
-            score_threshold=args.score_threshold,
-            expand_units=not args.no_expand_units,
+    if args.raw_faiss:
+        if args.store != "faiss":
+            raise ValueError("--raw-faiss requires --store faiss")
+        store = SQLitePayloadFaissVectorStore.load(runtime_index_dir)
+        embedder = SentenceTransformerEmbedder(args.model)
+        retriever = None
+    else:
+        store = None
+        embedder = None
+        retriever = build_vector_retriever(
+            RetrieverRuntimeConfig(
+                store=args.store,
+                index_dir=runtime_index_dir,
+                qdrant_url=args.qdrant_url,
+                qdrant_api_key=args.qdrant_api_key,
+                collection_name=args.collection,
+                model=args.model,
+                top_k=max(max_k * 3, 30),
+                top_n=max_k,
+                score_threshold=args.score_threshold,
+                expand_units=not args.no_expand_units,
+            )
         )
-    )
 
     cases: list[dict[str, Any]] = []
     skipped_unanswerable = 0
@@ -100,18 +116,29 @@ def main() -> int:
         if args.limit is not None and len(cases) >= args.limit:
             break
 
-        result = retriever.retrieve(str(qa.get("question") or ""), filter_profile=args.filter_profile, top_n=max_k)
-        retrieved_ids = [chunk.chunk_id for chunk in result.chunks]
-        row: dict[str, Any] = {
-            "qa_id": qa_id(qa, index),
-            "question": qa.get("question"),
-            "category": qa.get("category"),
-            "difficulty": qa.get("difficulty"),
-            "answer_type": qa.get("answer_type"),
-            "ground_truth_chunk_ids": sorted(relevant),
-            "empty_ground_truth": not bool(relevant),
-            "retrieved_chunk_ids": retrieved_ids,
-            "retrieved": [
+        question = str(qa.get("question") or "")
+        if args.raw_faiss:
+            assert store is not None and embedder is not None
+            query_vector = embedder.encode_queries([question])[0]
+            hits = store.search(query_vector, limit=max_k, score_threshold=None, filters=None)
+            retrieved_ids = [str(hit.payload.get("chunk_id") or hit.point_id) for hit in hits]
+            retrieved_rows = [
+                {
+                    "rank": rank,
+                    "chunk_id": str(hit.payload.get("chunk_id") or hit.point_id),
+                    "document_id": hit.payload.get("id_str"),
+                    "provision_id": hit.payload.get("parent_unit_id"),
+                    "rerank_score": None,
+                    "vector_score": hit.score,
+                    "citation": hit.payload.get("citation_anchor") or hit.payload.get("citation_label"),
+                }
+                for rank, hit in enumerate(hits, start=1)
+            ]
+        else:
+            assert retriever is not None
+            result = retriever.retrieve(question, filter_profile=args.filter_profile, top_n=max_k)
+            retrieved_ids = [chunk.chunk_id for chunk in result.chunks]
+            retrieved_rows = [
                 {
                     "rank": rank,
                     "chunk_id": chunk.chunk_id,
@@ -122,7 +149,17 @@ def main() -> int:
                     "citation": chunk.citation_anchor or chunk.citation_label,
                 }
                 for rank, chunk in enumerate(result.chunks, start=1)
-            ],
+            ]
+        row: dict[str, Any] = {
+            "qa_id": qa_id(qa, index),
+            "question": question,
+            "category": qa.get("category"),
+            "difficulty": qa.get("difficulty"),
+            "answer_type": qa.get("answer_type"),
+            "ground_truth_chunk_ids": sorted(relevant),
+            "empty_ground_truth": not bool(relevant),
+            "retrieved_chunk_ids": retrieved_ids,
+            "retrieved": retrieved_rows,
         }
         for k in args.top_k:
             if relevant:
@@ -146,6 +183,7 @@ def main() -> int:
         "qa_path": str(args.qa_path),
         "retriever": {
             "store": args.store,
+            "raw_faiss": args.raw_faiss,
             "source_index_dir": str(args.index_dir),
             "runtime_index_dir": str(runtime_index_dir),
             "collection": args.collection,
@@ -185,6 +223,7 @@ def write_report(path: Path, summary: dict[str, Any], metric_keys: list[str]) ->
         "",
         f"- QA path: `{summary['qa_path']}`",
         f"- Store: `{summary['retriever']['store']}`",
+        f"- Raw FAISS: {summary['retriever']['raw_faiss']}",
         f"- Source index dir: `{summary['retriever']['source_index_dir']}`",
         f"- Runtime index dir: `{summary['retriever']['runtime_index_dir']}`",
         f"- Final contexts: {summary['retriever']['final_top_n']}",
