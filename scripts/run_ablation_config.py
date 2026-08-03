@@ -493,11 +493,16 @@ def apply_runtime_path_overrides(
 
     dense = resolved["retrieval"]["dense"]
     if faiss_index_source is not None:
-        index_file = Path(faiss_index_source).resolve()
+        index_file = Path(faiss_index_source)
+        if not index_file.is_absolute():
+            index_file = (project_root / index_file).absolute()
         dense["index_path"] = str(index_file.parent)
         dense["index_file"] = str(index_file)
     if faiss_payloads_source is not None:
-        dense["payloads_path"] = str(Path(faiss_payloads_source).resolve())
+        payloads_file = Path(faiss_payloads_source)
+        if not payloads_file.is_absolute():
+            payloads_file = (project_root / payloads_file).absolute()
+        dense["payloads_path"] = str(payloads_file)
     if faiss_manifest_source is not None:
         dense["manifest_path"] = str(Path(faiss_manifest_source).resolve())
     if bm25_index_source is not None or bm25_metadata_source is not None:

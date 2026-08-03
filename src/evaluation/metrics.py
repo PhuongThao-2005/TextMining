@@ -109,9 +109,16 @@ def jaccard_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> fl
 
 def aggregate(rows: list[dict[str, Any]], metric_keys: list[str]) -> dict[str, Any]:
     out: dict[str, Any] = {"count": len(rows)}
+    denominators: dict[str, int] = {}
     for key in metric_keys:
-        values = [float(row.get(key, 0.0)) for row in rows]
+        values = [
+            float(row[key])
+            for row in rows
+            if row.get(key) is not None
+        ]
+        denominators[key] = len(values)
         out[key] = sum(values) / len(values) if values else 0.0
+    out["metric_denominators"] = denominators
     return out
 
 

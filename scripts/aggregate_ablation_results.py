@@ -386,6 +386,12 @@ def _load_completed_artifacts(record: RunRecord) -> None:
                 ("context_recall@k", "context_recall_at_k"),
             ):
                 _extract_number(overall, source, record, target, "E2E metrics")
+            for k in (1, 5, 10):
+                _extract_number(
+                    overall, f"recall@{k}", record, f"recall_at_{k}", "E2E metrics", optional=True
+                )
+            _extract_rank_metric(overall, "mrr", record)
+            _extract_rank_metric(overall, "ndcg", record)
         counts = e2e.get("counts")
         if counts is not None and not isinstance(counts, dict):
             record.validation_errors.append("E2E metrics field 'counts' must be an object.")
@@ -427,7 +433,8 @@ def _load_completed_artifacts(record: RunRecord) -> None:
                 _extract_rank_metric(overall, "mrr", record)
                 _extract_rank_metric(overall, "ndcg", record)
     else:
-        record.notes.append("Optional retrieval metrics artifact is unavailable.")
+        if not any(key in record.metrics for key in ("recall_at_1", "recall_at_5", "recall_at_10", "mrr", "ndcg")):
+            record.notes.append("Optional retrieval metrics artifact is unavailable.")
 
     missing_e2e = [
         target
