@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import os
+import shutil
+import sqlite3
 import sys
 from pathlib import Path
 from typing import Any
@@ -20,6 +23,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--qa-path", type=Path, required=True, help="Frozen QA JSONL, e.g. qa_final.jsonl.")
     parser.add_argument("--out-dir", type=Path, default=Path("evaluation_runs/retrieval"))
     parser.add_argument("--top-k", type=int, nargs="+", default=[1, 5, 10])
+    parser.add_argument("--store", choices=["faiss", "qdrant"], default="faiss")
+    parser.add_argument("--index-dir", type=Path, default=Path("data/faiss_index"))
+    parser.add_argument(
+        "--runtime-index-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Optional writable FAISS mirror directory. Useful on Kaggle because "
+            "/kaggle/input is read-only and the SQLite payload cache may need refresh."
+        ),
+    )
     parser.add_argument("--filter-profile", default="broad", choices=["current_law", "broad", "historical"])
     parser.add_argument("--collection", default="legal_chunks")
     parser.add_argument("--qdrant-url", default="http://localhost:6333")
@@ -27,15 +41,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", default="intfloat/multilingual-e5-large")
     parser.add_argument("--score-threshold", type=float, default=0.3)
     parser.add_argument("--no-expand-units", action="store_true")
-    parser.add_argument("--limit", type=int, default=None, help="Smoke-test on first N answerable QA.")
+    parser.add_argument(
+        "--include-empty-ground-truth",
+        action="store_true",
+        help=(
+            "Include rows with no ground_truth.chunk_ids in the case output and counts. "
+            "Retrieval metrics for those rows are null and excluded from metric averages."
+        ),
+    )
+    parser.add_argument("--limit", type=int, default=None, help="Smoke-test on first N evaluated QA.")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     max_k = max(args.top_k)
+    runtime_index_dir = (
+        prepare_writable_index_dir(args.index_dir, args.runtime_index_dir)
+        if args.store == "faiss" and args.runtime_index_dir is not None
+        else args.index_dir
+    )
     retriever = build_vector_retriever(
         RetrieverRuntimeConfig(
+            store=args.store,
+            index_dir=runtime_index_dir,
             qdrant_url=args.qdrant_url,
             qdrant_api_key=args.qdrant_api_key,
             collection_name=args.collection,
@@ -50,15 +79,24 @@ def main() -> int:
     cases: list[dict[str, Any]] = []
     skipped_unanswerable = 0
     skipped_missing_gt = 0
+    evaluated_empty_gt = 0
+    total_rows_seen = 0
     for index, qa in enumerate(read_jsonl(args.qa_path), start=1):
-        if str(qa.get("answer_type") or "").lower() == "unanswerable" or str(qa.get("category") or "").lower() == "unanswerable":
+        total_rows_seen += 1
+        is_unanswerable = (
+            str(qa.get("answer_type") or "").lower() == "unanswerable"
+            or str(qa.get("category") or "").lower() == "unanswerable"
+        )
+        if is_unanswerable and not args.include_empty_ground_truth:
             skipped_unanswerable += 1
             continue
         gt = qa.get("ground_truth") or {}
         relevant = {str(chunk_id) for chunk_id in gt.get("chunk_ids") or [] if chunk_id}
-        if not relevant:
+        if not relevant and not args.include_empty_ground_truth:
             skipped_missing_gt += 1
             continue
+        if not relevant:
+            evaluated_empty_gt += 1
         if args.limit is not None and len(cases) >= args.limit:
             break
 
@@ -71,6 +109,7 @@ def main() -> int:
             "difficulty": qa.get("difficulty"),
             "answer_type": qa.get("answer_type"),
             "ground_truth_chunk_ids": sorted(relevant),
+            "empty_ground_truth": not bool(relevant),
             "retrieved_chunk_ids": retrieved_ids,
             "retrieved": [
                 {
@@ -86,11 +125,18 @@ def main() -> int:
             ],
         }
         for k in args.top_k:
-            row[f"recall@{k}"] = recall_at_k(retrieved_ids, relevant, k)
-            row[f"hit@{k}"] = hit_at_k(retrieved_ids, relevant, k)
-            row[f"mrr@{k}"] = mrr_at_k(retrieved_ids, relevant, k)
-            row[f"ndcg@{k}"] = ndcg_at_k(retrieved_ids, relevant, k)
-            row[f"jaccard@{k}"] = jaccard_at_k(retrieved_ids, relevant, k)
+            if relevant:
+                row[f"recall@{k}"] = recall_at_k(retrieved_ids, relevant, k)
+                row[f"hit@{k}"] = hit_at_k(retrieved_ids, relevant, k)
+                row[f"mrr@{k}"] = mrr_at_k(retrieved_ids, relevant, k)
+                row[f"ndcg@{k}"] = ndcg_at_k(retrieved_ids, relevant, k)
+                row[f"jaccard@{k}"] = jaccard_at_k(retrieved_ids, relevant, k)
+            else:
+                row[f"recall@{k}"] = None
+                row[f"hit@{k}"] = None
+                row[f"mrr@{k}"] = None
+                row[f"ndcg@{k}"] = None
+                row[f"jaccard@{k}"] = None
         cases.append(row)
         if len(cases) % 25 == 0:
             print(f"Evaluated {len(cases)} retrieval cases...")
@@ -99,16 +145,24 @@ def main() -> int:
     summary = {
         "qa_path": str(args.qa_path),
         "retriever": {
+            "store": args.store,
+            "source_index_dir": str(args.index_dir),
+            "runtime_index_dir": str(runtime_index_dir),
             "collection": args.collection,
             "qdrant_url": args.qdrant_url,
             "model": args.model,
             "filter_profile": args.filter_profile,
             "score_threshold": args.score_threshold,
             "expand_units": not args.no_expand_units,
+            "candidate_top_k": max(max_k * 3, 30),
+            "final_top_n": max_k,
             "top_k": args.top_k,
+            "include_empty_ground_truth": args.include_empty_ground_truth,
         },
         "counts": {
-            "evaluated_answerable": len(cases),
+            "total_rows_seen": total_rows_seen,
+            "evaluated": len(cases),
+            "evaluated_empty_ground_truth": evaluated_empty_gt,
             "skipped_unanswerable": skipped_unanswerable,
             "skipped_missing_ground_truth_chunks": skipped_missing_gt,
         },
@@ -130,9 +184,18 @@ def write_report(path: Path, summary: dict[str, Any], metric_keys: list[str]) ->
         "# Retrieval Evaluation Report",
         "",
         f"- QA path: `{summary['qa_path']}`",
-        f"- Evaluated answerable QA: {summary['counts']['evaluated_answerable']}",
+        f"- Store: `{summary['retriever']['store']}`",
+        f"- Source index dir: `{summary['retriever']['source_index_dir']}`",
+        f"- Runtime index dir: `{summary['retriever']['runtime_index_dir']}`",
+        f"- Final contexts: {summary['retriever']['final_top_n']}",
+        f"- Candidate top-k: {summary['retriever']['candidate_top_k']}",
+        f"- Include empty ground truth: {summary['retriever']['include_empty_ground_truth']}",
+        f"- Total rows seen: {summary['counts']['total_rows_seen']}",
+        f"- Evaluated QA: {summary['counts']['evaluated']}",
+        f"- Evaluated empty-GT QA: {summary['counts']['evaluated_empty_ground_truth']}",
         f"- Skipped unanswerable QA: {summary['counts']['skipped_unanswerable']}",
         f"- Skipped missing GT chunks: {summary['counts']['skipped_missing_ground_truth_chunks']}",
+        "- Metric averages exclude rows where that metric is not applicable.",
         "",
         "## Overall",
         "",
@@ -141,12 +204,54 @@ def write_report(path: Path, summary: dict[str, Any], metric_keys: list[str]) ->
     ]
     overall = summary["overall"]
     lines.extend(f"| {key} | {overall.get(key, 0.0):.4f} |" for key in metric_keys)
+    denominators = overall.get("metric_denominators") or {}
+    if denominators:
+        lines.extend(["", "## Metric Denominators", "", "| Metric | Cases |", "| --- | ---: |"])
+        lines.extend(f"| {key} | {denominators.get(key, 0)} |" for key in metric_keys)
     lines.extend(["", "## By Category", ""])
     lines.extend(_group_table(summary["by_category"], metric_keys))
     lines.extend(["", "## By Difficulty", ""])
     lines.extend(_group_table(summary["by_difficulty"], metric_keys))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def prepare_writable_index_dir(source_dir: Path, runtime_dir: Path) -> Path:
+    source = Path(source_dir)
+    dest = Path(runtime_dir)
+    dest.mkdir(parents=True, exist_ok=True)
+    for filename in (
+        "index.faiss",
+        "payloads.jsonl",
+        "id_map.json",
+        "payload_offsets.pkl",
+        "payloads_export.csv",
+    ):
+        src = source / filename
+        if not src.exists():
+            continue
+        target = dest / filename
+        if target.exists() or target.is_symlink():
+            continue
+        try:
+            os.symlink(src, target)
+        except OSError:
+            shutil.copy2(src, target)
+
+    src_cache = source / "payload_cache.sqlite"
+    dest_cache = dest / "payload_cache.sqlite"
+    payloads_path = dest / "payloads.jsonl"
+    if src_cache.exists() and payloads_path.exists() and not dest_cache.exists():
+        shutil.copy2(src_cache, dest_cache)
+        stat = payloads_path.stat()
+        conn = sqlite3.connect(str(dest_cache))
+        try:
+            conn.execute("UPDATE meta SET value=? WHERE key='payload_size'", (str(stat.st_size),))
+            conn.execute("UPDATE meta SET value=? WHERE key='payload_mtime_ns'", (str(stat.st_mtime_ns),))
+            conn.commit()
+        finally:
+            conn.close()
+    return dest
 
 
 def _group_table(groups: dict[str, Any], metric_keys: list[str]) -> list[str]:
