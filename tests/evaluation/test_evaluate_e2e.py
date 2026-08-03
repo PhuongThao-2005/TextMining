@@ -251,6 +251,43 @@ def test_empty_retrieval_skips_generation_and_citation_metrics() -> None:
     assert result.predictions[0]["citation_metrics"] is None
 
 
+def test_unanswerable_cases_only_contribute_applicable_metrics() -> None:
+    rows = [
+        _rows()[0],
+        {
+            "qa_id": "unanswerable",
+            "question": "success",
+            "reference_answer": "Không có đủ thông tin trong đoạn luật.",
+            "answer_type": "unanswerable",
+            "category": "unanswerable",
+            "difficulty": "easy",
+            "ground_truth": {"chunk_ids": []},
+        },
+    ]
+
+    def generator(qa: dict[str, Any], context: str, chunks: Sequence[Any]) -> str:
+        del context, chunks
+        return str(qa["reference_answer"])
+
+    result = run_e2e_evaluation(
+        records_from_rows(rows),
+        retriever=_FakeRetriever(),
+        generator=generator,
+        retrieval_top_k=5,
+        filter_profile="broad",
+    )
+
+    unanswerable = result.predictions[1]
+    assert unanswerable["token_f1"] is None
+    assert unanswerable["rouge_l"] is None
+    assert unanswerable["context_recall@k"] is None
+    assert unanswerable["recall@5"] is None
+    assert unanswerable["unanswerable_accuracy"] == 1.0
+    assert result.metrics["overall"]["metric_denominators"]["token_f1"] == 1
+    assert result.metrics["overall"]["metric_denominators"]["recall@5"] == 1
+    assert result.metrics["overall"]["metric_denominators"]["unanswerable_accuracy"] == 2
+
+
 def test_hybrid_breakdown_keeps_disabled_reranker_null() -> None:
     result = run_e2e_evaluation(
         records_from_rows([_rows()[0]]),
