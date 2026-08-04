@@ -460,6 +460,7 @@ def apply_runtime_path_overrides(
     faiss_manifest_source: Path | None = None,
     bm25_index_source: Path | None = None,
     bm25_metadata_source: Path | None = None,
+    bm25_shards_source: Path | None = None,
     graph_source: Path | None = None,
     runs_root: Path | None = None,
     selected_device: str | None = None,
@@ -485,6 +486,10 @@ def apply_runtime_path_overrides(
     for label, source in supplied.items():
         if source is not None and not Path(source).is_file():
             raise AblationConfigError(f"Runtime {label} source is not a file: {Path(source).name}")
+    if bm25_shards_source is not None and not Path(bm25_shards_source).is_dir():
+        raise AblationConfigError(
+            f"Runtime bm25_shards source is not a directory: {Path(bm25_shards_source).name}"
+        )
 
     if benchmark_source is not None:
         resolved["benchmark"]["path"] = str(Path(benchmark_source).resolve())
@@ -505,7 +510,17 @@ def apply_runtime_path_overrides(
         dense["payloads_path"] = str(payloads_file)
     if faiss_manifest_source is not None:
         dense["manifest_path"] = str(Path(faiss_manifest_source).resolve())
-    if bm25_index_source is not None or bm25_metadata_source is not None:
+    if bm25_shards_source is not None and (
+        bm25_index_source is not None or bm25_metadata_source is not None
+    ):
+        raise AblationConfigError(
+            "Use either BM25 shard root or the global BM25 index/metadata pair, not both."
+        )
+    if bm25_shards_source is not None:
+        shard_root = Path(bm25_shards_source).resolve()
+        resolved["retrieval"].setdefault("sparse", {})["index_path"] = str(shard_root)
+        resolved["retrieval"]["sparse"]["layout"] = "sharded"
+    elif bm25_index_source is not None or bm25_metadata_source is not None:
         if bm25_index_source is None or bm25_metadata_source is None:
             raise AblationConfigError("BM25 runtime override requires both index and metadata files.")
         index_file = Path(bm25_index_source).resolve()
@@ -526,6 +541,8 @@ def apply_runtime_path_overrides(
     for label, source in supplied.items():
         if source is not None:
             identities[label] = str(Path(source).resolve())
+    if bm25_shards_source is not None:
+        identities["bm25_shards"] = str(Path(bm25_shards_source).resolve())
     if runs_root is not None:
         identities["runs_root"] = str(Path(runs_root).resolve())
     return resolved

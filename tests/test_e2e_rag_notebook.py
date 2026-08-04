@@ -342,6 +342,25 @@ def test_missing_runtime_override_is_rejected(tmp_path: Path) -> None:
         apply_runtime_path_overrides(_config(), bm25_index_source=bm25)
 
 
+def test_sharded_bm25_runtime_override_uses_root_and_records_identity(tmp_path: Path) -> None:
+    shard_root = tmp_path / "bm25"
+    for name in ("shard_00", "shard_01"):
+        shard = shard_root / name
+        shard.mkdir(parents=True)
+        (shard / "bm25_index.pkl").write_bytes(b"index")
+        (shard / "bm25_metadata.pkl").write_bytes(b"metadata")
+
+    resolved = apply_runtime_path_overrides(
+        _config(), bm25_shards_source=shard_root
+    )
+
+    assert resolved["retrieval"]["sparse"]["index_path"] == str(shard_root.resolve())
+    assert resolved["retrieval"]["sparse"]["layout"] == "sharded"
+    assert resolved["metadata"]["runtime_path_overrides"]["bm25_shards"] == str(
+        shard_root.resolve()
+    )
+
+
 def test_run_modes_do_not_silently_execute_or_downgrade() -> None:
     validate_run_parameters("inspect", smoke_limit=5, existing_run_dir=None)
     source = _cell_containing('if RUN_MODE == "inspect"')

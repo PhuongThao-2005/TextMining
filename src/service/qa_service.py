@@ -294,13 +294,30 @@ def run_preflight(
     sparse = retrieval.get("sparse", {})
     if isinstance(sparse, Mapping) and sparse.get("enabled"):
         sparse_dir = _resolve_path(sparse.get("index_path", "data/sparse_index"), project_root)
-        missing_sparse = [name for name in ("bm25_index.pkl", "bm25_metadata.pkl") if not (sparse_dir / name).is_file()]
-        if missing_sparse:
-            message = "Missing BM25 artifact(s): " + ", ".join(missing_sparse) + "."
+        global_ready = all(
+            (sparse_dir / name).is_file()
+            for name in ("bm25_index.pkl", "bm25_metadata.pkl")
+        )
+        shard_dirs = sorted(path for path in sparse_dir.glob("shard_*") if path.is_dir())
+        complete_shards = [
+            path for path in shard_dirs
+            if all((path / name).is_file() for name in ("bm25_index.pkl", "bm25_metadata.pkl"))
+        ]
+        sharded_ready = bool(shard_dirs) and len(complete_shards) == len(shard_dirs)
+        if not global_ready and not sharded_ready:
+            message = (
+                "Missing BM25 artifact: expected a global index/metadata pair or "
+                "complete shard_* directories."
+            )
             blockers.append(message)
             checks.append(PreflightCheck("sparse", "blocked", message))
         else:
-            checks.append(PreflightCheck("sparse", "ready", f"BM25 index is available at {_display_path(sparse_dir, project_root)}."))
+            layout = "global" if global_ready else f"sharded ({len(complete_shards)} shards)"
+            checks.append(PreflightCheck(
+                "sparse",
+                "ready",
+                f"BM25 {layout} index is available at {_display_path(sparse_dir, project_root)}.",
+            ))
         _check_package("rank_bm25", "rank-bm25", has_package, checks, blockers)
 
     graph = retrieval.get("graph", {})

@@ -172,6 +172,32 @@ def test_preflight_deferred_multitool_and_missing_full_stack_artifacts(tmp_path:
     assert not blocked.runnable and any("graph artifact" in value for value in blocked.blockers)
 
 
+def test_preflight_accepts_complete_sharded_bm25_layout(tmp_path: Path) -> None:
+    config = _base_config(tmp_path)
+    sparse_root = tmp_path / "bm25"
+    for name in ("shard_00", "shard_01"):
+        shard = sparse_root / name
+        shard.mkdir(parents=True)
+        (shard / "bm25_index.pkl").write_bytes(b"index")
+        (shard / "bm25_metadata.pkl").write_bytes(b"metadata")
+    config["retrieval"]["sparse"] = {
+        "enabled": True,
+        "backend": "bm25",
+        "index_path": str(sparse_root),
+    }
+
+    result = run_preflight(
+        config,
+        config_name="sharded",
+        project_root=tmp_path,
+        package_available=lambda name: True,
+    )
+
+    assert result.runnable
+    sparse_check = next(check for check in result.checks if check.name == "sparse")
+    assert "2 shards" in sparse_check.message
+
+
 def test_overrides_are_bounded_deterministic_and_non_mutating(tmp_path: Path) -> None:
     source = _base_config(tmp_path)
     original = deepcopy(source)

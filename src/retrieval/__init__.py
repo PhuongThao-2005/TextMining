@@ -41,10 +41,10 @@ try:
 except RuntimeError:
     pass
 
-# BM25SparseRetriever is optional (requires rank_bm25)
+# BM25 sparse retrievers are optional (require rank_bm25 at build/load time)
 try:
-    from .sparse_retriever import BM25SparseRetriever
-    __all__.append("BM25SparseRetriever")
+    from .sparse_retriever import BM25SparseRetriever, ShardedBM25SparseRetriever
+    __all__.extend(["BM25SparseRetriever", "ShardedBM25SparseRetriever"])
 except RuntimeError:
     pass
 

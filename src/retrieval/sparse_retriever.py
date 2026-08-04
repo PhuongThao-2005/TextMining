@@ -208,13 +208,18 @@ class BM25SparseRetriever:
         )
 
     @classmethod
-    def load(cls, index_dir: Path) -> "BM25SparseRetriever":
-        """Load a previously saved BM25 index from disk."""
+    def load(cls, index_dir: Path) -> "BM25SparseRetriever | ShardedBM25SparseRetriever":
+        """Load one BM25 index or a directory of ``shard_*`` indexes."""
         bm25_path = index_dir / "bm25_index.pkl"
         meta_path = index_dir / "bm25_metadata.pkl"
 
         if not bm25_path.exists():
+            shard_dirs = ShardedBM25SparseRetriever.discover_shard_dirs(index_dir)
+            if shard_dirs:
+                return ShardedBM25SparseRetriever.load(index_dir, shard_dirs=shard_dirs)
             raise FileNotFoundError(f"BM25 index not found at {bm25_path}")
+        if not meta_path.exists():
+            raise FileNotFoundError(f"BM25 metadata not found at {meta_path}")
 
         logger.info("Loading BM25 index from %s", index_dir)
 
@@ -279,3 +284,107 @@ class BM25SparseRetriever:
     @property
     def total_documents(self) -> int:
         return len(self._chunk_ids)
+
+
+class ShardedBM25SparseRetriever:
+    """Search independent BM25 shards and merge their candidates globally.
+
+    Each shard is searched with the same ``top_k``.  That is sufficient for a
+    global top-k: a result below rank k in one shard already has k better
+    results in that shard.  Candidate scores are kept on the artifact's native
+    BM25 scale, deduplicated by chunk ID, and sorted deterministically.
+
+    The shard artifacts intentionally calculate BM25 statistics independently;
+    this class follows that artifact contract and does not rewrite their IDF.
+    """
+
+    def __init__(self, *, shards: list[tuple[str, BM25SparseRetriever]]) -> None:
+        if not shards:
+            raise ValueError("Sharded BM25 requires at least one shard.")
+        self._shards = shards
+
+    @staticmethod
+    def discover_shard_dirs(index_root: Path) -> list[Path]:
+        """Return complete ``shard_*`` directories in deterministic order."""
+        root = Path(index_root)
+        if not root.is_dir():
+            return []
+        candidates = sorted(
+            (path for path in root.glob("shard_*") if path.is_dir()),
+            key=lambda path: path.name,
+        )
+        complete: list[Path] = []
+        incomplete: list[str] = []
+        for path in candidates:
+            required = (path / "bm25_index.pkl", path / "bm25_metadata.pkl")
+            if all(item.is_file() for item in required):
+                complete.append(path)
+            else:
+                incomplete.append(path.name)
+        if incomplete:
+            raise FileNotFoundError(
+                "Incomplete BM25 shard directories: " + ", ".join(incomplete)
+            )
+        return complete
+
+    @classmethod
+    def load(
+        cls,
+        index_root: Path,
+        *,
+        shard_dirs: list[Path] | None = None,
+    ) -> "ShardedBM25SparseRetriever":
+        """Eagerly load all shards once so each benchmark query is fast."""
+        resolved_dirs = shard_dirs or cls.discover_shard_dirs(index_root)
+        if not resolved_dirs:
+            raise FileNotFoundError(f"No complete BM25 shard_* directories found at {index_root}")
+        shards: list[tuple[str, BM25SparseRetriever]] = []
+        for shard_dir in resolved_dirs:
+            logger.info("Loading BM25 shard %s", shard_dir.name)
+            shard = BM25SparseRetriever.load(shard_dir)
+            if not isinstance(shard, BM25SparseRetriever):
+                raise RuntimeError(f"Nested sharded BM25 layout is not supported: {shard_dir}")
+            shards.append((shard_dir.name, shard))
+        logger.info(
+            "Loaded sharded BM25: %d shards, %d documents",
+            len(shards),
+            sum(shard.total_documents for _, shard in shards),
+        )
+        return cls(shards=shards)
+
+    def search(self, query: str, *, top_k: int = 20) -> list[SearchHit]:
+        if top_k <= 0:
+            return []
+        best: dict[str, tuple[float, int, int, SearchHit]] = {}
+        for shard_index, (_, shard) in enumerate(self._shards):
+            for local_rank, hit in enumerate(shard.search(query, top_k=top_k), start=1):
+                chunk_id = str(hit.payload.get("chunk_id") or hit.point_id)
+                candidate = (float(hit.score), shard_index, local_rank, hit)
+                existing = best.get(chunk_id)
+                if (
+                    existing is None
+                    or candidate[0] > existing[0]
+                    or (
+                        candidate[0] == existing[0]
+                        and candidate[1:3] < existing[1:3]
+                    )
+                ):
+                    best[chunk_id] = candidate
+        ordered = sorted(
+            best.items(),
+            key=lambda item: (-item[1][0], item[1][1], item[1][2], item[0]),
+        )
+        return [candidate[3] for _, candidate in ordered[:top_k]]
+
+    def search_with_latency(self, query: str, *, top_k: int = 20) -> tuple[list[SearchHit], float]:
+        t0 = time.perf_counter()
+        hits = self.search(query, top_k=top_k)
+        return hits, time.perf_counter() - t0
+
+    @property
+    def total_documents(self) -> int:
+        return sum(shard.total_documents for _, shard in self._shards)
+
+    @property
+    def shard_count(self) -> int:
+        return len(self._shards)

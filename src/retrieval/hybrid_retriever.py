@@ -28,7 +28,7 @@ from typing import Any
 
 from .retriever import VectorRetriever
 from .schema import RetrievalResult, RetrievedChunk
-from .sparse_retriever import BM25SparseRetriever
+from .sparse_retriever import BM25SparseRetriever, ShardedBM25SparseRetriever
 from .stores import SearchHit
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ class HybridRetriever:
         self,
         *,
         dense_retriever: VectorRetriever,
-        sparse_retriever: BM25SparseRetriever,
+        sparse_retriever: BM25SparseRetriever | ShardedBM25SparseRetriever,
         cross_encoder_name: str | None = None,
         use_rrf: bool = False,
         use_cross_encoder: bool = False,
