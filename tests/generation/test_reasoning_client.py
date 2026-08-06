@@ -78,14 +78,15 @@ def test_parse_generation_response_not_returned() -> None:
 
 def test_parse_generation_response_unterminated_think_tag() -> None:
     raw = RawGenerationResponse(
-        content="<think>I started reasoning but never closed it\nStill more text",
+        content="<think>sensitive hidden reasoning\nFinal answer: Safe answer",
         reasoning_field=None,
     )
     parsed = parse_generation_response(raw)
     assert parsed.reasoning_source == "not_returned"
     assert parsed.reasoning is None
     assert parsed.reasoning_available is False
-    assert parsed.answer.startswith("<think>")
+    assert parsed.answer == "Safe answer"
+    assert "sensitive hidden reasoning" not in parsed.answer
 
 
 def test_format_context_and_prompt_include_reasoning_instruction() -> None:

@@ -64,5 +64,17 @@ def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever:
     else:
         raise ValueError(f"Unknown runtime.store={runtime.store!r}; expected 'faiss' or 'qdrant'.")
 
+    embedder_dimension = getattr(embedder, "dimension", None)
+    store_dimension = getattr(store, "dimension", None)
+    if (
+        isinstance(embedder_dimension, int)
+        and isinstance(store_dimension, int)
+        and embedder_dimension != store_dimension
+    ):
+        raise ValueError(
+            "Embedding/index dimension mismatch before retrieval: "
+            f"embedder={embedder_dimension}, index={store_dimension}."
+        )
+
     return VectorRetriever(config=config, embedder=embedder, store=store)
 

@@ -1,0 +1,487 @@
+# Ablation configuration schema version 1.
+#
+# Required top-level keys per config:
+#   benchmark: {path, version}
+#   corpus: {path, version}
+#   retrieval:
+#     top_k: positive integer
+#     filter_profile: current_law | broad | historical
+#     dense: {enabled, backend}
+#     sparse/graph/fusion/reranker: {enabled, ...}
+#   generation:
+#     provider, model, prompt_strategy, temperature, top_p,
+#     max_output_tokens, timeout_seconds, max_retries
+#   judge: {provider, model?}
+#   agent: {enabled, mode?}; modes: none | simple_planner | multi_tool
+#   output: {root}
+#
+# Supported now:
+#   dense.backend: faiss | qdrant | hashing
+#   generation.provider: reference | gemini | openai_compatible
+#   judge.provider: none | gemini
+#
+# Sparse, graph, fusion, reranker, and agent sections are explicit extension
+# points. Enabling an unwired component causes a clear deferred result; the
+# runner never silently substitutes another stack.
+
+schema_version: 1
+
+configs:
+  Example-Reference-Hashing:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: hashing
+        model: development-hashing
+        score_threshold: 0.0
+        expand_units: false
+      sparse:
+        enabled: false
+      graph:
+        enabled: false
+      fusion:
+        enabled: false
+      reranker:
+        enabled: false
+    generation:
+      provider: reference
+      model: reference
+      temperature: 0.0
+    judge:
+      provider: none
+    agent:
+      enabled: false
+      type: plain_rag
+    output:
+      root: evaluation_runs/ablation
+    seed: 42
+    metadata:
+      purpose: local plumbing example; not an official benchmark result
+      tags:
+        - example
+        - offline
+
+  # Ablation 1: compare dense indexes built from chunk text only versus
+  # metadata header + chunk text. Both configs run the full E2E RAG path with
+  # the same generator, prompt, benchmark, corpus, filter, top-k, and decoding.
+  Embed-ChunkOnly-Dense:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: faiss
+        index_path: "data/chunk only/faiss_index"
+        index_version: chunk-only-faiss-v1
+        model: intfloat/multilingual-e5-large
+        score_threshold: 0.3
+        expand_units: true
+        embedded_text: chunk_text_only
+      sparse:
+        enabled: false
+      graph:
+        enabled: false
+      fusion:
+        enabled: false
+      reranker:
+        enabled: false
+    generation:
+      provider: openai_compatible
+      model: env:LLM_BASE_MODEL
+      prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge:
+      provider: none
+    agent:
+      enabled: false
+      mode: none
+      implementation_status: implemented
+    output:
+      root: evaluation_runs/ablation
+    seed: 42
+    metadata:
+      purpose: controlled E2E embedding-text ablation
+      experiment_family: embedding
+      ablation_family: embedding
+      embedded_text: chunk_text_only
+
+  Embed-ChunkMeta-Dense:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: faiss
+        index_path: "data/chunk metadata"
+        index_version: chunk-metadata-faiss-v1
+        model: intfloat/multilingual-e5-large
+        score_threshold: 0.3
+        expand_units: true
+        embedded_text: header_plus_chunk_text
+      sparse:
+        enabled: false
+      graph:
+        enabled: false
+      fusion:
+        enabled: false
+      reranker:
+        enabled: false
+    generation:
+      provider: openai_compatible
+      model: env:LLM_BASE_MODEL
+      prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge:
+      provider: none
+    agent:
+      enabled: false
+      mode: none
+      implementation_status: implemented
+    output:
+      root: evaluation_runs/ablation
+    seed: 42
+    metadata:
+      purpose: controlled E2E embedding-text ablation
+      experiment_family: embedding
+      ablation_family: embedding
+      embedded_text: header_plus_chunk_text
+
+  # Production-intent LLM comparison contract. Model selectors use env:NAME so
+  # no unverified provider model is hard-coded. The official benchmark and
+  # FAISS index paths intentionally fail preflight until those artifacts exist.
+  LLM-BaseReasoning:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: faiss
+        index_path: data/faiss_index
+        index_version: official-faiss-pending
+        model: intfloat/multilingual-e5-large
+        score_threshold: 0.3
+        expand_units: true
+      sparse:
+        enabled: false
+      graph:
+        enabled: false
+      fusion:
+        enabled: false
+      reranker:
+        enabled: false
+    generation:
+      provider: openai_compatible
+      model: env:LLM_BASE_MODEL
+      prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge:
+      provider: none
+    agent:
+      enabled: false
+      type: plain_rag
+    output:
+      root: evaluation_runs/ablation
+    seed: 42
+    metadata:
+      purpose: controlled production-intent LLM ablation; execution pending verified dependencies
+      experiment_family: llm-reasoning-model
+
+  LLM-CoTReasoning:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: faiss
+        index_path: data/faiss_index
+        index_version: official-faiss-pending
+        model: intfloat/multilingual-e5-large
+        score_threshold: 0.3
+        expand_units: true
+      sparse:
+        enabled: false
+      graph:
+        enabled: false
+      fusion:
+        enabled: false
+      reranker:
+        enabled: false
+    generation:
+      provider: openai_compatible
+      model: env:LLM_BASE_MODEL
+      prompt_strategy: reasoning
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge:
+      provider: none
+    agent:
+      enabled: false
+      type: plain_rag
+    output:
+      root: evaluation_runs/ablation
+    seed: 42
+    metadata:
+      purpose: controlled production-intent LLM ablation; execution pending verified dependencies
+      experiment_family: llm-reasoning-model
+
+  LLM-LargerModel:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: faiss
+        index_path: data/faiss_index
+        index_version: official-faiss-pending
+        model: intfloat/multilingual-e5-large
+        score_threshold: 0.3
+        expand_units: true
+      sparse:
+        enabled: false
+      graph:
+        enabled: false
+      fusion:
+        enabled: false
+      reranker:
+        enabled: false
+    generation:
+      provider: openai_compatible
+      model: env:LLM_LARGER_MODEL
+      prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge:
+      provider: none
+    agent:
+      enabled: false
+      type: plain_rag
+    output:
+      root: evaluation_runs/ablation
+    seed: 42
+    metadata:
+      purpose: controlled production-intent LLM ablation; execution pending verified dependencies
+      experiment_family: llm-reasoning-model
+
+  # Controlled agent comparison. These two executable configs intentionally
+  # differ only in the agent section; production dependencies remain explicit.
+  Agent-None-PlainRAG:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: faiss
+        index_path: data/faiss_index
+        index_version: official-faiss-pending
+        model: intfloat/multilingual-e5-large
+        score_threshold: 0.3
+        expand_units: true
+      sparse: {enabled: false}
+      graph: {enabled: false}
+      fusion: {enabled: false}
+      reranker: {enabled: false}
+    generation:
+      provider: openai_compatible
+      model: env:LLM_BASE_MODEL
+      prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge: {provider: none}
+    agent:
+      enabled: false
+      mode: none
+      implementation_status: implemented
+    output: {root: evaluation_runs/ablation}
+    seed: 42
+    metadata:
+      purpose: controlled production-intent agent ablation; execution pending verified dependencies
+      experiment_family: agent-orchestration
+
+  Agent-SimplePlanner:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: faiss
+        index_path: data/faiss_index
+        index_version: official-faiss-pending
+        model: intfloat/multilingual-e5-large
+        score_threshold: 0.3
+        expand_units: true
+      sparse: {enabled: false}
+      graph: {enabled: false}
+      fusion: {enabled: false}
+      reranker: {enabled: false}
+    generation:
+      provider: openai_compatible
+      model: env:LLM_BASE_MODEL
+      prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge: {provider: none}
+    agent:
+      enabled: true
+      mode: simple_planner
+      implementation_status: implemented
+      max_steps: 3
+      max_tool_calls: 1
+      max_retries: 0
+      deadline_seconds: 60.0
+      allowed_tools:
+        - retrieve
+      trace_enabled: true
+    output: {root: evaluation_runs/ablation}
+    seed: 42
+    metadata:
+      purpose: controlled production-intent agent ablation; execution pending verified dependencies
+      experiment_family: agent-orchestration
+
+  Agent-MultiTool-Orchestrated:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: faiss
+        index_path: data/faiss_index
+        index_version: official-faiss-pending
+        model: intfloat/multilingual-e5-large
+        score_threshold: 0.3
+        expand_units: true
+      sparse: {enabled: false}
+      graph: {enabled: false}
+      fusion: {enabled: false}
+      reranker: {enabled: false}
+    generation:
+      provider: openai_compatible
+      model: env:LLM_BASE_MODEL
+      prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge: {provider: none}
+    agent:
+      enabled: false
+      mode: multi_tool
+      implementation_status: deferred
+      reason: only retrieval has a stable approved typed tool contract
+      missing_dependencies:
+        - second approved read-only typed tool
+        - bounded multi-tool acceptance contract
+      validated_interfaces:
+        - retrieval tool input/output and failure contract
+      remaining_work:
+        - approve at least two tools and define deterministic routing tests
+      smoke_evidence: structural dry-run only; no live agent result
+    output: {root: evaluation_runs/ablation}
+    seed: 42
+    metadata:
+      purpose: controlled production-intent agent ablation; execution pending verified dependencies
+      experiment_family: agent-orchestration
