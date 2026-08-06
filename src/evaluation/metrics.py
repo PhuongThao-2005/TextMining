@@ -109,9 +109,16 @@ def jaccard_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> fl
 
 def aggregate(rows: list[dict[str, Any]], metric_keys: list[str]) -> dict[str, Any]:
     out: dict[str, Any] = {"count": len(rows)}
+    denominators: dict[str, int] = {}
     for key in metric_keys:
-        values = [float(row.get(key, 0.0)) for row in rows]
+        values = [
+            float(row[key])
+            for row in rows
+            if row.get(key) is not None
+        ]
+        denominators[key] = len(values)
         out[key] = sum(values) / len(values) if values else 0.0
+    out["metric_denominators"] = denominators
     return out
 
 
@@ -125,6 +132,11 @@ def aggregate_by(rows: list[dict[str, Any]], field: str, metric_keys: list[str])
 def is_unanswerable_text(text: str) -> bool:
     norm = normalize_text(text)
     markers = [
+        "không có đủ thông tin",
+        "không đủ thông tin",
+        "không đủ căn cứ",
+        "không tìm thấy",
+        "không có thông tin",
         "khong co du thong tin",
         "khong du thong tin",
         "khong du can cu",
