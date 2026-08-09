@@ -1,0 +1,81 @@
+benchmark:
+  path: /kaggle/input/datasets/phuongthao205/qa-legalrag/Benchmark/qa_final.jsonl
+  version: qa-final-v1
+corpus:
+  path: /kaggle/input/datasets/nguyenlethienlyy/text-mining-data-preprocessed/documents.jsonl
+  version: v2
+retrieval:
+  top_k: 5
+  filter_profile: broad
+  dense:
+    enabled: true
+    backend: faiss
+    index_path: /kaggle/working/e2e_runtime_inputs/faiss
+    index_version: official-faiss-pending
+    model: intfloat/multilingual-e5-large
+    score_threshold: 0.3
+    expand_units: true
+    index_file: /kaggle/working/e2e_runtime_inputs/faiss/index.faiss
+    payloads_path: /kaggle/working/e2e_runtime_inputs/faiss/payloads.jsonl
+  sparse:
+    enabled: true
+    backend: bm25
+    index_path: /kaggle/input/datasets/nguyenlethienlyy/bm25-tokenized/bm25
+    version: official-bm25-pending
+    layout: sharded
+  graph:
+    enabled: true
+    backend: structural_pickle
+    path: /kaggle/input/datasets/myvnthdim/kg-pkl/knowledge_graph.gpickle
+    version: official-kg-pending
+    max_seeds: 3
+    max_hop: 2
+    max_chunks: 10
+  fusion:
+    enabled: true
+    strategy: rrf
+    rrf_k: 60
+  reranker:
+    enabled: true
+    model: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+generation:
+  provider: openai_compatible
+  model: gpt-4o-mini
+  prompt_strategy: base
+  prompt_template_version: legal-grounded-answer-v2-citations
+  temperature: 0.0
+  top_p: 1.0
+  max_output_tokens: 1024
+  timeout_seconds: 60.0
+  max_retries: 2
+  api_key_env: LLM_API_KEY
+  base_url_env: LLM_BASE_URL
+  model_env: LLM_BASE_MODEL
+judge:
+  provider: none
+agent:
+  enabled: false
+  type: plain_rag
+output:
+  root: /kaggle/working/evaluation_runs/ablation
+seed: 42
+metadata:
+  purpose: controlled production-intent LLM ablation; execution pending verified dependencies
+  experiment_family: llm-reasoning-model
+  runtime_path_overrides:
+    benchmark: /kaggle/input/datasets/phuongthao205/qa-legalrag/Benchmark/qa_final.jsonl
+    corpus: /kaggle/input/datasets/nguyenlethienlyy/text-mining-data-preprocessed/documents.jsonl
+    faiss_index: /kaggle/input/datasets/kittrntunk/faiss-chunk-meta/index.faiss
+    faiss_payloads: /kaggle/input/datasets/kittrntunk/faiss-chunk-meta/payloads.jsonl
+    graph: /kaggle/input/datasets/myvnthdim/kg-pkl/knowledge_graph.gpickle
+    bm25_shards: /kaggle/input/datasets/nguyenlethienlyy/bm25-tokenized/bm25
+    runs_root: /kaggle/working/evaluation_runs/ablation
+  kaggle_input_identities:
+    benchmark: /kaggle/input/datasets/phuongthao205/qa-legalrag/Benchmark/qa_final.jsonl
+    corpus: /kaggle/input/datasets/nguyenlethienlyy/text-mining-data-preprocessed/documents.jsonl
+    faiss_index: /kaggle/input/datasets/kittrntunk/faiss-chunk-meta/index.faiss
+    faiss_payloads: /kaggle/input/datasets/kittrntunk/faiss-chunk-meta/payloads.jsonl
+    bm25_shards: /kaggle/input/datasets/nguyenlethienlyy/bm25-tokenized/bm25
+    graph: /kaggle/input/datasets/myvnthdim/kg-pkl/knowledge_graph.gpickle
+runtime:
+  selected_device: cuda

@@ -83,12 +83,16 @@ class HybridRetriever:
         use_rrf: bool = False,
         use_cross_encoder: bool = False,
         rrf_k: int = 60,
+        rerank_candidate_multiplier: int = 10,
     ) -> None:
+        if rerank_candidate_multiplier < 1:
+            raise ValueError("rerank_candidate_multiplier must be at least 1.")
         self.dense_retriever = dense_retriever
         self.sparse_retriever = sparse_retriever
         self.use_rrf = use_rrf
         self.use_cross_encoder = use_cross_encoder
         self.rrf_k = rrf_k
+        self.rerank_candidate_multiplier = rerank_candidate_multiplier
 
         self._cross_encoder = None
         if use_cross_encoder:
@@ -283,11 +287,11 @@ class HybridRetriever:
 
         t0 = time.perf_counter()
 
-        # Build (query, passage) pairs
-        pairs = []
-        for hit in hits:
-            text = str(hit.payload.get("chunk_text") or "")
-            pairs.append((query, text))
+        # Legal questions often identify a provision through its document title,
+        # number, or article path.  Those fields are part of the retrieval
+        # payload but were previously hidden from the Cross-Encoder, so a
+        # semantically similar chunk from the wrong instrument could win.
+        pairs = [(query, self._rerank_passage(hit.payload)) for hit in hits]
 
         # Score with Cross-Encoder
         ce_scores = self._cross_encoder.predict(pairs)
@@ -305,6 +309,25 @@ class HybridRetriever:
 
         latency = time.perf_counter() - t0
         return scored[:top_n], latency
+
+    @staticmethod
+    def _rerank_passage(payload: dict[str, Any]) -> str:
+        """Build a metadata-aware passage for legal Cross-Encoder reranking."""
+        fields = (
+            payload.get("citation_anchor"),
+            payload.get("title"),
+            payload.get("so_ky_hieu"),
+            payload.get("path"),
+            payload.get("chunk_text"),
+        )
+        parts: list[str] = []
+        seen: set[str] = set()
+        for value in fields:
+            text = str(value or "").strip()
+            if text and text not in seen:
+                seen.add(text)
+                parts.append(text)
+        return "\n".join(parts)
 
     # ------------------------------------------------------------------
     # Main retrieve
@@ -387,7 +410,7 @@ class HybridRetriever:
         ce_latency = 0.0
         if self.use_cross_encoder and self._cross_encoder is not None:
             # Feed fused candidates (more than top_n) to CE for reranking
-            candidates = fused_hits[: top_n * 3]  # rerank top candidates
+            candidates = fused_hits[: top_n * self.rerank_candidate_multiplier]
             fused_hits, ce_latency = self._cross_encoder_rerank(
                 query, candidates, top_n=top_n
             )

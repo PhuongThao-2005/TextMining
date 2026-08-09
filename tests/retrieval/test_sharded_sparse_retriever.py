@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from retrieval.sparse_retriever import ShardedBM25SparseRetriever
+from retrieval.sparse_retriever import BM25SparseRetriever, ShardedBM25SparseRetriever
 from retrieval.stores import SearchHit
 
 
@@ -36,6 +36,59 @@ def test_searches_every_shard_and_merges_global_top_k() -> None:
     assert second.calls == [("nhãn hiệu", 3)]
     assert retriever.shard_count == 2
     assert retriever.total_documents == 4
+
+
+def test_local_ids_that_restart_in_each_shard_do_not_collide() -> None:
+    first = _FakeShard([SearchHit(point_id="0", score=2.0, payload={})], 1)
+    second = _FakeShard([SearchHit(point_id="0", score=3.0, payload={})], 1)
+    retriever = ShardedBM25SparseRetriever(
+        shards=[("shard_00", first), ("shard_01", second)]  # type: ignore[list-item]
+    )
+
+    hits = retriever.search("lao động", top_k=2)
+
+    assert [hit.point_id for hit in hits] == ["shard_01:0", "shard_00:0"]
+    assert first.calls == [("lao động", 2)]
+    assert second.calls == [("lao động", 2)]
+
+
+def test_disk_backed_search_loads_shards_lazily_in_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for name in ("shard_00", "shard_01", "shard_02"):
+        shard = tmp_path / name
+        shard.mkdir()
+        (shard / "bm25_index.pkl").write_bytes(b"index")
+        (shard / "bm25_metadata.pkl").write_bytes(b"metadata")
+
+    load_calls: list[str] = []
+
+    class _Scores:
+        def __init__(self, score: float) -> None:
+            self.score = score
+
+        def get_scores(self, _tokens: list[str]) -> list[float]:
+            return [self.score]
+
+    def fake_load(cls, shard_dir: Path) -> BM25SparseRetriever:
+        load_calls.append(shard_dir.name)
+        index = int(shard_dir.name.rsplit("_", 1)[1])
+        return BM25SparseRetriever(
+            bm25=_Scores(float(index + 1)),
+            chunk_ids=[f"chunk-{index}"],
+            payloads=[{"chunk_id": f"chunk-{index}"}],
+            tokenizer=lambda value: value.split(),
+        )
+
+    monkeypatch.setattr(BM25SparseRetriever, "load", classmethod(fake_load))
+    retriever = ShardedBM25SparseRetriever.load(tmp_path)
+
+    assert load_calls == []
+    hits = retriever.search("query", top_k=2)
+
+    assert load_calls == ["shard_00", "shard_01", "shard_02"]
+    assert [hit.point_id for hit in hits] == ["chunk-2", "chunk-1"]
+    assert retriever.shard_count == 3
 
 
 def test_discovers_complete_shards_and_rejects_partial_layout(tmp_path: Path) -> None:

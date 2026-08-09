@@ -120,3 +120,29 @@ def test_sparse_candidates_honor_the_shared_filter_profile() -> None:
     assert [hit.point_id for hit in current] == ["active"]
     broad, _ = hybrid._sparse_search("q", top_k=5, filter_profile="broad")
     assert [hit.point_id for hit in broad] == ["active", "expired"]
+
+
+def test_cross_encoder_passage_includes_legal_identity_metadata() -> None:
+    passage = HybridRetriever._rerank_passage(
+        {
+            "citation_anchor": "Nghị định 204/2004/NĐ-CP, Điều 1",
+            "title": "Chế độ tiền lương",
+            "so_ky_hieu": "204/2004/NĐ-CP",
+            "path": "Điều 1",
+            "chunk_text": "Nội dung quy định.",
+        }
+    )
+
+    assert "Nghị định 204/2004/NĐ-CP" in passage
+    assert "Chế độ tiền lương" in passage
+    assert "204/2004/NĐ-CP" in passage
+    assert "Điều 1" in passage
+    assert passage.endswith("Nội dung quy định.")
+
+
+def test_cross_encoder_passage_deduplicates_identical_metadata() -> None:
+    passage = HybridRetriever._rerank_passage(
+        {"citation_anchor": "Điều 1", "path": "Điều 1", "chunk_text": "Nội dung"}
+    )
+
+    assert passage.splitlines() == ["Điều 1", "Nội dung"]

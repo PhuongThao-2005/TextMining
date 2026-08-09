@@ -563,7 +563,11 @@ def _retrieve_with_latency(
     if hasattr(retriever, "retrieve_with_latency"):
         result, breakdown = retriever.retrieve_with_latency(
             question,
-            top_k=max(top_k * 3, top_k),
+            # Keep the generator context bounded by ``top_k`` while giving
+            # fusion/reranking a substantially deeper candidate pool.  Legal
+            # corpora contain many near-duplicate provisions across instruments;
+            # a 3x pool was too shallow to recover the labelled document.
+            top_k=max(top_k * 10, top_k),
             top_n=top_k,
             filter_profile=filter_profile,
         )

@@ -401,7 +401,7 @@ def build_ablation_stack(
         collection_name=str(dense.get("collection") or "legal_chunks"),
         model=str(dense.get("model") or "intfloat/multilingual-e5-large"),
         dev_hashing=backend == "hashing",
-        top_k=max(int(retrieval["top_k"]) * 3, int(retrieval["top_k"])),
+        top_k=max(int(retrieval["top_k"]) * 10, int(retrieval["top_k"])),
         top_n=int(retrieval["top_k"]),
         score_threshold=dense.get("score_threshold", 0.3),
         expand_units=bool(dense.get("expand_units", True)) and not bool(retrieval.get("graph", {}).get("enabled")),

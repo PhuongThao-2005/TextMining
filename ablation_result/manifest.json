@@ -1,0 +1,233 @@
+{
+  "run_id": "20260809T054531825203Z_llm-basereasoning_2cd1a914",
+  "config_name": "LLM-BaseReasoning",
+  "resolved_config": {
+    "benchmark": {
+      "path": "/kaggle/input/datasets/phuongthao205/qa-legalrag/Benchmark/qa_final.jsonl",
+      "version": "qa-final-v1"
+    },
+    "corpus": {
+      "path": "/kaggle/input/datasets/nguyenlethienlyy/text-mining-data-preprocessed/documents.jsonl",
+      "version": "v2"
+    },
+    "retrieval": {
+      "top_k": 5,
+      "filter_profile": "broad",
+      "dense": {
+        "enabled": true,
+        "backend": "faiss",
+        "index_path": "/kaggle/working/e2e_runtime_inputs/faiss",
+        "index_version": "official-faiss-pending",
+        "model": "intfloat/multilingual-e5-large",
+        "score_threshold": 0.3,
+        "expand_units": true,
+        "index_file": "/kaggle/working/e2e_runtime_inputs/faiss/index.faiss",
+        "payloads_path": "/kaggle/working/e2e_runtime_inputs/faiss/payloads.jsonl"
+      },
+      "sparse": {
+        "enabled": true,
+        "backend": "bm25",
+        "index_path": "/kaggle/input/datasets/nguyenlethienlyy/bm25-tokenized/bm25",
+        "version": "official-bm25-pending",
+        "layout": "sharded"
+      },
+      "graph": {
+        "enabled": true,
+        "backend": "structural_pickle",
+        "path": "/kaggle/input/datasets/myvnthdim/kg-pkl/knowledge_graph.gpickle",
+        "version": "official-kg-pending",
+        "max_seeds": 3,
+        "max_hop": 2,
+        "max_chunks": 10
+      },
+      "fusion": {
+        "enabled": true,
+        "strategy": "rrf",
+        "rrf_k": 60
+      },
+      "reranker": {
+        "enabled": true,
+        "model": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
+      }
+    },
+    "generation": {
+      "provider": "openai_compatible",
+      "model": "gpt-4o-mini",
+      "prompt_strategy": "base",
+      "prompt_template_version": "legal-grounded-answer-v2-citations",
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_output_tokens": 1024,
+      "timeout_seconds": 60.0,
+      "max_retries": 2,
+      "api_key_env": "LLM_API_KEY",
+      "base_url_env": "LLM_BASE_URL",
+      "model_env": "LLM_BASE_MODEL"
+    },
+    "judge": {
+      "provider": "none"
+    },
+    "agent": {
+      "enabled": false,
+      "type": "plain_rag"
+    },
+    "output": {
+      "root": "/kaggle/working/evaluation_runs/ablation"
+    },
+    "seed": 42,
+    "metadata": {
+      "purpose": "controlled production-intent LLM ablation; execution pending verified dependencies",
+      "experiment_family": "llm-reasoning-model",
+      "runtime_path_overrides": {
+        "benchmark": "/kaggle/input/datasets/phuongthao205/qa-legalrag/Benchmark/qa_final.jsonl",
+        "corpus": "/kaggle/input/datasets/nguyenlethienlyy/text-mining-data-preprocessed/documents.jsonl",
+        "faiss_index": "/kaggle/input/datasets/kittrntunk/faiss-chunk-meta/index.faiss",
+        "faiss_payloads": "/kaggle/input/datasets/kittrntunk/faiss-chunk-meta/payloads.jsonl",
+        "graph": "/kaggle/input/datasets/myvnthdim/kg-pkl/knowledge_graph.gpickle",
+        "bm25_shards": "/kaggle/input/datasets/nguyenlethienlyy/bm25-tokenized/bm25",
+        "runs_root": "/kaggle/working/evaluation_runs/ablation"
+      },
+      "kaggle_input_identities": {
+        "benchmark": "/kaggle/input/datasets/phuongthao205/qa-legalrag/Benchmark/qa_final.jsonl",
+        "corpus": "/kaggle/input/datasets/nguyenlethienlyy/text-mining-data-preprocessed/documents.jsonl",
+        "faiss_index": "/kaggle/input/datasets/kittrntunk/faiss-chunk-meta/index.faiss",
+        "faiss_payloads": "/kaggle/input/datasets/kittrntunk/faiss-chunk-meta/payloads.jsonl",
+        "bm25_shards": "/kaggle/input/datasets/nguyenlethienlyy/bm25-tokenized/bm25",
+        "graph": "/kaggle/input/datasets/myvnthdim/kg-pkl/knowledge_graph.gpickle"
+      }
+    },
+    "runtime": {
+      "selected_device": "cuda"
+    }
+  },
+  "config_file_path": "/kaggle/working/TextMining/configs/ablation_configs.yaml",
+  "config_hash": "2cd1a91411bb3df0ff89b66b2da8a9ffc9e8185554d1414f871cf51e01e3447f",
+  "start_time": "2026-08-09T05:45:31.828783+00:00",
+  "end_time": "2026-08-09T05:53:48.187181+00:00",
+  "status": "completed",
+  "case_limit": 2,
+  "benchmark_path": "/kaggle/input/datasets/phuongthao205/qa-legalrag/Benchmark/qa_final.jsonl",
+  "benchmark_version": "qa-final-v1",
+  "corpus_path": "/kaggle/input/datasets/nguyenlethienlyy/text-mining-data-preprocessed/documents.jsonl",
+  "corpus_version": "v2",
+  "index_path": "/kaggle/working/e2e_runtime_inputs/faiss",
+  "index_version": "official-faiss-pending",
+  "graph_path": "/kaggle/input/datasets/myvnthdim/kg-pkl/knowledge_graph.gpickle",
+  "graph_version": "official-kg-pending",
+  "selected_retrieval_stack": {
+    "top_k": 5,
+    "filter_profile": "broad",
+    "dense": {
+      "enabled": true,
+      "backend": "faiss",
+      "index_path": "/kaggle/working/e2e_runtime_inputs/faiss",
+      "index_version": "official-faiss-pending",
+      "model": "intfloat/multilingual-e5-large",
+      "score_threshold": 0.3,
+      "expand_units": true,
+      "index_file": "/kaggle/working/e2e_runtime_inputs/faiss/index.faiss",
+      "payloads_path": "/kaggle/working/e2e_runtime_inputs/faiss/payloads.jsonl"
+    },
+    "sparse": {
+      "enabled": true,
+      "backend": "bm25",
+      "index_path": "/kaggle/input/datasets/nguyenlethienlyy/bm25-tokenized/bm25",
+      "version": "official-bm25-pending",
+      "layout": "sharded"
+    },
+    "graph": {
+      "enabled": true,
+      "backend": "structural_pickle",
+      "path": "/kaggle/input/datasets/myvnthdim/kg-pkl/knowledge_graph.gpickle",
+      "version": "official-kg-pending",
+      "max_seeds": 3,
+      "max_hop": 2,
+      "max_chunks": 10
+    },
+    "fusion": {
+      "enabled": true,
+      "strategy": "rrf",
+      "rrf_k": 60
+    },
+    "reranker": {
+      "enabled": true,
+      "model": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
+    }
+  },
+  "selected_generation_stack": {
+    "provider": "openai_compatible",
+    "model": "gpt-4o-mini",
+    "prompt_strategy": "base",
+    "prompt_template_version": "legal-grounded-answer-v2-citations",
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "max_output_tokens": 1024,
+    "timeout_seconds": 60.0,
+    "max_retries": 2,
+    "api_key_env": "LLM_API_KEY",
+    "base_url_env": "LLM_BASE_URL",
+    "model_env": "LLM_BASE_MODEL"
+  },
+  "generation_provider": "openai_compatible",
+  "generation_model": "gpt-4o-mini",
+  "prompt_strategy": "base",
+  "prompt_template_version": "legal-grounded-answer-v2-citations",
+  "prompt_template_hash": "ccedea197be52710539ae0d2e105abf9ff73b15c5e1e31443e183ff4743c1871",
+  "citation_contract_version": "retrieved-context-citations-v1",
+  "citation_contract_hash": "f12b25de1289a32abaff5a487c7ad898c404550a44748aca24dc47b79c2564f6",
+  "generation_decoding": {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "max_output_tokens": 1024,
+    "timeout_seconds": 60.0,
+    "max_retries": 2
+  },
+  "selected_agent_stack": {
+    "enabled": false,
+    "type": "plain_rag"
+  },
+  "agent_mode": "none",
+  "agent_enabled": false,
+  "agent_version": "agent-ablation-v1",
+  "planner_policy": null,
+  "planner_policy_version": null,
+  "planner_prompt_hash": null,
+  "max_steps": null,
+  "max_tool_calls": null,
+  "allowed_tools": [],
+  "trace_schema_version": "agent-trace-v1",
+  "tool_contract_version": "retrieval-tool-v1",
+  "seed": 42,
+  "hostname": "db04132b31d8",
+  "execution_environment": {
+    "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
+    "python_version": "3.12.13",
+    "packages": {
+      "PyYAML": "6.0.3",
+      "google-genai": "1.68.0",
+      "openai": "2.32.0",
+      "faiss-cpu": "1.15.0",
+      "rank-bm25": "0.2.2",
+      "sentence-transformers": "5.4.1"
+    },
+    "selected_device": "cuda"
+  },
+  "git_commit": "41a7bdc818a54b261b78fefe6ccc6f7e5ebe6521",
+  "git_dirty": true,
+  "command_line_arguments": [],
+  "output_directory": "/kaggle/working/evaluation_runs/ablation/20260809T054531825203Z_llm-basereasoning_2cd1a914",
+  "output_artifacts": {
+    "manifest": "/kaggle/working/evaluation_runs/ablation/20260809T054531825203Z_llm-basereasoning_2cd1a914/manifest.json",
+    "resolved_config": "/kaggle/working/evaluation_runs/ablation/20260809T054531825203Z_llm-basereasoning_2cd1a914/resolved_config.yaml",
+    "predictions": "/kaggle/working/evaluation_runs/ablation/20260809T054531825203Z_llm-basereasoning_2cd1a914/e2e_predictions.jsonl",
+    "metrics": "/kaggle/working/evaluation_runs/ablation/20260809T054531825203Z_llm-basereasoning_2cd1a914/e2e_metrics.json",
+    "latency": "/kaggle/working/evaluation_runs/ablation/20260809T054531825203Z_llm-basereasoning_2cd1a914/latency.json",
+    "errors": "/kaggle/working/evaluation_runs/ablation/20260809T054531825203Z_llm-basereasoning_2cd1a914/errors.jsonl",
+    "report": "/kaggle/working/evaluation_runs/ablation/20260809T054531825203Z_llm-basereasoning_2cd1a914/report.md"
+  },
+  "completed_case_count": 2,
+  "failed_case_count": 0,
+  "skipped_case_count": 0,
+  "evaluated_case_count": 2,
+  "error_summary": null
+}

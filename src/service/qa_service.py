@@ -117,6 +117,10 @@ class PreflightCheck:
     status: str
     message: str
 
+    @property
+    def detail(self) -> str:
+        return self.message
+
 
 @dataclass(frozen=True)
 class PreflightResult:

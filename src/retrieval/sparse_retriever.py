@@ -15,6 +15,7 @@ Usage::
 """
 from __future__ import annotations
 
+import gc
 import json
 import logging
 import pickle
@@ -298,10 +299,25 @@ class ShardedBM25SparseRetriever:
     this class follows that artifact contract and does not rewrite their IDF.
     """
 
-    def __init__(self, *, shards: list[tuple[str, BM25SparseRetriever]]) -> None:
-        if not shards:
+    def __init__(
+        self,
+        *,
+        shards: list[tuple[str, BM25SparseRetriever]] | None = None,
+        shard_dirs: list[Path] | None = None,
+    ) -> None:
+        in_memory = list(shards or [])
+        on_disk = [Path(path) for path in (shard_dirs or [])]
+        if bool(in_memory) == bool(on_disk):
+            if in_memory:
+                raise ValueError("Provide in-memory BM25 shards or shard directories, not both.")
             raise ValueError("Sharded BM25 requires at least one shard.")
-        self._shards = shards
+        self._shards = in_memory
+        self._shard_dirs = on_disk
+        self._total_documents_cache = (
+            sum(shard.total_documents for _, shard in in_memory)
+            if in_memory
+            else None
+        )
 
     @staticmethod
     def discover_shard_dirs(index_root: Path) -> list[Path]:
@@ -334,42 +350,95 @@ class ShardedBM25SparseRetriever:
         *,
         shard_dirs: list[Path] | None = None,
     ) -> "ShardedBM25SparseRetriever":
-        """Eagerly load all shards once so each benchmark query is fast."""
+        """Keep shard paths on disk; each query loads and releases one at a time."""
         resolved_dirs = shard_dirs or cls.discover_shard_dirs(index_root)
         if not resolved_dirs:
             raise FileNotFoundError(f"No complete BM25 shard_* directories found at {index_root}")
-        shards: list[tuple[str, BM25SparseRetriever]] = []
-        for shard_dir in resolved_dirs:
-            logger.info("Loading BM25 shard %s", shard_dir.name)
-            shard = BM25SparseRetriever.load(shard_dir)
-            if not isinstance(shard, BM25SparseRetriever):
-                raise RuntimeError(f"Nested sharded BM25 layout is not supported: {shard_dir}")
-            shards.append((shard_dir.name, shard))
         logger.info(
-            "Loaded sharded BM25: %d shards, %d documents",
-            len(shards),
-            sum(shard.total_documents for _, shard in shards),
+            "Prepared memory-bounded sharded BM25: %d independent shard paths",
+            len(resolved_dirs),
         )
-        return cls(shards=shards)
+        return cls(shard_dirs=resolved_dirs)
+
+    @staticmethod
+    def _merge_shard_hits(
+        best: dict[str, tuple[float, int, int, SearchHit]],
+        *,
+        shard_index: int,
+        shard_name: str,
+        shard: BM25SparseRetriever,
+        query: str,
+        top_k: int,
+    ) -> None:
+        """Search one independent shard and merge only its bounded candidates."""
+        for local_rank, hit in enumerate(shard.search(query, top_k=top_k), start=1):
+            payload_chunk_id = hit.payload.get("chunk_id")
+            if payload_chunk_id is not None and str(payload_chunk_id).strip():
+                # A corpus chunk_id is global, so genuine duplicates across
+                # shards should collapse to the highest-scoring occurrence.
+                merge_id = str(payload_chunk_id)
+                merged_hit = hit
+            else:
+                # Shards may number their metadata from zero independently.
+                # Namespace such local IDs before merging so shard_01/0 does
+                # not overwrite shard_00/0.
+                merge_id = f"{shard_name}:{hit.point_id}"
+                merged_hit = SearchHit(
+                    point_id=merge_id,
+                    score=hit.score,
+                    payload=hit.payload,
+                )
+            candidate = (float(hit.score), shard_index, local_rank, merged_hit)
+            existing = best.get(merge_id)
+            if (
+                existing is None
+                or candidate[0] > existing[0]
+                or (
+                    candidate[0] == existing[0]
+                    and candidate[1:3] < existing[1:3]
+                )
+            ):
+                best[merge_id] = candidate
 
     def search(self, query: str, *, top_k: int = 20) -> list[SearchHit]:
         if top_k <= 0:
             return []
         best: dict[str, tuple[float, int, int, SearchHit]] = {}
-        for shard_index, (_, shard) in enumerate(self._shards):
-            for local_rank, hit in enumerate(shard.search(query, top_k=top_k), start=1):
-                chunk_id = str(hit.payload.get("chunk_id") or hit.point_id)
-                candidate = (float(hit.score), shard_index, local_rank, hit)
-                existing = best.get(chunk_id)
-                if (
-                    existing is None
-                    or candidate[0] > existing[0]
-                    or (
-                        candidate[0] == existing[0]
-                        and candidate[1:3] < existing[1:3]
+        if self._shards:
+            for shard_index, (shard_name, shard) in enumerate(self._shards):
+                self._merge_shard_hits(
+                    best,
+                    shard_index=shard_index,
+                    shard_name=shard_name,
+                    shard=shard,
+                    query=query,
+                    top_k=top_k,
+                )
+        else:
+            for shard_index, shard_dir in enumerate(self._shard_dirs):
+                logger.info(
+                    "Searching BM25 shard %d/%d: %s",
+                    shard_index + 1,
+                    len(self._shard_dirs),
+                    shard_dir.name,
+                )
+                shard = BM25SparseRetriever.load(shard_dir)
+                if not isinstance(shard, BM25SparseRetriever):
+                    raise RuntimeError(f"Nested sharded BM25 layout is not supported: {shard_dir}")
+                try:
+                    self._merge_shard_hits(
+                        best,
+                        shard_index=shard_index,
+                        shard_name=shard_dir.name,
+                        shard=shard,
+                        query=query,
+                        top_k=top_k,
                     )
-                ):
-                    best[chunk_id] = candidate
+                finally:
+                    # BM25 pickle + payload metadata can be large. Drop the
+                    # current shard before opening the next independent index.
+                    del shard
+                    gc.collect()
         ordered = sorted(
             best.items(),
             key=lambda item: (-item[1][0], item[1][1], item[1][2], item[0]),
@@ -383,8 +452,18 @@ class ShardedBM25SparseRetriever:
 
     @property
     def total_documents(self) -> int:
-        return sum(shard.total_documents for _, shard in self._shards)
+        if self._total_documents_cache is not None:
+            return self._total_documents_cache
+        total = 0
+        for shard_dir in self._shard_dirs:
+            with (shard_dir / "bm25_metadata.pkl").open("rb") as handle:
+                metadata = pickle.load(handle)
+            total += len(metadata["chunk_ids"])
+            del metadata
+            gc.collect()
+        self._total_documents_cache = total
+        return total
 
     @property
     def shard_count(self) -> int:
-        return len(self._shards)
+        return len(self._shards) or len(self._shard_dirs)

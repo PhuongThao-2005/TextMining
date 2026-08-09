@@ -1,0 +1,81 @@
+{
+  "unit": "milliseconds",
+  "stages": {
+    "dense_retrieval": {
+      "count": 2,
+      "mean": 1321.2453994999578,
+      "median": 1321.2453994999578,
+      "min": 819.7481929998958,
+      "max": 1822.7426060000198,
+      "p95": 1822.7426060000198
+    },
+    "sparse_retrieval": {
+      "count": 2,
+      "mean": 129487.37008600005,
+      "median": 129487.37008600005,
+      "min": 127323.02023600004,
+      "max": 131651.71993600007,
+      "p95": 131651.71993600007
+    },
+    "graph_traversal": {
+      "count": 2,
+      "mean": 2.0527629999378405,
+      "median": 2.0527629999378405,
+      "min": 2.044246999957977,
+      "max": 2.061278999917704,
+      "p95": 2.061278999917704
+    },
+    "fusion": {
+      "count": 2,
+      "mean": 0.07885300010457286,
+      "median": 0.07885300010457286,
+      "min": 0.07016400013526436,
+      "max": 0.08754200007388135,
+      "p95": 0.08754200007388135
+    },
+    "reranker": {
+      "count": 2,
+      "mean": 269.1287879999891,
+      "median": 269.1287879999891,
+      "min": 214.4125659999645,
+      "max": 323.84501000001364,
+      "p95": 323.84501000001364
+    },
+    "generation": {
+      "count": 2,
+      "mean": 3487.1837134999996,
+      "median": 3487.1837134999996,
+      "min": 3229.548954,
+      "max": 3744.818473,
+      "p95": 3744.818473
+    },
+    "planner_decision": null,
+    "tool_retrieval": null,
+    "agent_total": null,
+    "judge": null,
+    "serialization": {
+      "count": 2,
+      "mean": 0.0448485,
+      "median": 0.0448485,
+      "min": 0.042775,
+      "max": 0.046922,
+      "p95": 0.046922
+    },
+    "total": {
+      "count": 2,
+      "mean": 134568.85029,
+      "median": 134568.85029,
+      "min": 131590.950247,
+      "max": 137546.750333,
+      "p95": 137546.750333
+    }
+  },
+  "denominator": "Each stage uses cases with a recorded value for that stage; total includes successful, failed, and skipped cases.",
+  "counts": {
+    "total_input": 2,
+    "successful": 2,
+    "failed": 0,
+    "skipped": 0,
+    "evaluated": 2
+  }
+}
