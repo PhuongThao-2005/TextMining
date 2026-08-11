@@ -1,0 +1,155 @@
+{
+  "source_dirs": {
+    "dense": "evaluate-outputs\\graph_dense_eval_outputs",
+    "hybrid": "evaluate-outputs\\hybrid_graph_eval_outputs"
+  },
+  "source_manifests": {
+    "dense": {
+      "run_name": "graph_dense_generate_eval",
+      "modes": [
+        "DenseOnly",
+        "DenseGraph"
+      ],
+      "benchmark_path": "/kaggle/input/datasets/nguyenlethienlyy/legalrag-text-mining-benchmark/qa_final.jsonl",
+      "faiss_dir": "/kaggle/input/datasets/kittrntunk/faiss-chunk-meta",
+      "graph_path": "/kaggle/input/datasets/nguyenlethienlyy/legalrag-knowledge-graph/knowledge_graph.gpickle",
+      "embedding_model": "intfloat/multilingual-e5-large",
+      "generation_model": "gpt-4o-mini",
+      "base_url": "https://api.shopaikey.com/v1",
+      "search_k": 50,
+      "final_top_n": 10,
+      "k_values": [
+        1,
+        3,
+        5,
+        10
+      ],
+      "retrieval_metrics": [
+        "recall@1",
+        "hit@1",
+        "mrr@1",
+        "ndcg@1",
+        "precision@1",
+        "recall@3",
+        "hit@3",
+        "mrr@3",
+        "ndcg@3",
+        "precision@3",
+        "recall@5",
+        "hit@5",
+        "mrr@5",
+        "ndcg@5",
+        "precision@5",
+        "recall@10",
+        "hit@10",
+        "mrr@10",
+        "ndcg@10",
+        "precision@10"
+      ],
+      "generation_metrics": [
+        "exact_match",
+        "token_f1",
+        "rouge_l"
+      ],
+      "latency_metrics": [
+        "embedding_latency_sec",
+        "dense_search_latency_sec",
+        "graph_latency_sec",
+        "generation_latency_sec",
+        "total_latency_sec"
+      ],
+      "graph_seed_n": 5,
+      "graph_max_hop": 1,
+      "graph_context": 10,
+      "filter_profile": "broad",
+      "sample_limit": null,
+      "qa_total": 500,
+      "answerable_total": 400,
+      "unanswerable_total": 100,
+      "total_benchmark_time_sec": 5356.070242865
+    },
+    "hybrid": {
+      "run_name": "hybrid_graph_generate_eval",
+      "modes": [
+        "HybridOnly",
+        "HybridGraph"
+      ],
+      "benchmark_path": "/kaggle/input/datasets/nguyenlethienlyy/legalrag-text-mining-benchmark/qa_final.jsonl",
+      "faiss_dir": "/kaggle/input/datasets/kittrntunk/faiss-chunk-meta",
+      "bm25_dir": "/kaggle/input/datasets/nguyenlethienlyy/bm25-tokenized/bm25",
+      "graph_path": "/kaggle/input/datasets/nguyenlethienlyy/legalrag-knowledge-graph/knowledge_graph.gpickle",
+      "embedding_model": "intfloat/multilingual-e5-large",
+      "generation_model": "gpt-4o-mini",
+      "base_url": "https://api.shopaikey.com/v1",
+      "search_k": 50,
+      "final_top_n": 10,
+      "k_values": [
+        1,
+        3,
+        5,
+        10
+      ],
+      "rrf_k": 60,
+      "bm25_max_shards_in_memory": 1,
+      "bm25_precompute": true,
+      "bm25_precompute_latency_sec": 13495.036527211001,
+      "bm25_amortized_latency_sec": 26.990073054422,
+      "eval_start": 0,
+      "eval_end": 500,
+      "run_label": "q0000_q0500",
+      "retrieval_metrics": [
+        "recall@1",
+        "hit@1",
+        "mrr@1",
+        "ndcg@1",
+        "precision@1",
+        "recall@3",
+        "hit@3",
+        "mrr@3",
+        "ndcg@3",
+        "precision@3",
+        "recall@5",
+        "hit@5",
+        "mrr@5",
+        "ndcg@5",
+        "precision@5",
+        "recall@10",
+        "hit@10",
+        "mrr@10",
+        "ndcg@10",
+        "precision@10"
+      ],
+      "generation_metrics": [
+        "exact_match",
+        "token_f1",
+        "rouge_l"
+      ],
+      "latency_metrics": [
+        "embedding_latency_sec",
+        "dense_search_latency_sec",
+        "bm25_search_latency_sec",
+        "fusion_latency_sec",
+        "graph_latency_sec",
+        "generation_latency_sec",
+        "total_latency_sec"
+      ],
+      "graph_seed_n": 5,
+      "graph_max_hop": 1,
+      "graph_context": 10,
+      "filter_profile": "broad",
+      "sample_limit": null,
+      "qa_total": 500,
+      "answerable_total": 400,
+      "unanswerable_total": 100,
+      "total_benchmark_time_sec": 4089.094708708002
+    }
+  },
+  "outputs": [
+    "combined_e2e_cases.csv",
+    "combined_summary_all_modes.csv",
+    "comparison_report.md",
+    "delta_comparisons.csv",
+    "per_question_deltas.csv",
+    "report_ready_summary.csv"
+  ]
+}

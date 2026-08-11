@@ -1,3 +1,0 @@
-﻿summary_set,mode,evaluated,answerable,unanswerable,hit@10,recall@10,exact_match,token_f1,rouge_l,unanswerable_accuracy,avg_retrieved_count,avg_graph_added_count,avg_embedding_latency_sec,avg_dense_search_latency_sec,avg_graph_latency_sec,avg_generation_latency_sec,avg_total_latency_sec,median_total_latency_sec
-answerable_only,DenseOnly,400,400,0,0.5325,0.4854583333333333,0.0,0.19438809046362132,0.16618053445909023,,10.0,0.0,0.032975896612501575,0.7755274285849907,0.0,3.206072962264997,4.014576287462489,3.9197183375000577
-answerable_only,DenseGraph,400,400,0,0.5075,0.4669583333333333,0.0,0.1937834749438768,0.16570982164990058,,10.0,0.935,0.032975896612501575,0.7755274285849907,0.0025017896574999554,3.3089160854400053,4.119921200294998,3.954792639500056
