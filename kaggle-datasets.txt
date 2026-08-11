@@ -1,0 +1,7 @@
+Datasets để bạn không cần phải tải xuống:
+https://www.kaggle.com/datasets/nguyenlethienlyy/text-mining-data-preprocessed
+https://www.kaggle.com/datasets/kittrntunk/faiss-chunk-meta
+https://www.kaggle.com/datasets/kittrntunk/faisse-only-chunk
+https://www.kaggle.com/datasets/nguyenlethienlyy/legalrag-text-mining-benchmark
+https://www.kaggle.com/code/nguyenlethienlyy/faiss-retrieve-generate-graph
+https://www.kaggle.com/datasets/nguyenlethienlyy/bm25-tokenized
