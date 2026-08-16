@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Literal
 
 from retrieval import (
+    BM25Client,
+    BM25RemoteRetriever,
     HashingEmbedder,
     QdrantVectorStore,
     SentenceTransformerEmbedder,
@@ -17,6 +19,7 @@ from retrieval import (
 @dataclass(frozen=True)
 class RetrieverRuntimeConfig:
     store: Literal["faiss", "qdrant"] = "faiss"
+    backend: Literal["vector", "bm25"] = "vector"
     index_dir: str | Path = "data/faiss_index"
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str | None = None
@@ -27,9 +30,12 @@ class RetrieverRuntimeConfig:
     top_n: int = 10
     score_threshold: float | None = 0.3
     expand_units: bool = True
+    bm25_service_url: str | None = None
+    bm25_api_key: str | None = None
+    bm25_timeout_seconds: float = 300.0
 
 
-def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever:
+def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever | BM25RemoteRetriever:
     config = VectorIndexConfig(
         collection_name=runtime.collection_name,
         embedding_model=runtime.model,
@@ -64,6 +70,22 @@ def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever:
     else:
         raise ValueError(f"Unknown runtime.store={runtime.store!r}; expected 'faiss' or 'qdrant'.")
 
+    if runtime.backend == "bm25":
+        if runtime.dev_hashing:
+            raise ValueError("Remote BM25 retrieval requires a FAISS or Qdrant payload store; dev_hashing is unsupported.")
+        return BM25RemoteRetriever(
+            client=BM25Client(
+                base_url=runtime.bm25_service_url,
+                api_key=runtime.bm25_api_key,
+                timeout_seconds=runtime.bm25_timeout_seconds,
+            ),
+            payload_store=store,
+            top_k=runtime.top_k,
+            top_n=runtime.top_n,
+        )
+    if runtime.backend != "vector":
+        raise ValueError(f"Unknown runtime.backend={runtime.backend!r}; expected 'vector' or 'bm25'.")
+
     embedder_dimension = getattr(embedder, "dimension", None)
     store_dimension = getattr(store, "dimension", None)
     if (
@@ -77,4 +99,3 @@ def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever:
         )
 
     return VectorRetriever(config=config, embedder=embedder, store=store)
-

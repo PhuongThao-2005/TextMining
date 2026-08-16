@@ -10,7 +10,7 @@ import pytest
 
 import evaluation.retriever_factory as retriever_factory
 from evaluation.retriever_factory import RetrieverRuntimeConfig, build_vector_retriever
-from retrieval import VectorRetriever
+from retrieval import BM25RemoteRetriever, VectorRetriever
 from retrieval.sqlite_faiss_store import SQLitePayloadFaissVectorStore
 from retrieval.stores import InMemoryVectorStore, QdrantVectorStore
 
@@ -137,6 +137,23 @@ def test_dev_hashing_regression_still_builds_in_memory_retriever() -> None:
 
     assert isinstance(retriever, VectorRetriever)
     assert isinstance(retriever.store, InMemoryVectorStore)
+
+
+def test_bm25_backend_builds_remote_retriever_with_qdrant_payload_store(
+    fake_qdrant_store: None,
+) -> None:
+    runtime = RetrieverRuntimeConfig(
+        backend="bm25",
+        store="qdrant",
+        bm25_service_url="https://bm25.example.test",
+        bm25_api_key="test-key",
+    )
+
+    retriever = build_vector_retriever(runtime)
+
+    assert isinstance(retriever, BM25RemoteRetriever)
+    assert isinstance(retriever.payload_store, _FakeQdrantStore)
+    assert retriever.client.base_url == "https://bm25.example.test"
 
 
 def test_unknown_store_value_raises_value_error(fake_sentence_transformer_embedder: None) -> None:

@@ -75,6 +75,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out-dir", type=Path, default=Path("evaluation_runs/e2e"))
     parser.add_argument("--retrieval-top-k", type=int, default=10)
     parser.add_argument("--filter-profile", default="broad", choices=["current_law", "broad", "historical"])
+    parser.add_argument("--retriever-backend", choices=["vector", "bm25"], default="vector")
     parser.add_argument("--store", choices=["faiss", "qdrant"], default="faiss")
     parser.add_argument("--index-dir", type=Path, default=Path("data/faiss_index"))
     parser.add_argument("--collection", default="legal_chunks")
@@ -83,6 +84,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--retrieval-model", default="intfloat/multilingual-e5-large")
     parser.add_argument("--score-threshold", type=float, default=0.3)
     parser.add_argument("--no-expand-units", action="store_true")
+    parser.add_argument("--bm25-service-url", default=None, help="Remote BM25 URL; defaults to BM25_SERVICE_URL.")
+    parser.add_argument("--bm25-api-key", default=None, help="Remote BM25 API key; defaults to BM25_API_KEY.")
+    parser.add_argument("--bm25-timeout-seconds", type=float, default=300.0)
     parser.add_argument("--generator", choices=["gemini", "reference"], default="gemini")
     parser.add_argument("--generator-model", default="gemini-3.1-flash-lite")
     parser.add_argument("--judge", choices=["none", "gemini"], default="none")
@@ -116,6 +120,7 @@ def main() -> int:
     args = parse_args()
     retriever = build_vector_retriever(
         RetrieverRuntimeConfig(
+            backend=args.retriever_backend,
             store=args.store,
             index_dir=args.index_dir,
             qdrant_url=args.qdrant_url,
@@ -126,6 +131,9 @@ def main() -> int:
             top_n=args.retrieval_top_k,
             score_threshold=args.score_threshold,
             expand_units=not args.no_expand_units,
+            bm25_service_url=args.bm25_service_url,
+            bm25_api_key=args.bm25_api_key,
+            bm25_timeout_seconds=args.bm25_timeout_seconds,
         )
     )
 
@@ -163,7 +171,9 @@ def main() -> int:
 
     config = {
         "collection": args.collection,
+        "backend": args.retriever_backend,
         "store": args.store,
+        "bm25_service_url": args.bm25_service_url,
         "index_dir": str(args.index_dir),
         "qdrant_url": args.qdrant_url,
         "retrieval_model": args.retrieval_model,
@@ -251,3 +261,4 @@ __all__ = [
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

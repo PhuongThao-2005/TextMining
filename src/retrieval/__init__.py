@@ -2,6 +2,8 @@
 
 from .config import VectorIndexConfig, VectorPaths
 from .embeddings import HashingEmbedder, SentenceTransformerEmbedder
+from .bm25_client import BM25Client, BM25Hit, BM25Result, create_client_from_env
+from .bm25_retriever import BM25RemoteRetriever
 from .indexer import VectorIndexer
 from .retriever import VectorRetriever
 from .schema import RetrievalResult, RetrievedChunk
@@ -10,6 +12,10 @@ from .stores import InMemoryVectorStore, QdrantVectorStore
 
 __all__ = [
     "HashingEmbedder",
+    "BM25Client",
+    "BM25Hit",
+    "BM25RemoteRetriever",
+    "BM25Result",
     "InMemoryVectorStore",
     "LoadStats",
     "QdrantVectorStore",
@@ -21,6 +27,7 @@ __all__ = [
     "VectorIndexConfig",
     "VectorPaths",
     "VectorRetriever",
+    "create_client_from_env",
 ]
 
 # FaissVectorStore is optional (requires faiss-cpu)

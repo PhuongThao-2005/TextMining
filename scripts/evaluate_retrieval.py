@@ -42,12 +42,16 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--filter-profile", default="broad", choices=["current_law", "broad", "historical"])
+    parser.add_argument("--retriever-backend", choices=["vector", "bm25"], default="vector")
     parser.add_argument("--collection", default="legal_chunks")
     parser.add_argument("--qdrant-url", default="http://localhost:6333")
     parser.add_argument("--qdrant-api-key", default=None)
     parser.add_argument("--model", default="intfloat/multilingual-e5-large")
     parser.add_argument("--score-threshold", type=float, default=0.3)
     parser.add_argument("--no-expand-units", action="store_true")
+    parser.add_argument("--bm25-service-url", default=None, help="Remote BM25 URL; defaults to BM25_SERVICE_URL.")
+    parser.add_argument("--bm25-api-key", default=None, help="Remote BM25 API key; defaults to BM25_API_KEY.")
+    parser.add_argument("--bm25-timeout-seconds", type=float, default=300.0)
     parser.add_argument(
         "--include-empty-ground-truth",
         action="store_true",
@@ -79,6 +83,7 @@ def main() -> int:
         embedder = None
         retriever = build_vector_retriever(
             RetrieverRuntimeConfig(
+                backend=args.retriever_backend,
                 store=args.store,
                 index_dir=runtime_index_dir,
                 qdrant_url=args.qdrant_url,
@@ -89,6 +94,9 @@ def main() -> int:
                 top_n=max_k,
                 score_threshold=args.score_threshold,
                 expand_units=not args.no_expand_units,
+                bm25_service_url=args.bm25_service_url,
+                bm25_api_key=args.bm25_api_key,
+                bm25_timeout_seconds=args.bm25_timeout_seconds,
             )
         )
 
@@ -182,8 +190,10 @@ def main() -> int:
     summary = {
         "qa_path": str(args.qa_path),
         "retriever": {
+            "backend": args.retriever_backend,
             "store": args.store,
             "raw_faiss": args.raw_faiss,
+            "bm25_service_url": args.bm25_service_url,
             "source_index_dir": str(args.index_dir),
             "runtime_index_dir": str(runtime_index_dir),
             "collection": args.collection,
@@ -304,4 +314,5 @@ def _group_table(groups: dict[str, Any], metric_keys: list[str]) -> list[str]:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 
