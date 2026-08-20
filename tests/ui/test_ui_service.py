@@ -157,7 +157,7 @@ def test_preflight_missing_faiss_artifacts_and_dependency(tmp_path: Path) -> Non
     assert "faiss-cpu" in text and "sentence-transformers" in text
 
 
-def test_preflight_deferred_graph_and_reranker_states(tmp_path: Path) -> None:
+def test_preflight_deferred_and_graph_rrf_stack_states(tmp_path: Path) -> None:
     deferred = _base_config(tmp_path)
     deferred["agent"] = {"enabled": False, "mode": "multi_tool", "implementation_status": "deferred", "reason": "needs tools"}
     result = run_preflight(deferred, config_name="multi", project_root=tmp_path)
@@ -167,7 +167,31 @@ def test_preflight_deferred_graph_and_reranker_states(tmp_path: Path) -> None:
         config = _base_config(tmp_path)
         config["retrieval"][component]["enabled"] = True
         blocked = run_preflight(config, config_name=component, project_root=tmp_path)
-        assert not blocked.runnable and any(component.capitalize() in value for value in blocked.blockers)
+        assert not blocked.runnable
+        assert any("dense, graph, fusion, and reranker together" in value for value in blocked.blockers)
+
+    graph_path = tmp_path / "knowledge_graph.gpickle"
+    graph_path.write_bytes(b"fixture")
+    config = _base_config(tmp_path)
+    config["retrieval"].update({
+        "graph": {
+            "enabled": True, "backend": "structural_pickle", "path": str(graph_path),
+            "max_hop": 2, "max_context": 30,
+        },
+        "fusion": {"enabled": True, "strategy": "rrf", "rrf_k": 60},
+        "reranker": {
+            "enabled": True, "backend": "cross_encoder", "scope": "global",
+            "model": "fixture-cross-encoder", "candidate_limit": 30,
+        },
+    })
+    ready = run_preflight(
+        config,
+        config_name="graph-rrf",
+        project_root=tmp_path,
+        package_available=lambda name: True,
+    )
+    assert ready.runnable
+    assert {check.name for check in ready.checks if check.status == "ready"} >= {"graph", "fusion", "reranker"}
 
 
 def test_overrides_are_bounded_deterministic_and_non_mutating(tmp_path: Path) -> None:

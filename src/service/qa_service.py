@@ -315,12 +315,35 @@ def run_preflight(
             )
         )
 
-    for component in ("graph", "reranker", "sparse", "fusion"):
-        section = retrieval.get(component, {})
-        if isinstance(section, Mapping) and section.get("enabled"):
-            message = f"{component.capitalize()} is enabled but is not integrated with the production ablation stack."
+    graph = retrieval.get("graph", {})
+    fusion = retrieval.get("fusion", {})
+    reranker = retrieval.get("reranker", {})
+    sparse = retrieval.get("sparse", {})
+    graph_rrf_flags = tuple(
+        bool(section.get("enabled"))
+        for section in (graph, fusion, reranker)
+        if isinstance(section, Mapping)
+    )
+    if any(graph_rrf_flags) and not all(graph_rrf_flags):
+        message = "Dense+Graph+RRF+Global-Reranker must be enabled as one complete stack."
+        blockers.append(message)
+        checks.append(PreflightCheck("graph_rrf_stack", "blocked", message))
+    elif graph_rrf_flags and all(graph_rrf_flags):
+        graph_path = _resolve_path(graph.get("path"), project_root) if graph.get("path") else None
+        if graph_path is not None and graph_path.is_file():
+            checks.append(PreflightCheck("graph", "ready", f"{_display_path(graph_path, project_root)} is available."))
+        else:
+            message = "Knowledge-graph pickle is missing."
             blockers.append(message)
-            checks.append(PreflightCheck(component, "blocked", message))
+            checks.append(PreflightCheck("graph", "blocked", message))
+        checks.append(PreflightCheck("fusion", "ready", "RRF fusion is configured."))
+        if backend != "faiss":
+            _check_package("sentence_transformers", "sentence-transformers", has_package, checks, blockers)
+        checks.append(PreflightCheck("reranker", "ready", "Global Cross-Encoder reranking is configured."))
+    if isinstance(sparse, Mapping) and sparse.get("enabled"):
+        message = "Sparse/BM25 must remain disabled for the Dense+Graph+RRF pipeline."
+        blockers.append(message)
+        checks.append(PreflightCheck("sparse", "blocked", message))
 
     for identity in ("benchmark", "corpus"):
         value = resolved.get(identity, {}).get("path")

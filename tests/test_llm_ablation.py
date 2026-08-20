@@ -53,6 +53,13 @@ def test_required_configs_exist_validate_and_have_controlled_differences() -> No
     assert all(name in configs for name in LLM_ABLATION_CONFIG_NAMES)
     for name in LLM_ABLATION_CONFIG_NAMES:
         validate_ablation_config(configs[name], config_name=name)
+        retrieval = configs[name]["retrieval"]
+        assert retrieval["dense"]["enabled"] is True
+        assert retrieval["sparse"]["enabled"] is False
+        assert retrieval["graph"]["enabled"] is True
+        assert retrieval["fusion"] == {"enabled": True, "strategy": "rrf", "rrf_k": 60}
+        assert retrieval["reranker"]["enabled"] is True
+        assert retrieval["reranker"]["scope"] == "global"
 
     base = configs["LLM-BaseReasoning"]
     cot = configs["LLM-CoTReasoning"]

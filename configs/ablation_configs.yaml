@@ -232,6 +232,9 @@ configs:
   # Production-intent LLM comparison contract. Model selectors use env:NAME so
   # no unverified provider model is hard-coded. The official benchmark and
   # FAISS index paths intentionally fail preflight until those artifacts exist.
+  # Controlled 2x2 LLM comparison. Retrieval is fixed across all four cells:
+  # Dense FAISS -> Graph -> RRF(Dense, Graph) -> global Cross-Encoder reranker.
+  # Sparse/BM25 is deliberately disabled.
   LLM-BaseReasoning:
     benchmark:
       path: data/benchmark/qa_final.jsonl
@@ -253,11 +256,22 @@ configs:
       sparse:
         enabled: false
       graph:
-        enabled: false
+        enabled: true
+        backend: structural_pickle
+        path: data/graph/knowledge_graph.gpickle
+        version: official-graph-pending
+        max_hop: 2
+        max_context: 30
       fusion:
-        enabled: false
+        enabled: true
+        strategy: rrf
+        rrf_k: 60
       reranker:
-        enabled: false
+        enabled: true
+        backend: cross_encoder
+        scope: global
+        model: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+        candidate_limit: 30
     generation:
       provider: openai_compatible
       model: env:LLM_BASE_MODEL
@@ -303,11 +317,22 @@ configs:
       sparse:
         enabled: false
       graph:
-        enabled: false
+        enabled: true
+        backend: structural_pickle
+        path: data/graph/knowledge_graph.gpickle
+        version: official-graph-pending
+        max_hop: 2
+        max_context: 30
       fusion:
-        enabled: false
+        enabled: true
+        strategy: rrf
+        rrf_k: 60
       reranker:
-        enabled: false
+        enabled: true
+        backend: cross_encoder
+        scope: global
+        model: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+        candidate_limit: 30
     generation:
       provider: openai_compatible
       model: env:LLM_BASE_MODEL
@@ -353,11 +378,22 @@ configs:
       sparse:
         enabled: false
       graph:
-        enabled: false
+        enabled: true
+        backend: structural_pickle
+        path: data/graph/knowledge_graph.gpickle
+        version: official-graph-pending
+        max_hop: 2
+        max_context: 30
       fusion:
-        enabled: false
+        enabled: true
+        strategy: rrf
+        rrf_k: 60
       reranker:
-        enabled: false
+        enabled: true
+        backend: cross_encoder
+        scope: global
+        model: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+        candidate_limit: 30
     generation:
       provider: openai_compatible
       model: env:LLM_LARGER_MODEL
@@ -403,11 +439,22 @@ configs:
       sparse:
         enabled: false
       graph:
-        enabled: false
+        enabled: true
+        backend: structural_pickle
+        path: data/graph/knowledge_graph.gpickle
+        version: official-graph-pending
+        max_hop: 2
+        max_context: 30
       fusion:
-        enabled: false
+        enabled: true
+        strategy: rrf
+        rrf_k: 60
       reranker:
-        enabled: false
+        enabled: true
+        backend: cross_encoder
+        scope: global
+        model: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+        candidate_limit: 30
     generation:
       provider: openai_compatible
       model: env:LLM_LARGER_MODEL

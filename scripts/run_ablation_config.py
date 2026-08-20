@@ -40,6 +40,8 @@ from agent.simple_planner import PLANNER_POLICY, PLANNER_POLICY_VERSION, SimpleP
 from agent.tools import RetrievalTool  # noqa: E402
 from evaluation.io_utils import write_json  # noqa: E402
 from evaluation.retriever_factory import RetrieverRuntimeConfig, build_vector_retriever  # noqa: E402
+from knowledge_graph import GraphExpansion, load_knowledge_graph  # noqa: E402
+from retrieval import GraphRRFGlobalReranker, VectorRetriever  # noqa: E402
 from generation.prompt_strategy import (  # noqa: E402
     PROMPT_TEMPLATE_VERSION,
     build_generation_prompt,
@@ -198,6 +200,57 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
         _require_bool(section, "enabled", f"{config_name}.retrieval.{component}")
         if component in {"sparse", "graph"}:
             enabled_retrievers = enabled_retrievers or bool(section["enabled"])
+    graph_enabled = bool(retrieval.get("graph", {}).get("enabled"))
+    fusion_enabled = bool(retrieval.get("fusion", {}).get("enabled"))
+    reranker_enabled = bool(retrieval.get("reranker", {}).get("enabled"))
+    if any((graph_enabled, fusion_enabled, reranker_enabled)):
+        if not all((dense["enabled"], graph_enabled, fusion_enabled, reranker_enabled)):
+            raise AblationConfigError(
+                f"{config_name} must enable dense, graph, fusion, and reranker together for the supported Graph-RRF stack."
+            )
+        if retrieval.get("sparse", {}).get("enabled"):
+            raise AblationConfigError(
+                f"{config_name} Graph-RRF stack does not use sparse/BM25 retrieval."
+            )
+        if dense.get("backend") == "bm25":
+            raise AblationConfigError(
+                f"{config_name} Graph-RRF stack requires a vector Dense backend, not BM25."
+            )
+        graph = retrieval["graph"]
+        if graph.get("backend") != "structural_pickle":
+            raise AblationConfigError(
+                f"{config_name}.retrieval.graph.backend must be 'structural_pickle'."
+            )
+        _require_non_empty_string(graph, "path", f"{config_name}.retrieval.graph")
+        for field, default in (("max_hop", 2), ("max_context", 30)):
+            value = graph.get(field, default)
+            if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+                raise AblationConfigError(
+                    f"{config_name}.retrieval.graph.{field} must be a positive integer."
+                )
+        fusion = retrieval["fusion"]
+        if fusion.get("strategy") != "rrf":
+            raise AblationConfigError(
+                f"{config_name}.retrieval.fusion.strategy must be 'rrf'."
+            )
+        rrf_k = fusion.get("rrf_k", 60)
+        if not isinstance(rrf_k, int) or isinstance(rrf_k, bool) or rrf_k < 1:
+            raise AblationConfigError(f"{config_name}.retrieval.fusion.rrf_k must be a positive integer.")
+        reranker = retrieval["reranker"]
+        if reranker.get("backend") != "cross_encoder":
+            raise AblationConfigError(
+                f"{config_name}.retrieval.reranker.backend must be 'cross_encoder'."
+            )
+        _require_non_empty_string(reranker, "model", f"{config_name}.retrieval.reranker")
+        if reranker.get("scope", "global") != "global":
+            raise AblationConfigError(
+                f"{config_name}.retrieval.reranker.scope must be 'global'."
+            )
+        candidate_limit = reranker.get("candidate_limit", 30)
+        if not isinstance(candidate_limit, int) or isinstance(candidate_limit, bool) or candidate_limit < 1:
+            raise AblationConfigError(
+                f"{config_name}.retrieval.reranker.candidate_limit must be a positive integer."
+            )
     if not enabled_retrievers:
         raise AblationConfigError(f"{config_name} must enable at least one retriever.")
 
@@ -369,13 +422,10 @@ def build_ablation_stack(
     project_root: Path = PROJECT_ROOT,
 ) -> tuple[Any, GeneratorFunction, JudgeFunction | None, list[str]]:
     retrieval = config["retrieval"]
-    for component in ("sparse", "graph", "fusion", "reranker"):
-        section = retrieval.get(component, {})
-        if section.get("enabled"):
-            name = section.get("backend") or section.get("strategy") or section.get("model") or component
-            raise UnsupportedComponentError(
-                f"Configured {component} component {name!r} is not integrated with scripts/run_ablation_config.py."
-            )
+    if retrieval.get("sparse", {}).get("enabled"):
+        raise UnsupportedComponentError(
+            "Sparse/BM25 is excluded from the supported Dense+Graph+RRF+Global-Reranker stack."
+        )
     dense = retrieval["dense"]
     if not dense["enabled"]:
         raise UnsupportedComponentError("The current runner requires retrieval.dense.enabled=true.")
@@ -401,6 +451,30 @@ def build_ablation_stack(
         bm25_timeout_seconds=float(dense.get("timeout_seconds", 300.0)),
     )
     retriever = build_vector_retriever(runtime)
+    graph_enabled = bool(retrieval.get("graph", {}).get("enabled"))
+    fusion_enabled = bool(retrieval.get("fusion", {}).get("enabled"))
+    reranker_enabled = bool(retrieval.get("reranker", {}).get("enabled"))
+    if any((graph_enabled, fusion_enabled, reranker_enabled)):
+        if not all((graph_enabled, fusion_enabled, reranker_enabled)):
+            raise UnsupportedComponentError(
+                "Dense+Graph+RRF+Global-Reranker must be enabled as one complete stack."
+            )
+        if not isinstance(retriever, VectorRetriever):
+            raise UnsupportedComponentError("Graph-RRF requires a vector-backed Dense retriever.")
+        graph_config = retrieval["graph"]
+        fusion_config = retrieval["fusion"]
+        reranker_config = retrieval["reranker"]
+        graph_path = _resolved_path(graph_config["path"], project_root)
+        graph = load_knowledge_graph(graph_path).graph
+        retriever = GraphRRFGlobalReranker(
+            dense_retriever=retriever,
+            graph_expansion=GraphExpansion(graph),
+            cross_encoder_name=str(reranker_config["model"]),
+            rrf_k=int(fusion_config.get("rrf_k", 60)),
+            graph_max_hop=int(graph_config.get("max_hop", 2)),
+            graph_max_context=int(graph_config.get("max_context", 30)),
+            rerank_candidate_limit=int(reranker_config.get("candidate_limit", 30)),
+        )
     generator, generator_secrets = _build_generator(config["generation"])
     judge, judge_secrets = _build_judge(config.get("judge", {"provider": "none"}))
     qdrant_key = runtime.qdrant_api_key or ""

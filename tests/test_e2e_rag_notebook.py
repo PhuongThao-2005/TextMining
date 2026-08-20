@@ -132,6 +132,9 @@ def test_notebook_is_valid_clean_and_secret_safe() -> None:
     assert "https://github.com/" in source
     assert not __import__("re").search(r"[A-Za-z]:\\\\", source)
     assert not __import__("re").search(r"(?i)(api[_-]?key|token)\s*=\s*[\"'][A-Za-z0-9_-]{20,}", source)
+    assert 'CONFIG_NAME = "LLM-BaseReasoning"' in source
+    assert "knowledge_graph.gpickle" in source
+    assert "BM25_SERVICE_URL" not in source
 
 
 def test_notebook_order_is_clone_first() -> None:

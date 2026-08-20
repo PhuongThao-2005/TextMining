@@ -4,6 +4,7 @@ from .config import VectorIndexConfig, VectorPaths
 from .embeddings import HashingEmbedder, SentenceTransformerEmbedder
 from .bm25_client import BM25Client, BM25Hit, BM25Result, create_client_from_env
 from .bm25_retriever import BM25RemoteRetriever
+from .graph_rrf_retriever import GraphRRFGlobalReranker, GraphRRFLatencyBreakdown
 from .indexer import VectorIndexer
 from .retriever import VectorRetriever
 from .schema import RetrievalResult, RetrievedChunk
@@ -16,6 +17,8 @@ __all__ = [
     "BM25Hit",
     "BM25RemoteRetriever",
     "BM25Result",
+    "GraphRRFGlobalReranker",
+    "GraphRRFLatencyBreakdown",
     "InMemoryVectorStore",
     "LoadStats",
     "QdrantVectorStore",

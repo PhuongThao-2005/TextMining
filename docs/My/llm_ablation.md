@@ -17,6 +17,16 @@ at `generation.prompt_strategy`; Base versus Larger may differ only at
 filters, agent and judge settings, decoding controls, retry/timeout policy, seed,
 answer format, and citation format are held constant.
 
+All four configurations use the same retrieval and generation path:
+
+```text
+Dense FAISS -> structural Graph expansion -> RRF(Dense, Graph)
+            -> global Cross-Encoder reranker -> Generator
+```
+
+Sparse retrieval/BM25 is disabled. RRF combines the dense ranking with the
+graph-derived ranking; it does not require a BM25 server or BM25 credentials.
+
 ## Prompt and output safety
 
 Both modes use template version `legal-grounded-answer-v2-citations`, the same context
@@ -49,7 +59,12 @@ data/benchmark/qa_final.jsonl
 data/v2/documents.jsonl
 data/faiss_index/index.faiss
 data/faiss_index/payloads.jsonl
+data/graph/knowledge_graph.gpickle
 ```
+
+Install `sentence-transformers` for the Dense embedder and global Cross-Encoder
+reranker. On Kaggle, point `GRAPH_SOURCE` at the attached graph pickle when
+auto-discovery does not select it unambiguously.
 
 The benchmark, corpus, and index versions must describe the same frozen
 experiment inputs. The placeholder index version in the config must be replaced
@@ -72,7 +87,7 @@ After artifact, credential, model, and quota checks, run a bounded smoke test:
 python scripts/run_ablation_config.py --config LLM-BaseReasoning --limit 5
 ```
 
-Then use the identical limit and case set for the other two configs. The existing
+Then use the identical limit and case set for the other three configs. The existing
 batch runner preserves requested order and independent statuses:
 
 ```bash

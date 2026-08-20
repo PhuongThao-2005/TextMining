@@ -31,8 +31,6 @@ Configure these secrets as required by the selected named config:
 - `LLM_API_KEY`
 - `LLM_BASE_MODEL`
 - `LLM_LARGER_MODEL`
-- `BM25_SERVICE_URL` (required by `BM25-Remote-E2E` after Bình starts the server)
-- `BM25_API_KEY` (optional; only when the BM25 server requires bearer authentication)
 
 Existing environment variables are preserved. Otherwise values are copied from Kaggle Secrets into `os.environ`. Diagnostics show only `configured` or `missing`. Values are not written to configs, manifests, errors, exports, or notebook metadata.
 
@@ -55,7 +53,7 @@ Real files are required; placeholders and fixture substitution are prohibited. F
 
 ## Dependencies and CPU/GPU behavior
 
-The current `pyproject.toml` contains tool settings but no complete install metadata, so the notebook installs PyYAML and, only for smoke/full, missing packages required by the selected FAISS/OpenAI-compatible production path. It does not request Streamlit, pandas, pyarrow, CUDA, or PyTorch.
+The current `pyproject.toml` contains tool settings but no complete install metadata, so the notebook installs PyYAML and, only for smoke/full, missing packages required by the FAISS/OpenAI-compatible path plus `sentence-transformers` for embedding and global Cross-Encoder reranking. It does not request Streamlit, pandas, pyarrow, CUDA, or PyTorch directly.
 
 Pandas is optional and imported only in the final display cell. If pandas, NumPy, or pyarrow are incompatible, tables fall back to Python dictionaries and production execution/artifact export continue. If newly installed imports are not visible, the notebook prints exactly:
 
@@ -71,8 +69,7 @@ CUDA is selected only when enabled and reported available by PyTorch. CPU is oth
 
 `smoke` requires complete preflight and calls the canonical named-config runner with exactly `SMOKE_LIMIT` cases. It does not substitute fixture data.
 
-For the remote BM25 E2E run, keep `CONFIG_NAME = "BM25-Remote-E2E"` and `RUN_MODE = "inspect"` while preparing datasets. After Bình confirms that the server is online, configure `BM25_SERVICE_URL`, switch to `RUN_MODE = "smoke"`, and run five cases before selecting `full`. The local FAISS files are still required because BM25 returns IDs/scores and the adapter hydrates full chunk payloads locally.
-Before a `smoke` or `full` BM25 run starts, the notebook calls `/healthz`; an unavailable server stops the run before any generation request is made.
+The notebook defaults to `CONFIG_NAME = "LLM-BaseReasoning"`. Select each of the four LLM configs in turn while holding the benchmark and retrieval artifacts fixed. Their shared path is Dense FAISS -> Graph -> RRF fusion -> global Cross-Encoder reranker -> Generator. BM25 is disabled, so no BM25 server or BM25 credential is needed.
 
 `full` must be selected explicitly. It requires all packages, compatible benchmark/corpus/index artifacts, credentials, provider access, model access, and quota. It never downgrades to smoke.
 
