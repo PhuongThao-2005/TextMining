@@ -37,7 +37,7 @@ class BM25Client:
         retry_backoff_seconds: float = 0.5,
     ) -> None:
         self.base_url = (base_url or os.environ.get("BM25_SERVICE_URL") or "").rstrip("/")
-        self.api_key = api_key or os.environ.get("BM25_API_KEY") or ""
+        self.api_key = api_key if api_key is not None else (os.environ.get("BM25_API_KEY") or "")
         self.timeout_seconds = float(timeout_seconds)
         self.max_retries = max(1, int(max_retries))
         self.retry_backoff_seconds = float(retry_backoff_seconds)

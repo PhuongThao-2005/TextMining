@@ -57,14 +57,21 @@ def test_required_configs_exist_validate_and_have_controlled_differences() -> No
     base = configs["LLM-BaseReasoning"]
     cot = configs["LLM-CoTReasoning"]
     larger = configs["LLM-LargerModel"]
+    larger_cot = configs["LLM-LargerModel-CoTReasoning"]
     cot_normalized = copy.deepcopy(cot)
     cot_normalized["generation"]["prompt_strategy"] = base["generation"]["prompt_strategy"]
     larger_normalized = copy.deepcopy(larger)
     larger_normalized["generation"]["model"] = base["generation"]["model"]
+    larger_cot_normalized = copy.deepcopy(larger_cot)
+    larger_cot_normalized["generation"]["model"] = base["generation"]["model"]
+    larger_cot_normalized["generation"]["prompt_strategy"] = base["generation"]["prompt_strategy"]
     assert cot_normalized == base
     assert larger_normalized == base
+    assert larger_cot_normalized == base
     assert cot["generation"]["prompt_strategy"] == "reasoning"
     assert larger["generation"]["model"] == "env:LLM_LARGER_MODEL"
+    assert larger_cot["generation"]["model"] == "env:LLM_LARGER_MODEL"
+    assert larger_cot["generation"]["prompt_strategy"] == "reasoning"
 
 
 def test_fairness_validator_rejects_unintended_change() -> None:
@@ -132,6 +139,7 @@ def test_reasoning_fields_and_tags_never_enter_final_answer() -> None:
         ("LLM-BaseReasoning", "base-model", False),
         ("LLM-CoTReasoning", "base-model", True),
         ("LLM-LargerModel", "larger-model", False),
+        ("LLM-LargerModel-CoTReasoning", "larger-model", True),
     ],
 )
 def test_named_configs_construct_expected_generator(
@@ -386,12 +394,20 @@ def test_aggregator_compares_intended_prompt_and_model_variants(tmp_path: Path) 
     _write_aggregate_llm_run(
         runs, "larger", "LLM-LargerModel", model="larger-model", strategy="base"
     )
+    _write_aggregate_llm_run(
+        runs,
+        "larger-cot",
+        "LLM-LargerModel-CoTReasoning",
+        model="larger-model",
+        strategy="reasoning",
+    )
     result = aggregate_ablation_results(runs)
-    assert result.comparable_count == 3
+    assert result.comparable_count == 4
     with result.output_csv.open(encoding="utf-8", newline="") as handle:
         rows = {row["config_name"]: row for row in csv.DictReader(handle)}
     assert rows["LLM-CoTReasoning"]["prompt_strategy"] == "reasoning"
     assert rows["LLM-LargerModel"]["generation_model"] == "larger-model"
+    assert rows["LLM-LargerModel-CoTReasoning"]["prompt_strategy"] == "reasoning"
     assert rows["LLM-BaseReasoning"]["max_retries"] == "2"
 
 

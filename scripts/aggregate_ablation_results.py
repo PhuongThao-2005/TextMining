@@ -302,7 +302,12 @@ def _validate_llm_comparison_metadata(record: RunRecord) -> None:
     if (
         record.status != "completed"
         or record.config_name
-        not in {"LLM-BaseReasoning", "LLM-CoTReasoning", "LLM-LargerModel"}
+        not in {
+            "LLM-BaseReasoning",
+            "LLM-CoTReasoning",
+            "LLM-LargerModel",
+            "LLM-LargerModel-CoTReasoning",
+        }
     ):
         return
     manifest = record.manifest or {}

@@ -57,7 +57,7 @@ from generation.reasoning_client import (  # noqa: E402
 
 DEFAULT_CONFIG_FILE = PROJECT_ROOT / "configs" / "ablation_configs.yaml"
 DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "evaluation_runs" / "ablation"
-SUPPORTED_DENSE_BACKENDS = {"faiss", "qdrant", "hashing"}
+SUPPORTED_DENSE_BACKENDS = {"faiss", "qdrant", "hashing", "bm25"}
 SUPPORTED_GENERATORS = {"reference", "gemini", "openai_compatible"}
 SUPPORTED_JUDGES = {"none", "gemini"}
 RUN_STATUSES = {"completed", "failed", "skipped", "deferred", "needs-rerun"}
@@ -65,6 +65,7 @@ LLM_ABLATION_CONFIG_NAMES = (
     "LLM-BaseReasoning",
     "LLM-CoTReasoning",
     "LLM-LargerModel",
+    "LLM-LargerModel-CoTReasoning",
 )
 AGENT_ABLATION_CONFIG_NAMES = (
     "Agent-None-PlainRAG",
@@ -177,10 +178,17 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
             raise AblationConfigError(
                 f"Unsupported dense backend {backend!r}; expected one of {sorted(SUPPORTED_DENSE_BACKENDS)}."
             )
-        if backend == "faiss":
+        if backend in {"faiss", "bm25"}:
             _require_non_empty_string(dense, "index_path", f"{config_name}.retrieval.dense")
         if backend == "qdrant":
             _require_non_empty_string(dense, "collection", f"{config_name}.retrieval.dense")
+        if backend == "bm25":
+            _require_non_empty_string(dense, "service_url_env", f"{config_name}.retrieval.dense")
+            payload_store = dense.get("payload_store", "faiss")
+            if payload_store not in {"faiss", "qdrant"}:
+                raise AblationConfigError(
+                    f"{config_name}.retrieval.dense.payload_store must be faiss or qdrant."
+                )
 
     enabled_retrievers = bool(dense["enabled"])
     for component in ("sparse", "graph", "fusion", "reranker"):
@@ -273,21 +281,26 @@ def validate_llm_ablation_fairness(configs: Mapping[str, dict[str, Any]]) -> Non
             "LLM ablation fairness validation requires configs: " + ", ".join(missing)
         )
     base = configs["LLM-BaseReasoning"]
+    prompt_path = ("generation", "prompt_strategy")
+    model_path = ("generation", "model")
     comparisons = (
-        ("LLM-CoTReasoning", ("generation", "prompt_strategy")),
-        ("LLM-LargerModel", ("generation", "model")),
+        ("LLM-CoTReasoning", {prompt_path}),
+        ("LLM-LargerModel", {model_path}),
+        ("LLM-LargerModel-CoTReasoning", {model_path, prompt_path}),
     )
-    for other_name, allowed_path in comparisons:
+    for other_name, allowed_paths in comparisons:
         differences = _differing_paths(base, configs[other_name])
-        unintended = sorted(path for path in differences if path != allowed_path)
+        unintended = sorted(differences - allowed_paths)
         if unintended:
             formatted = ", ".join(".".join(path) for path in unintended)
             raise AblationConfigError(
                 f"Unfair LLM ablation {other_name!r}; unintended differing fields: {formatted}."
             )
-        if allowed_path not in differences:
+        missing_differences = sorted(allowed_paths - differences)
+        if missing_differences:
+            formatted = ", ".join(".".join(path) for path in missing_differences)
             raise AblationConfigError(
-                f"LLM ablation {other_name!r} must differ at {'.'.join(allowed_path)}."
+                f"LLM ablation {other_name!r} must differ at {formatted}."
             )
 
 
@@ -330,7 +343,10 @@ def validate_required_paths(config: dict[str, Any], *, project_root: Path = PROJ
         ("corpus.path", _resolved_path(config["corpus"]["path"], project_root)),
     ]
     dense = config["retrieval"]["dense"]
-    if dense["enabled"] and dense["backend"] == "faiss":
+    if dense["enabled"] and (
+        dense["backend"] == "faiss"
+        or (dense["backend"] == "bm25" and dense.get("payload_store", "faiss") == "faiss")
+    ):
         required.append(("retrieval.dense.index_path", _resolved_path(dense["index_path"], project_root)))
     graph = config["retrieval"].get("graph", {})
     if graph.get("enabled"):
@@ -364,8 +380,12 @@ def build_ablation_stack(
     if not dense["enabled"]:
         raise UnsupportedComponentError("The current runner requires retrieval.dense.enabled=true.")
     backend = dense["backend"]
+    payload_store = str(dense.get("payload_store") or "faiss") if backend == "bm25" else None
+    runtime_store = payload_store or ("faiss" if backend in {"faiss", "hashing"} else "qdrant")
+    bm25_api_key = _env_value(dense.get("api_key_env") or "BM25_API_KEY") if backend == "bm25" else None
     runtime = RetrieverRuntimeConfig(
-        store="faiss" if backend in {"faiss", "hashing"} else "qdrant",
+        backend="bm25" if backend == "bm25" else "vector",
+        store=runtime_store,
         index_dir=_resolved_path(dense.get("index_path", "data/faiss_index"), project_root),
         qdrant_url=str(dense.get("url") or "http://localhost:6333"),
         qdrant_api_key=_env_value(dense.get("api_key_env")),
@@ -376,12 +396,20 @@ def build_ablation_stack(
         top_n=int(retrieval["top_k"]),
         score_threshold=dense.get("score_threshold", 0.3),
         expand_units=bool(dense.get("expand_units", True)),
+        bm25_service_url=_env_value(dense.get("service_url_env") or "BM25_SERVICE_URL"),
+        bm25_api_key=bm25_api_key,
+        bm25_timeout_seconds=float(dense.get("timeout_seconds", 300.0)),
     )
     retriever = build_vector_retriever(runtime)
     generator, generator_secrets = _build_generator(config["generation"])
     judge, judge_secrets = _build_judge(config.get("judge", {"provider": "none"}))
     qdrant_key = runtime.qdrant_api_key or ""
-    return retriever, generator, judge, [*generator_secrets, *judge_secrets, qdrant_key]
+    return retriever, generator, judge, [
+        *generator_secrets,
+        *judge_secrets,
+        qdrant_key,
+        bm25_api_key or "",
+    ]
 
 
 def resolve_runtime_config(config: Mapping[str, Any]) -> dict[str, Any]:

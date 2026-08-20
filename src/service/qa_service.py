@@ -282,7 +282,7 @@ def run_preflight(
     retrieval = resolved.get("retrieval", {})
     dense = retrieval.get("dense", {})
     backend = dense.get("backend") if dense.get("enabled") else None
-    if backend == "faiss":
+    if backend == "faiss" or (backend == "bm25" and dense.get("payload_store", "faiss") == "faiss"):
         index_dir = _resolve_path(dense.get("index_path", "data/faiss_index"), project_root)
         for filename in ("index.faiss", "payloads.jsonl"):
             path = index_dir / filename
@@ -293,9 +293,27 @@ def run_preflight(
                 blockers.append(message)
                 checks.append(PreflightCheck(f"faiss_{filename}", "blocked", message))
         _check_package("faiss", "faiss-cpu", has_package, checks, blockers)
-        _check_package("sentence_transformers", "sentence-transformers", has_package, checks, blockers)
+        if backend == "faiss":
+            _check_package("sentence_transformers", "sentence-transformers", has_package, checks, blockers)
     elif backend == "qdrant":
         _check_package("qdrant_client", "qdrant-client", has_package, checks, blockers)
+
+    if backend == "bm25":
+        service_url_env = str(dense.get("service_url_env") or "BM25_SERVICE_URL")
+        if env.get(service_url_env):
+            checks.append(PreflightCheck("bm25_service_url", "ready", f"{service_url_env}: configured."))
+        else:
+            message = f"{service_url_env}: missing. Configure it after the BM25 server is started."
+            blockers.append(message)
+            checks.append(PreflightCheck("bm25_service_url", "blocked", message))
+        api_key_env = str(dense.get("api_key_env") or "BM25_API_KEY")
+        checks.append(
+            PreflightCheck(
+                "bm25_api_key",
+                "ready" if env.get(api_key_env) else "not_required",
+                f"{api_key_env}: {'configured' if env.get(api_key_env) else 'optional and missing'}.",
+            )
+        )
 
     for component in ("graph", "reranker", "sparse", "fusion"):
         section = retrieval.get(component, {})

@@ -16,7 +16,7 @@
 #   output: {root}
 #
 # Supported now:
-#   dense.backend: faiss | qdrant | hashing
+#   dense.backend: faiss | qdrant | hashing | bm25
 #   generation.provider: reference | gemini | openai_compatible
 #   judge.provider: none | gemini
 #
@@ -27,6 +27,55 @@
 schema_version: 1
 
 configs:
+  BM25-Remote-E2E:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: bm25
+        payload_store: faiss
+        index_path: data/faiss_index
+        index_version: official-faiss-payloads-pending
+        service_url_env: BM25_SERVICE_URL
+        api_key_env: BM25_API_KEY
+        timeout_seconds: 300.0
+        score_threshold: null
+        expand_units: false
+      sparse: {enabled: false}
+      graph: {enabled: false}
+      fusion: {enabled: false}
+      reranker: {enabled: false}
+    generation:
+      provider: openai_compatible
+      model: env:LLM_BASE_MODEL
+      prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge:
+      provider: none
+    agent:
+      enabled: false
+      mode: none
+    output:
+      root: evaluation_runs/ablation
+    seed: 42
+    metadata:
+      purpose: remote BM25 end-to-end evaluation using local FAISS payload hydration
+      experiment_family: retrieval
+
   Example-Reference-Hashing:
     benchmark:
       path: data/benchmark/qa_final.jsonl
@@ -313,6 +362,56 @@ configs:
       provider: openai_compatible
       model: env:LLM_LARGER_MODEL
       prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge:
+      provider: none
+    agent:
+      enabled: false
+      type: plain_rag
+    output:
+      root: evaluation_runs/ablation
+    seed: 42
+    metadata:
+      purpose: controlled production-intent LLM ablation; execution pending verified dependencies
+      experiment_family: llm-reasoning-model
+
+  LLM-LargerModel-CoTReasoning:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/v2/documents.jsonl
+      version: v2
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: faiss
+        index_path: data/faiss_index
+        index_version: official-faiss-pending
+        model: intfloat/multilingual-e5-large
+        score_threshold: 0.3
+        expand_units: true
+      sparse:
+        enabled: false
+      graph:
+        enabled: false
+      fusion:
+        enabled: false
+      reranker:
+        enabled: false
+    generation:
+      provider: openai_compatible
+      model: env:LLM_LARGER_MODEL
+      prompt_strategy: reasoning
       prompt_template_version: legal-grounded-answer-v2-citations
       temperature: 0.0
       top_p: 1.0

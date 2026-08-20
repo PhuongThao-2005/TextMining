@@ -31,6 +31,8 @@ Configure these secrets as required by the selected named config:
 - `LLM_API_KEY`
 - `LLM_BASE_MODEL`
 - `LLM_LARGER_MODEL`
+- `BM25_SERVICE_URL` (required by `BM25-Remote-E2E` after Bình starts the server)
+- `BM25_API_KEY` (optional; only when the BM25 server requires bearer authentication)
 
 Existing environment variables are preserved. Otherwise values are copied from Kaggle Secrets into `os.environ`. Diagnostics show only `configured` or `missing`. Values are not written to configs, manifests, errors, exports, or notebook metadata.
 
@@ -68,6 +70,9 @@ CUDA is selected only when enabled and reported available by PyTorch. CPU is oth
 `inspect` is the committed default. It performs no retrieval or model call. Set `EXISTING_RUN_DIR` to a run under `/kaggle/input` or `/kaggle/working`; leaving it unset completes with an informational message.
 
 `smoke` requires complete preflight and calls the canonical named-config runner with exactly `SMOKE_LIMIT` cases. It does not substitute fixture data.
+
+For the remote BM25 E2E run, keep `CONFIG_NAME = "BM25-Remote-E2E"` and `RUN_MODE = "inspect"` while preparing datasets. After Bình confirms that the server is online, configure `BM25_SERVICE_URL`, switch to `RUN_MODE = "smoke"`, and run five cases before selecting `full`. The local FAISS files are still required because BM25 returns IDs/scores and the adapter hydrates full chunk payloads locally.
+Before a `smoke` or `full` BM25 run starts, the notebook calls `/healthz`; an unavailable server stops the run before any generation request is made.
 
 `full` must be selected explicitly. It requires all packages, compatible benchmark/corpus/index artifacts, credentials, provider access, model access, and quota. It never downgrades to smoke.
 

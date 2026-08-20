@@ -247,16 +247,16 @@ These validation counts overlap implementation counts: an implementation-complet
 ### 8. LLM Ablation Runs
 
 **Overall implementation status:** [x] Implementation Complete for configuration/execution support
-**Validation status:** 11 LLM tests plus nine generation-client tests pass; structural dry-runs pass; [B] three comparable production runs pending.
+**Validation status:** LLM and generation-client tests pass; structural dry-runs pass; [B] four comparable production runs pending.
 
 **Implementation evidence:**
 
-- `configs/ablation_configs.yaml:75`, `:125`, and `:175` define `LLM-BaseReasoning`, `LLM-CoTReasoning`, and `LLM-LargerModel`.
+- `configs/ablation_configs.yaml` defines the complete 2x2 matrix: `LLM-BaseReasoning`, `LLM-CoTReasoning`, `LLM-LargerModel`, and `LLM-LargerModel-CoTReasoning`.
 - `scripts/run_ablation_config.py:266` enforces controlled LLM comparison differences.
 - `src/generation/prompt_strategy.py` defines deterministic Base/Reasoning prompts with a shared answer/citation contract and prompt hash.
 - `src/generation/reasoning_client.py:143-192` strips provider reasoning fields and `<think>` content from serialized answers.
 - Runner manifests persist model, prompt strategy/version/hash, decoding settings, and environment variable names—not secret values.
-- All three configs returned `completed` structural dry-run status during this audit.
+- All four configs returned `completed` structural dry-run status during this audit.
 
 **Why this status:** The experiment definitions and safe execution infrastructure are implemented. “Runs” are not production-complete because no comparable official artifacts exist.
 
@@ -267,10 +267,10 @@ These validation counts overlap implementation counts: an implementation-complet
 - [x] Automated fairness validation and safe metadata.
 - [x] Hidden-reasoning removal and offline tests.
 - [x] Structural dry-runs.
-- [B] Execute all three on the same official case set.
+- [B] Execute all four on the same official case set.
 
 **Dependencies:** official benchmark, compatible index, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_BASE_MODEL`, `LLM_LARGER_MODEL`, model availability, and quota.
-**Acceptance criteria:** implementation passes; three comparable completed production artifacts are still required.
+**Acceptance criteria:** implementation passes; four comparable completed production artifacts are still required.
 **Next action:** obtain provider/model confirmation and run a same-limit smoke matrix before any full run.
 
 ### 9. Agent Ablation Runs
@@ -342,7 +342,7 @@ These validation counts overlap implementation counts: an implementation-complet
 ## Missing Work
 
 - No production run directory or canonical aggregate/report artifacts exist locally.
-- No three-run LLM result set exists.
+- No four-run LLM result set exists.
 - No comparable Plain RAG/Simple Planner production pair exists.
 - No final evidence-backed Task 10 report/recommendation exists.
 

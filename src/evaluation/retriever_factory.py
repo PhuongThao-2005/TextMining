@@ -44,12 +44,6 @@ def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever |
         score_threshold=0.0 if runtime.score_threshold is None else runtime.score_threshold,
         expand_units=runtime.expand_units,
     )
-    embedder = (
-        HashingEmbedder()
-        if runtime.dev_hashing
-        else SentenceTransformerEmbedder(runtime.model, query_prefix=config.query_prefix, passage_prefix=config.passage_prefix)
-    )
-
     if runtime.dev_hashing:
         # Smoke-test path: in-memory store, no real index required (FR-011/FR-012 n/a here).
         from retrieval import InMemoryVectorStore
@@ -85,6 +79,16 @@ def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever |
         )
     if runtime.backend != "vector":
         raise ValueError(f"Unknown runtime.backend={runtime.backend!r}; expected 'vector' or 'bm25'.")
+
+    embedder = (
+        HashingEmbedder()
+        if runtime.dev_hashing
+        else SentenceTransformerEmbedder(
+            runtime.model,
+            query_prefix=config.query_prefix,
+            passage_prefix=config.passage_prefix,
+        )
+    )
 
     embedder_dimension = getattr(embedder, "dimension", None)
     store_dimension = getattr(store, "dimension", None)
