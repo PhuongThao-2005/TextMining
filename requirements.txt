@@ -1,0 +1,24 @@
+# Local production web app dependencies for G-LRAG.
+#
+# Install with:
+#   python -m pip install -r requirements.txt
+#
+# Use the same Python interpreter you use to run Streamlit.
+
+streamlit>=1.52,<2
+PyYAML>=6,<7
+openai>=3,<4
+
+# Dense FAISS retrieval.
+faiss-cpu>=1.8
+sentence-transformers>=5.1,<6
+transformers>=4.41,<5
+huggingface-hub>=0.34,<1
+torch>=2.2
+
+# Runtime/data utilities used by the app and evaluation helpers.
+numpy>=1.26,<2
+pandas>=2,<3
+
+# Test runner for local verification.
+pytest>=8,<9

@@ -1,6 +1,7 @@
 """Pure presentation view models shared by Streamlit components and tests."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from html import escape
 from typing import Any, Sequence
@@ -56,6 +57,27 @@ def safe_html_text(value: Any) -> str:
     return escape(str(value), quote=True)
 
 
+def format_retrieved_text(value: Any) -> str:
+    """Add readable breaks to cleaned legal chunks without changing source data."""
+    text = re.sub(r"[ \t]+", " ", str(value or "")).strip()
+    if not text:
+        return ""
+    text = re.sub(r"\s+(?=(?:Chương|Mục|Điều)\s+\d+[.:])", "\n\n", text)
+    text = re.sub(r"\s+(?=\d{1,2}[.)]\s+\D)", _numbered_break, text)
+    text = re.sub(r"\s+(?=[a-zđ]\)\s+)", "\n", text)
+    text = re.sub(r"\s+-\s+", "\n- ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _numbered_break(match: re.Match[str]) -> str:
+    prefix = match.string[:match.start()].rstrip()
+    previous_word = prefix.rsplit(maxsplit=1)[-1].casefold() if prefix else ""
+    if previous_word in {"điều", "chương", "mục", "khoản"}:
+        return " "
+    return "\n"
+
+
 def build_source_text_segments(
     source_text: str, evidence_span: EvidenceSpan | None, *, context_id: str | None = None,
 ) -> SourceTextRender:
@@ -81,7 +103,7 @@ def source_segments_html(render: SourceTextRender) -> str:
     """Render only escaped text inside application-owned presentation wrappers."""
     parts = []
     for segment in render.segments:
-        escaped = safe_html_text(segment.text)
+        escaped = safe_html_text(format_retrieved_text(segment.text))
         parts.append(f'<span class="ga-evidence-highlight">{escaped}</span>' if segment.highlighted else escaped)
     return '<div class="ga-source-text">' + "".join(parts) + "</div>"
 
@@ -91,5 +113,5 @@ def display_value(value: Any) -> str:
 
 
 __all__ = ["SourceSections", "SourceTextRender", "SourceTextSegment", "build_source_sections",
-           "build_source_text_segments", "display_value", "resolve_source_text", "safe_html_text",
-           "source_segments_html"]
+           "build_source_text_segments", "display_value", "format_retrieved_text",
+           "resolve_source_text", "safe_html_text", "source_segments_html"]

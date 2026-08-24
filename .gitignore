@@ -4,3 +4,7 @@ __pycache__/
 .tmp_tests/
 runcode.txt
 .venv/
+.env
+.env.*
+!.env.example
+.cache/

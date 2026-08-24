@@ -60,6 +60,13 @@ class QuestionRequest:
     graph_enabled_override: bool | None = None
     reranker_enabled_override: bool | None = None
     filter_profile: str | None = None
+    generation_model_override: str | None = None
+    prompt_strategy_override: str | None = None
+    temperature_override: float | None = None
+    top_p_override: float | None = None
+    max_output_tokens_override: int | None = None
+    timeout_seconds_override: float | None = None
+    max_retries_override: int | None = None
 
 
 @dataclass(frozen=True)
@@ -179,6 +186,9 @@ def apply_safe_overrides(config: Mapping[str, Any], request: QuestionRequest) ->
 
     effective = deepcopy(dict(config))
     retrieval = effective["retrieval"]
+    generation = effective.setdefault("generation", {})
+    if not isinstance(generation, dict):
+        raise UIConfigError("Generation configuration must be a mapping.")
     if request.top_k_override is not None:
         if (
             not isinstance(request.top_k_override, int)
@@ -191,30 +201,126 @@ def apply_safe_overrides(config: Mapping[str, Any], request: QuestionRequest) ->
         if request.filter_profile not in FILTER_PROFILES:
             raise UIConfigError(f"Unknown filter profile {request.filter_profile!r}.")
         retrieval["filter_profile"] = request.filter_profile
-    for field_name, override in (
-        ("graph", request.graph_enabled_override),
-        ("reranker", request.reranker_enabled_override),
-    ):
-        if override is None:
-            continue
-        section = retrieval.get(field_name)
-        if not isinstance(section, dict):
-            raise UIConfigError(f"The selected config does not define {field_name} settings.")
-        section["enabled"] = bool(override)
+    graph_override = request.graph_enabled_override
+    reranker_override = request.reranker_enabled_override
+    if graph_override is not None or reranker_override is not None:
+        graph_enabled = bool(graph_override)
+        reranker_enabled = bool(reranker_override)
+        if graph_enabled or reranker_enabled:
+            if not (graph_enabled and reranker_enabled):
+                raise UIConfigError("Graph and reranker must be enabled together for the supported RRF stack.")
+            _enable_graph_rrf_stack(retrieval)
+        else:
+            for field_name in ("graph", "fusion", "reranker"):
+                section = retrieval.get(field_name)
+                if isinstance(section, dict):
+                    section["enabled"] = False
+    if request.generation_model_override is not None:
+        model = request.generation_model_override.strip()
+        if not model or len(model) > 160:
+            raise UIConfigError("Generation model must be a non-empty string up to 160 characters.")
+        generation["model"] = model
+    if request.prompt_strategy_override is not None:
+        strategy = request.prompt_strategy_override.strip()
+        if strategy not in {"base", "reasoning"}:
+            raise UIConfigError("Prompt strategy must be either 'base' or 'reasoning'.")
+        generation["prompt_strategy"] = strategy
+    if request.temperature_override is not None:
+        generation["temperature"] = _bounded_float(
+            request.temperature_override, "temperature", minimum=0.0, maximum=2.0,
+        )
+    if request.top_p_override is not None:
+        generation["top_p"] = _bounded_float(
+            request.top_p_override, "top-p", minimum=0.05, maximum=1.0,
+        )
+    if request.max_output_tokens_override is not None:
+        generation["max_output_tokens"] = _bounded_int(
+            request.max_output_tokens_override, "max output tokens", minimum=128, maximum=8192,
+        )
+    if request.timeout_seconds_override is not None:
+        generation["timeout_seconds"] = _bounded_float(
+            request.timeout_seconds_override, "timeout seconds", minimum=5.0, maximum=300.0,
+        )
+    if request.max_retries_override is not None:
+        generation["max_retries"] = _bounded_int(
+            request.max_retries_override, "max retries", minimum=0, maximum=5,
+        )
     validate_override_compatibility(effective)
     return effective
+
+
+def _bounded_float(value: Any, label: str, *, minimum: float, maximum: float) -> float:
+    if isinstance(value, bool):
+        raise UIConfigError(f"{label} must be a number from {minimum:g} through {maximum:g}.")
+    try:
+        result = float(value)
+    except (TypeError, ValueError) as exc:
+        raise UIConfigError(f"{label} must be a number from {minimum:g} through {maximum:g}.") from exc
+    if not minimum <= result <= maximum:
+        raise UIConfigError(f"{label} must be a number from {minimum:g} through {maximum:g}.")
+    return result
+
+
+def _bounded_int(value: Any, label: str, *, minimum: int, maximum: int) -> int:
+    if isinstance(value, bool):
+        raise UIConfigError(f"{label} must be an integer from {minimum} through {maximum}.")
+    try:
+        result = int(value)
+    except (TypeError, ValueError) as exc:
+        raise UIConfigError(f"{label} must be an integer from {minimum} through {maximum}.") from exc
+    if result != value and not (isinstance(value, float) and value.is_integer()):
+        raise UIConfigError(f"{label} must be an integer from {minimum} through {maximum}.")
+    if not minimum <= result <= maximum:
+        raise UIConfigError(f"{label} must be an integer from {minimum} through {maximum}.")
+    return result
 
 
 def validate_override_compatibility(config: Mapping[str, Any]) -> None:
     retrieval = config.get("retrieval")
     if not isinstance(retrieval, Mapping):
         raise UIConfigError("Retrieval configuration is missing.")
-    for component in ("graph", "reranker"):
-        section = retrieval.get(component)
-        if isinstance(section, Mapping) and section.get("enabled"):
-            raise UIConfigError(
-                f"{component.capitalize()} cannot be enabled interactively: the production ablation stack has no integrated {component} adapter."
-            )
+    dense = retrieval.get("dense")
+    graph = retrieval.get("graph")
+    fusion = retrieval.get("fusion")
+    reranker = retrieval.get("reranker")
+    flags = tuple(
+        bool(section.get("enabled"))
+        for section in (graph, fusion, reranker)
+        if isinstance(section, Mapping)
+    )
+    if any(flags):
+        if not isinstance(dense, Mapping) or dense.get("backend") != "faiss":
+            raise UIConfigError("Graph-RRF requires the FAISS dense retriever.")
+        if not all(flags):
+            raise UIConfigError("Graph, RRF fusion, and reranker must be enabled together.")
+
+
+def _enable_graph_rrf_stack(retrieval: dict[str, Any]) -> None:
+    graph = retrieval.setdefault("graph", {})
+    fusion = retrieval.setdefault("fusion", {})
+    reranker = retrieval.setdefault("reranker", {})
+    if not isinstance(graph, dict) or not isinstance(fusion, dict) or not isinstance(reranker, dict):
+        raise UIConfigError("Graph-RRF stack sections must be mappings.")
+    graph.update({
+        "enabled": True,
+        "backend": graph.get("backend") or "structural_pickle",
+        "path": graph.get("path") or "data/graph/knowledge_graph.gpickle",
+        "version": graph.get("version") or "local-knowledge-graph",
+        "max_hop": graph.get("max_hop", 2),
+        "max_context": graph.get("max_context", 30),
+    })
+    fusion.update({
+        "enabled": True,
+        "strategy": fusion.get("strategy") or "rrf",
+        "rrf_k": fusion.get("rrf_k", 60),
+    })
+    reranker.update({
+        "enabled": True,
+        "backend": reranker.get("backend") or "cross_encoder",
+        "scope": reranker.get("scope") or "global",
+        "model": reranker.get("model") or "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+        "candidate_limit": reranker.get("candidate_limit", 30),
+    })
 
 
 def run_preflight(
@@ -340,6 +446,16 @@ def run_preflight(
         if backend != "faiss":
             _check_package("sentence_transformers", "sentence-transformers", has_package, checks, blockers)
         checks.append(PreflightCheck("reranker", "ready", "Global Cross-Encoder reranking is configured."))
+        reranker_model = str(reranker.get("model") or "")
+        if env.get("HF_HUB_OFFLINE") == "1" and reranker_model and not _hf_model_likely_cached(reranker_model):
+            message = (
+                f"Reranker model {reranker_model!r} is not cached while HF_HUB_OFFLINE=1. "
+                "Temporarily set HF_HUB_OFFLINE=0 for the first model download, then clear the resource cache."
+            )
+            blockers.append(message)
+            checks.append(PreflightCheck("reranker_model_cache", "blocked", message))
+        elif reranker_model:
+            checks.append(PreflightCheck("reranker_model_cache", "ready", "Reranker model cache/network setting is usable."))
     if isinstance(sparse, Mapping) and sparse.get("enabled"):
         message = "Sparse/BM25 must remain disabled for the Dense+Graph+RRF pipeline."
         blockers.append(message)
@@ -630,6 +746,22 @@ def _package_available(module: str) -> bool:
         return False
 
 
+def _hf_model_likely_cached(model_name: str) -> bool:
+    try:
+        from huggingface_hub import try_to_load_from_cache  # type: ignore[import-untyped]
+    except ImportError:
+        return False
+    required_groups = (
+        ("config.json",),
+        ("tokenizer.json", "tokenizer_config.json"),
+        ("model.safetensors", "pytorch_model.bin"),
+    )
+    for filenames in required_groups:
+        if not any(bool(try_to_load_from_cache(model_name, name)) for name in filenames):
+            return False
+    return True
+
+
 def _resolve_path(value: object, project_root: Path) -> Path:
     path = Path(str(value))
     return path if path.is_absolute() else project_root / path
@@ -647,8 +779,7 @@ def _safe_config(value: Any) -> Any:
         return {
             str(key): (
                 "***"
-                if any(marker in str(key).lower() for marker in ("api_key", "authorization", "secret", "token", "password"))
-                and not str(key).lower().endswith("_env")
+                if _is_sensitive_config_key(str(key))
                 else _safe_config(item)
             )
             for key, item in value.items()
@@ -656,6 +787,33 @@ def _safe_config(value: Any) -> Any:
     if isinstance(value, list):
         return [_safe_config(item) for item in value]
     return value
+
+
+def _is_sensitive_config_key(key: str) -> bool:
+    lowered = key.lower()
+    if lowered.endswith("_env"):
+        return False
+    sensitive_exact = {
+        "api_key",
+        "apikey",
+        "authorization",
+        "auth_header",
+        "bearer_token",
+        "access_token",
+        "refresh_token",
+        "secret",
+        "client_secret",
+        "password",
+        "credential",
+    }
+    if lowered in sensitive_exact:
+        return True
+    return (
+        lowered.endswith("_api_key")
+        or lowered.endswith("_secret")
+        or lowered.endswith("_password")
+        or lowered.endswith("_credential")
+    )
 
 
 def _optional_text(value: object) -> str | None:

@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -280,7 +281,8 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         self.cache_path = Path(cache_path)
         self.int_to_id: dict[int, str] = int_to_id or {}
         self.id_map = self.int_to_id  # data-model alias
-        self.conn = sqlite3.connect(str(self.cache_path))
+        self._conn_lock = threading.RLock()
+        self.conn = sqlite3.connect(str(self.cache_path), check_same_thread=False)
         self.conn.execute("PRAGMA query_only = ON")
         # Notebook export helpers historically used store._conn.
         self._conn = self.conn
@@ -341,17 +343,20 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         if not line_nos:
             return {}
         placeholders = ",".join("?" for _ in line_nos)
-        rows = self.conn.execute(
-            f"SELECT line_no, payload FROM payloads WHERE line_no IN ({placeholders})",
-            line_nos,
-        ).fetchall()
+        with self._conn_lock:
+            rows = self.conn.execute(
+                f"SELECT line_no, payload FROM payloads WHERE line_no IN ({placeholders})",
+                line_nos,
+            ).fetchall()
         return {int(line_no): json.loads(payload) for line_no, payload in rows}
 
     def _iter_payloads(self):
-        for line_no, payload_text in self.conn.execute(
-            "SELECT line_no, payload FROM payloads ORDER BY line_no"
-        ):
-            yield int(line_no), json.loads(payload_text)
+        with self._conn_lock:
+            cursor = self.conn.execute(
+                "SELECT line_no, payload FROM payloads ORDER BY line_no"
+            )
+            for line_no, payload_text in cursor:
+                yield int(line_no), json.loads(payload_text)
 
     def search(
         self,
@@ -444,10 +449,11 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         if limit <= 0:
             return []
         if not filters:
-            rows = self.conn.execute(
-                "SELECT line_no, payload FROM payloads ORDER BY line_no LIMIT ?",
-                (limit,),
-            ).fetchall()
+            with self._conn_lock:
+                rows = self.conn.execute(
+                    "SELECT line_no, payload FROM payloads ORDER BY line_no LIMIT ?",
+                    (limit,),
+                ).fetchall()
             return self._rows_to_hits(rows)
 
         if any(field not in _SQL_FILTER_FIELDS for field in filters):
@@ -468,7 +474,8 @@ class SQLitePayloadFaissVectorStore(VectorStore):
             + " ORDER BY line_no LIMIT ?"
         )
         params.append(limit)
-        rows = self.conn.execute(sql, params).fetchall()
+        with self._conn_lock:
+            rows = self.conn.execute(sql, params).fetchall()
         return self._rows_to_hits(rows)
 
     @staticmethod

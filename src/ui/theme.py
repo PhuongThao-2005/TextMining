@@ -39,35 +39,35 @@ class ThemeTokens:
     reading_width: str
 
 
-_SANS = 'Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-_MONO = '"SFMono-Regular", Consolas, "Liberation Mono", monospace'
+_SANS = '"Work Sans", Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+_MONO = '"DM Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace'
 
 LIGHT_THEME = ThemeTokens(
     _SANS, _MONO,
-    "#f7f7f5", "#ffffff", "#f2f2ef", "#ecece8", "rgba(255,255,255,.94)",
-    "#171714", "#4f4f48", "#74746c", "#ffffff",
-    "#e9e9e4", "#ddddd6", "#c7c7bd",
-    "#1f766f", "#175e59", "#e5f2f0", "#124b47",
-    "#23835b", "#a85f0d", "#b93b3b", "#3c6da8",
-    "9px", "13px", "17px", "23px",
-    "0 1px 2px rgba(24,24,20,.04)",
-    "0 1px 2px rgba(24,24,20,.04), 0 8px 30px rgba(24,24,20,.05)",
-    "0 16px 48px rgba(24,24,20,.08)",
-    "1260px", "790px",
+    "#f7fbff", "#ffffff", "#eef6ff", "#e2eefc", "rgba(255,255,255,.92)",
+    "#0f172a", "#334155", "#64748b", "#ffffff",
+    "#e2e8f0", "#cbd5e1", "#94a3b8",
+    "#2563eb", "#1d4ed8", "#dbeafe", "#1e3a8a",
+    "#16a34a", "#0ea5e9", "#dc2626", "#2563eb",
+    "7px", "9px", "13px", "16px",
+    "0 1px 2px rgba(48,42,30,.04)",
+    "0 8px 20px rgba(48,42,30,.04)",
+    "0 20px 56px rgba(48,42,30,.12)",
+    "1180px", "930px",
 )
 
 DARK_THEME = ThemeTokens(
     _SANS, _MONO,
-    "#111311", "#181b18", "#20231f", "#292c28", "rgba(24,27,24,.96)",
-    "#f1f2ed", "#c4c7bd", "#92968b", "#10120f",
-    "#292d28", "#373c35", "#4b5148",
-    "#75bdb5", "#8dcac3", "#203c38", "#b7e4df",
-    "#65be8d", "#dfa658", "#e27878", "#80a9db",
-    "9px", "13px", "17px", "23px",
+    "#0f172a", "#111827", "#1e293b", "#263449", "rgba(17,24,39,.94)",
+    "#f8fafc", "#cbd5e1", "#94a3b8", "#0f172a",
+    "#1e293b", "#334155", "#475569",
+    "#60a5fa", "#93c5fd", "#1e3a8a", "#dbeafe",
+    "#4ade80", "#38bdf8", "#f87171", "#60a5fa",
+    "7px", "9px", "13px", "16px",
     "0 1px 2px rgba(0,0,0,.16)",
-    "0 8px 28px rgba(0,0,0,.14)",
-    "0 16px 48px rgba(0,0,0,.18)",
-    "1260px", "790px",
+    "0 8px 28px rgba(0,0,0,.16)",
+    "0 18px 52px rgba(0,0,0,.24)",
+    "1180px", "930px",
 )
 
 THEME_CHOICES = ("System", "Light", "Dark")

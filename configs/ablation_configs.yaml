@@ -32,8 +32,8 @@ configs:
       path: data/benchmark/qa_final.jsonl
       version: qa-final-v1
     corpus:
-      path: data/v2/documents.jsonl
-      version: v2
+      path: data/pre-processed/documents.jsonl
+      version: pre-processed-v1
     retrieval:
       top_k: 5
       filter_profile: broad
@@ -41,8 +41,8 @@ configs:
         enabled: true
         backend: bm25
         payload_store: faiss
-        index_path: data/faiss_index
-        index_version: official-faiss-payloads-pending
+        index_path: "data/chunk metadata"
+        index_version: chunk-metadata-faiss-v1
         service_url_env: BM25_SERVICE_URL
         api_key_env: BM25_API_KEY
         timeout_seconds: 300.0
@@ -95,11 +95,22 @@ configs:
       sparse:
         enabled: false
       graph:
-        enabled: false
+        enabled: true
+        backend: structural_pickle
+        path: data/graph/knowledge_graph.gpickle
+        version: official-graph-pending
+        max_hop: 2
+        max_context: 30
       fusion:
-        enabled: false
+        enabled: true
+        strategy: rrf
+        rrf_k: 60
       reranker:
-        enabled: false
+        enabled: true
+        backend: cross_encoder
+        scope: global
+        model: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+        candidate_limit: 30
     generation:
       provider: reference
       model: reference
@@ -143,11 +154,22 @@ configs:
       sparse:
         enabled: false
       graph:
-        enabled: false
+        enabled: true
+        backend: structural_pickle
+        path: data/graph/knowledge_graph.gpickle
+        version: official-graph-pending
+        max_hop: 2
+        max_context: 30
       fusion:
-        enabled: false
+        enabled: true
+        strategy: rrf
+        rrf_k: 60
       reranker:
-        enabled: false
+        enabled: true
+        backend: cross_encoder
+        scope: global
+        model: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+        candidate_limit: 30
     generation:
       provider: openai_compatible
       model: env:LLM_BASE_MODEL
@@ -197,11 +219,22 @@ configs:
       sparse:
         enabled: false
       graph:
-        enabled: false
+        enabled: true
+        backend: structural_pickle
+        path: data/graph/knowledge_graph.gpickle
+        version: official-graph-pending
+        max_hop: 2
+        max_context: 30
       fusion:
-        enabled: false
+        enabled: true
+        strategy: rrf
+        rrf_k: 60
       reranker:
-        enabled: false
+        enabled: true
+        backend: cross_encoder
+        scope: global
+        model: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+        candidate_limit: 30
     generation:
       provider: openai_compatible
       model: env:LLM_BASE_MODEL
@@ -230,26 +263,25 @@ configs:
       embedded_text: header_plus_chunk_text
 
   # Production-intent LLM comparison contract. Model selectors use env:NAME so
-  # no unverified provider model is hard-coded. The official benchmark and
-  # FAISS index paths intentionally fail preflight until those artifacts exist.
-  # Controlled 2x2 LLM comparison. Retrieval is fixed across all four cells:
-  # Dense FAISS -> Graph -> RRF(Dense, Graph) -> global Cross-Encoder reranker.
-  # Sparse/BM25 is deliberately disabled.
+  # no unverified provider model is hard-coded. The interactive UI points to
+  # the manifest-backed local FAISS artifact under data/chunk metadata.
+  # Graph, fusion, and reranker remain disabled until their production adapters
+  # are integrated into the canonical stack.
   LLM-BaseReasoning:
     benchmark:
       path: data/benchmark/qa_final.jsonl
       version: qa-final-v1
     corpus:
-      path: data/v2/documents.jsonl
-      version: v2
+      path: data/pre-processed/documents.jsonl
+      version: pre-processed-v1
     retrieval:
       top_k: 5
       filter_profile: broad
       dense:
         enabled: true
         backend: faiss
-        index_path: data/faiss_index
-        index_version: official-faiss-pending
+        index_path: "data/chunk metadata"
+        index_version: chunk-metadata-faiss-v1
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
@@ -301,16 +333,16 @@ configs:
       path: data/benchmark/qa_final.jsonl
       version: qa-final-v1
     corpus:
-      path: data/v2/documents.jsonl
-      version: v2
+      path: data/pre-processed/documents.jsonl
+      version: pre-processed-v1
     retrieval:
       top_k: 5
       filter_profile: broad
       dense:
         enabled: true
         backend: faiss
-        index_path: data/faiss_index
-        index_version: official-faiss-pending
+        index_path: "data/chunk metadata"
+        index_version: chunk-metadata-faiss-v1
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
@@ -362,16 +394,16 @@ configs:
       path: data/benchmark/qa_final.jsonl
       version: qa-final-v1
     corpus:
-      path: data/v2/documents.jsonl
-      version: v2
+      path: data/pre-processed/documents.jsonl
+      version: pre-processed-v1
     retrieval:
       top_k: 5
       filter_profile: broad
       dense:
         enabled: true
         backend: faiss
-        index_path: data/faiss_index
-        index_version: official-faiss-pending
+        index_path: "data/chunk metadata"
+        index_version: chunk-metadata-faiss-v1
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
@@ -423,16 +455,16 @@ configs:
       path: data/benchmark/qa_final.jsonl
       version: qa-final-v1
     corpus:
-      path: data/v2/documents.jsonl
-      version: v2
+      path: data/pre-processed/documents.jsonl
+      version: pre-processed-v1
     retrieval:
       top_k: 5
       filter_profile: broad
       dense:
         enabled: true
         backend: faiss
-        index_path: data/faiss_index
-        index_version: official-faiss-pending
+        index_path: "data/chunk metadata"
+        index_version: chunk-metadata-faiss-v1
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
@@ -486,16 +518,16 @@ configs:
       path: data/benchmark/qa_final.jsonl
       version: qa-final-v1
     corpus:
-      path: data/v2/documents.jsonl
-      version: v2
+      path: data/pre-processed/documents.jsonl
+      version: pre-processed-v1
     retrieval:
       top_k: 5
       filter_profile: broad
       dense:
         enabled: true
         backend: faiss
-        index_path: data/faiss_index
-        index_version: official-faiss-pending
+        index_path: "data/chunk metadata"
+        index_version: chunk-metadata-faiss-v1
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
@@ -531,16 +563,16 @@ configs:
       path: data/benchmark/qa_final.jsonl
       version: qa-final-v1
     corpus:
-      path: data/v2/documents.jsonl
-      version: v2
+      path: data/pre-processed/documents.jsonl
+      version: pre-processed-v1
     retrieval:
       top_k: 5
       filter_profile: broad
       dense:
         enabled: true
         backend: faiss
-        index_path: data/faiss_index
-        index_version: official-faiss-pending
+        index_path: "data/chunk metadata"
+        index_version: chunk-metadata-faiss-v1
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true
@@ -583,16 +615,16 @@ configs:
       path: data/benchmark/qa_final.jsonl
       version: qa-final-v1
     corpus:
-      path: data/v2/documents.jsonl
-      version: v2
+      path: data/pre-processed/documents.jsonl
+      version: pre-processed-v1
     retrieval:
       top_k: 5
       filter_profile: broad
       dense:
         enabled: true
         backend: faiss
-        index_path: data/faiss_index
-        index_version: official-faiss-pending
+        index_path: "data/chunk metadata"
+        index_version: chunk-metadata-faiss-v1
         model: intfloat/multilingual-e5-large
         score_threshold: 0.3
         expand_units: true

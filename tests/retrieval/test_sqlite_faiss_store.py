@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -200,6 +201,18 @@ def test_search_and_scroll_with_filters(tmp_path: Path) -> None:
         scrolled = store.scroll({"validity_group": "current"}, limit=10)
         assert len(scrolled) == 2
         assert {h.payload["chunk_id"] for h in scrolled} == {"chunk-0", "chunk-1"}
+    finally:
+        store.close()
+
+
+def test_sqlite_payload_store_can_be_reused_from_streamlit_worker_thread(tmp_path: Path) -> None:
+    index_dir, vectors, _ = _make_index_fixture(tmp_path)
+    store = SQLitePayloadFaissVectorStore.load(index_dir)
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(lambda: store.search(vectors[0].tolist(), limit=1))
+            hits = future.result(timeout=5)
+        assert hits and hits[0].payload["chunk_id"] == "chunk-0"
     finally:
         store.close()
 

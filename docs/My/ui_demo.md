@@ -12,19 +12,13 @@ Implementation-complete, local-startup-verified, bounded-live-question-verified,
 
 ## Installation
 
-This repository currently has no established application dependency declaration in `pyproject.toml` or a `requirements*.txt` file, so Task 5 does not introduce a competing package-management format. Install into the existing environment:
+Install the local production UI dependencies into the same Python environment used to run Streamlit:
 
 ```bash
-pip install streamlit pyyaml openai
+python -m pip install -r requirements.txt
 ```
 
-For the configured FAISS retrieval stack, also install:
-
-```bash
-pip install faiss-cpu sentence-transformers
-```
-
-Gemini configurations require `google-genai`; Qdrant configurations require `qdrant-client`. Graph and reranker dependencies alone do not enable those controls because their adapters are not wired into the production ablation stack.
+The FAISS production path needs `faiss-cpu`, `sentence-transformers`, `transformers`, and `torch`. Gemini configurations require `google-genai`; Qdrant configurations require `qdrant-client`. The Graph + RRF + reranker path also needs `data/graph/knowledge_graph.gpickle`, `data/kg/knowledge_graph.gpickle`, or `GRAPH_PICKLE_PATH`.
 
 ## Environment variables
 
@@ -41,23 +35,24 @@ Gemini configs use their configured model plus `GEMINI_API_KEY`. Only configured
 
 ## Required artifacts
 
-The current FAISS configs expect:
+The current interactive Production-intent LLM/Agent configs expect:
 
 ```text
-data/faiss_index/index.faiss
-data/faiss_index/payloads.jsonl
+data/chunk metadata/index.faiss
+data/chunk metadata/payloads.jsonl
+data/chunk metadata/index_manifest.json
 ```
 
 `payload_cache.sqlite` is created/reused by the production read-only FAISS store when its source payload file is available. `id_map.json` is optional when the index does not require a separate identifier map.
 
-The benchmark and corpus identities currently point to:
+The interactive Production-intent configs currently use the local preprocessed corpus identity:
 
 ```text
 data/benchmark/qa_final.jsonl
-data/v2/documents.jsonl
+data/pre-processed/documents.jsonl
 ```
 
-They are checked for diagnostic completeness but are not read to answer one interactive question. Full evaluation still requires them. Qdrant configs require their real collection/server contract. An enabled graph requires its configured graph artifact, and a reranker requires its model/dependency and an integrated adapter; neither adapter is currently executable through the canonical stack.
+The benchmark path is checked for diagnostic completeness but is not read to answer one interactive question. Full evaluation still requires the official benchmark. Qdrant configs require their real collection/server contract. Graph expansion, RRF fusion, and global reranking run as one supported stack when the graph artifact and reranker model are available.
 
 ## Launch
 
@@ -79,8 +74,7 @@ The app adds only repository-relative import paths derived from `ui/app.py`; it 
 - **Pipeline config:** sourced from `configs/ablation_configs.yaml`. Supported LLM/Plain RAG/Simple Planner identities are shown with current readiness. MultiTool is visible as deferred.
 - **Top-k:** temporary in-memory override from 1 through 50. It never edits YAML.
 - **Filter profile:** uses the real `current_law`, `broad`, and `historical` schema values.
-- **Graph:** schema-visible, but enabling it blocks execution with an actionable message because no graph adapter is integrated with `build_ablation_stack`.
-- **Reranker:** behaves the same way; it is never silently ignored.
+- **Graph + RRF + reranker:** one runtime toggle because the supported stack must enable graph expansion, RRF fusion, and global Cross-Encoder reranking together. It is disabled until a graph pickle is available.
 - **Question:** a dominant landing-page search field. After the first turn, `st.chat_input` submits follow-ups.
 - **Ask:** explicit form submission; no request occurs on each keystroke.
 - **Reset cache:** clears parsed registry and lazily constructed stack resources. **New search** clears the bounded in-memory thread.
@@ -128,7 +122,7 @@ Temporarily select a config whose model selector, credential, provider URL, pack
 - **Missing API key:** set the config's named key variable, normally `LLM_API_KEY`; the UI never displays its value.
 - **Missing base URL/provider failure:** set `LLM_BASE_URL`, verify endpoint/model compatibility, and inspect the sanitized failed stage.
 - **Deferred MultiTool:** expected; approve another typed read-only tool and bounded routing acceptance contract before implementation.
-- **Graph/Reranker unavailable:** expected with the current stack builder. Turning either on blocks instead of silently falling back.
+- **Graph/Reranker unavailable:** place the graph at `data/graph/knowledge_graph.gpickle` or set `GRAPH_PICKLE_PATH`, then clear the resource cache. If the reranker model is not cached, allow the first model download or pre-cache it.
 - **Cache still uses an old resource:** use **Clear resource cache** after changing artifacts or environment configuration.
 
 ## Security notes

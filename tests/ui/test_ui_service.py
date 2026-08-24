@@ -133,6 +133,7 @@ def test_preflight_runnable_fixture_and_paths_are_safe(tmp_path: Path) -> None:
     assert result.runnable and result.status == "runtime-ready"
     diagnostics = json.dumps({"checks": [vars(check) for check in result.checks], "config": result.resolved_config})
     assert "fixture-secret" not in diagnostics
+    assert result.resolved_config["generation"]["max_output_tokens"] == 100
 
 
 def test_preflight_missing_model_api_key_and_base_url(tmp_path: Path) -> None:
@@ -193,6 +194,16 @@ def test_preflight_deferred_and_graph_rrf_stack_states(tmp_path: Path) -> None:
     assert ready.runnable
     assert {check.name for check in ready.checks if check.status == "ready"} >= {"graph", "fusion", "reranker"}
 
+    offline = run_preflight(
+        config,
+        config_name="graph-rrf",
+        project_root=tmp_path,
+        environ={"HF_HUB_OFFLINE": "1"},
+        package_available=lambda name: True,
+    )
+    assert not offline.runnable
+    assert any("HF_HUB_OFFLINE=1" in blocker for blocker in offline.blockers)
+
 
 def test_overrides_are_bounded_deterministic_and_non_mutating(tmp_path: Path) -> None:
     source = _base_config(tmp_path)
@@ -209,12 +220,53 @@ def test_overrides_are_bounded_deterministic_and_non_mutating(tmp_path: Path) ->
             apply_safe_overrides(source, QuestionRequest("q", "fixture", top_k_override=invalid))
 
 
-def test_graph_and_reranker_true_overrides_are_rejected(tmp_path: Path) -> None:
-    config = _base_config(tmp_path)
-    with pytest.raises(UIConfigError, match="Graph cannot be enabled"):
+def test_generation_overrides_are_bounded_and_non_mutating(tmp_path: Path) -> None:
+    source = _base_config(tmp_path)
+    original = deepcopy(source)
+    effective = apply_safe_overrides(
+        source,
+        QuestionRequest(
+            "q", "fixture",
+            generation_model_override="env:LLM_LARGER_MODEL",
+            prompt_strategy_override="reasoning",
+            temperature_override=0.4,
+            top_p_override=0.8,
+            max_output_tokens_override=2048,
+            timeout_seconds_override=90.0,
+            max_retries_override=3,
+        ),
+    )
+    generation = effective["generation"]
+    assert generation["model"] == "env:LLM_LARGER_MODEL"
+    assert generation["prompt_strategy"] == "reasoning"
+    assert generation["temperature"] == 0.4
+    assert generation["top_p"] == 0.8
+    assert generation["max_output_tokens"] == 2048
+    assert generation["timeout_seconds"] == 90.0
+    assert generation["max_retries"] == 3
+    assert source == original
+
+    with pytest.raises(UIConfigError, match="Prompt strategy"):
+        apply_safe_overrides(source, QuestionRequest("q", "fixture", prompt_strategy_override="unsupported"))
+    with pytest.raises(UIConfigError, match="temperature"):
+        apply_safe_overrides(source, QuestionRequest("q", "fixture", temperature_override=2.5))
+
+
+def test_graph_and_reranker_enable_the_complete_stack(tmp_path: Path) -> None:
+    config = _base_config(tmp_path, backend="faiss")
+    with pytest.raises(UIConfigError, match="enabled together"):
         apply_safe_overrides(config, QuestionRequest("q", "fixture", graph_enabled_override=True))
-    with pytest.raises(UIConfigError, match="Reranker cannot be enabled"):
+    with pytest.raises(UIConfigError, match="enabled together"):
         apply_safe_overrides(config, QuestionRequest("q", "fixture", reranker_enabled_override=True))
+    effective = apply_safe_overrides(
+        config,
+        QuestionRequest("q", "fixture", graph_enabled_override=True, reranker_enabled_override=True),
+    )
+    retrieval = effective["retrieval"]
+    assert retrieval["graph"]["enabled"] is True
+    assert retrieval["fusion"]["enabled"] is True
+    assert retrieval["reranker"]["enabled"] is True
+    assert retrieval["graph"]["path"] == "data/graph/knowledge_graph.gpickle"
 
 
 def test_plain_service_success_preserves_context_rank_score_latency_and_strips_reasoning(tmp_path: Path) -> None:

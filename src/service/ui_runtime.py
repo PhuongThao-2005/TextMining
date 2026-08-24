@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import os
+from difflib import SequenceMatcher
+from functools import lru_cache
 from copy import deepcopy
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -24,6 +26,13 @@ AUTO_MODE = "Auto"
 RUNTIME_MODES = (AUTO_MODE, DEMO_MODE, PRODUCTION_MODE)
 ARTIFACT_SEARCH_ROOTS = (Path("data"), Path("artifacts"))
 MANIFEST_NAMES = ("index_manifest.json", "manifest.json", "meta.json")
+GRAPH_PICKLE_ENV = "GRAPH_PICKLE_PATH"
+GRAPH_PICKLE_CANDIDATES = (
+    Path("data/graph/knowledge_graph.gpickle"),
+    Path("data/kg/knowledge_graph.gpickle"),
+)
+QA_FINAL_PATH = Path("data/qa_final.jsonl")
+QA_DEMO_MATCH_THRESHOLD = 0.34
 
 
 @dataclass(frozen=True)
@@ -91,8 +100,13 @@ class ProductionAnswerProvider:
 class DemoAnswerProvider:
     """Deterministic UI preview provider with no production dependencies or calls."""
 
+    def __init__(self, *, project_root: Path | None = None, qa_path: Path | None = None) -> None:
+        self._project_root = project_root or Path(__file__).resolve().parents[2]
+        configured_path = qa_path or QA_FINAL_PATH
+        self._qa_path = configured_path if configured_path.is_absolute() else self._project_root / configured_path
+
     def answer(self, request: QuestionRequest) -> QuestionResponse:
-        scenario = _demo_scenario(request.question)
+        scenario = _qa_demo_scenario(request.question, self._qa_path) or _demo_scenario(request.question)
         rows = scenario["sources"]
         sources = prepare_citation_sources(rows)
         raw_answer = str(scenario.get("answer") or "")
@@ -136,6 +150,21 @@ class DemoAnswerProvider:
             question=request.question,
             is_mock=True,
         )
+
+
+def load_demo_qa_examples(
+    project_root: Path, *, limit: int = 3, lang: str = "vi", qa_path: Path = QA_FINAL_PATH,
+) -> tuple[tuple[str, str], ...]:
+    del lang
+    path = qa_path if qa_path.is_absolute() else project_root / qa_path
+    rows = [row for row in _load_qa_demo_rows(path) if str(row.get("answer_type") or "") != "unanswerable"]
+    if not rows:
+        return ()
+    labels = ("Quy định", "Nguồn pháp lý", "Tình huống")
+    examples: list[tuple[str, str]] = []
+    for index, row in enumerate(rows[:limit]):
+        examples.append((labels[index] if index < len(labels) else f"QA {index + 1}", str(row.get("question") or "")))
+    return tuple(examples)
 
 
 def resolve_runtime_mode(requested_mode: str, readiness: ProductionReadiness) -> ModeResolution:
@@ -197,6 +226,8 @@ def scan_production_readiness(
                                    (message,), (), (), None, {})
 
     config = deepcopy(registry[config_name])
+    env = os.environ if environ is None else environ
+    graph_warnings = _apply_graph_runtime_path(config, project_root, env)
     dense = config.get("retrieval", {}).get("dense", {})
     backend = dense.get("backend") if dense.get("enabled") else None
     candidates = discover_artifact_candidates(project_root, search_roots=search_roots) if backend == "faiss" else ()
@@ -218,12 +249,12 @@ def scan_production_readiness(
 
     preflight = run_preflight(
         config, config_name=config_name, project_root=project_root,
-        environ=os.environ if environ is None else environ,
+        environ=env,
         package_available=package_available,
     )
     checks = list(preflight.checks)
     blockers = list(preflight.blockers)
-    warnings = list(preflight.warnings)
+    warnings = [*graph_warnings, *preflight.warnings]
 
     if backend == "faiss":
         active_dir = _resolve_path(dense.get("index_path", "data/faiss_index"), project_root)
@@ -286,6 +317,132 @@ def scan_production_readiness(
         tuple(checks), tuple(blockers), tuple(warnings), compatible, chosen,
         preflight.resolved_config,
     )
+
+
+def _qa_demo_scenario(question: str, qa_path: Path) -> dict[str, Any] | None:
+    rows = _load_qa_demo_rows(qa_path)
+    if not rows:
+        return None
+    query = question.strip()
+    if not query:
+        return None
+    lowered = query.casefold()
+    if any(marker in lowered for marker in ("complete example", "single source", "multiple sources", "abstention", "invalid")):
+        return None
+    best: tuple[float, Mapping[str, Any]] | None = None
+    for row in rows:
+        candidate = str(row.get("question") or "")
+        score = 1.0 if candidate == query else SequenceMatcher(None, lowered, candidate.casefold()).ratio()
+        if best is None or score > best[0]:
+            best = (score, row)
+    if best is None or best[0] < QA_DEMO_MATCH_THRESHOLD:
+        return None
+    return _qa_row_to_demo_scenario(best[1], best[0])
+
+
+@lru_cache(maxsize=4)
+def _load_qa_demo_rows(path: Path) -> tuple[Mapping[str, Any], ...]:
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return ()
+    rows: list[Mapping[str, Any]] = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, Mapping) and row.get("question"):
+            rows.append(row)
+    return tuple(rows)
+
+
+def _qa_row_to_demo_scenario(row: Mapping[str, Any], score: float) -> dict[str, Any]:
+    answer_type = str(row.get("answer_type") or "")
+    abstained = answer_type == "unanswerable"
+    rows = _qa_demo_sources(row)
+    citation_count = max(1, len(rows))
+    markers = "".join(f"[{index}]" for index in range(1, citation_count + 1))
+    if abstained:
+        answer = ""
+    else:
+        reference_answer = str(row.get("reference_answer") or "").strip()
+        explanation = str(row.get("answer_explanation") or "").strip()
+        answer = reference_answer
+        if markers and answer:
+            answer = f"{answer} {markers}"
+        if explanation:
+            answer = f"{answer}\n\nGiải thích: {explanation} {markers}".strip()
+    followups = tuple(
+        str(value) for value in (
+            "Văn bản nào là nguồn chính của câu trả lời này?",
+            "Có ngoại lệ hoặc hạn chế nào cần kiểm tra không?",
+            "Tóm tắt các căn cứ được trích dẫn.",
+        )
+    )
+    return {
+        "name": f"qa-final:{row.get('qa_id') or 'unknown'}",
+        "answer": answer,
+        "abstained": abstained,
+        "sources": rows,
+        "followups": followups,
+        "trace": (
+            {"step": 1, "event": "load_mock_qa", "qa_id": row.get("qa_id"), "status": "demo"},
+            {"step": 2, "event": "match_question", "similarity": round(score, 4), "status": "demo"},
+            {"step": 3, "event": "render_reference_answer", "answer_type": answer_type, "status": "demo"},
+        ),
+    }
+
+
+def _qa_demo_sources(row: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
+    ground_truth = row.get("ground_truth") if isinstance(row.get("ground_truth"), Mapping) else {}
+    document_ids = [str(value) for value in ground_truth.get("document_ids") or []]
+    provision_ids = [str(value) for value in ground_truth.get("provision_ids") or []]
+    chunk_ids = [str(value) for value in ground_truth.get("chunk_ids") or []]
+    if not chunk_ids:
+        center = str(row.get("center_provision_id") or row.get("qa_id") or "mock-context")
+        chunk_ids = [center]
+    reference_answer = str(row.get("reference_answer") or "").strip()
+    explanation = str(row.get("answer_explanation") or "").strip()
+    source_text = (
+        "Mock QA evidence from data/qa_final.jsonl. This is not the full legal chunk text.\n\n"
+        f"Question: {row.get('question') or ''}\n\n"
+        f"Reference answer: {reference_answer or 'Không có đủ thông tin trong đoạn luật.'}\n\n"
+        f"Explanation: {explanation or 'No explanation was recorded.'}\n\n"
+        f"Answer type: {row.get('answer_type') or 'unknown'}\n"
+        f"Category: {row.get('category') or 'unknown'}\n"
+        f"Difficulty: {row.get('difficulty') or 'unknown'}\n"
+        f"Corpus version: {row.get('corpus_version') or 'unknown'}\n"
+        f"As of date: {row.get('as_of_date') or 'unknown'}"
+    )
+    quote = reference_answer or explanation or "Không có đủ thông tin trong đoạn luật."
+    start = source_text.find(quote)
+    rows: list[dict[str, Any]] = []
+    for index, chunk_id in enumerate(chunk_ids, 1):
+        document_id = document_ids[min(index - 1, len(document_ids) - 1)] if document_ids else str(row.get("qa_id") or "mock-document")
+        provision_id = provision_ids[min(index - 1, len(provision_ids) - 1)] if provision_ids else str(row.get("center_provision_id") or "")
+        rows.append({
+            "document_id": document_id,
+            "provision_id": provision_id,
+            "chunk_id": chunk_id,
+            "title": f"Mock QA · {document_id}",
+            "section": provision_id or str(row.get("category") or "qa_final"),
+            "rank": index,
+            "score": round(max(0.5, 0.96 - (index - 1) * 0.07), 3),
+            "is_mock": True,
+            "text": source_text,
+            "evidence": EvidenceSpan(
+                context_id=chunk_id,
+                start_char=start if start >= 0 else None,
+                end_char=start + len(quote) if start >= 0 else None,
+                quote=quote,
+                match_type="explicit_offsets" if start >= 0 else "exact_unique_quote",
+                confidence="mock QA reference",
+            ),
+        })
+    return tuple(rows)
 
 
 def _demo_scenario(question: str) -> dict[str, Any]:
@@ -462,6 +619,63 @@ def _configured_manifest(dense: Mapping[str, Any], index_dir: Path, project_root
     return None
 
 
+def resolve_graph_pickle_path(
+    project_root: Path,
+    environ: Mapping[str, str] | None = None,
+    configured: Any = None,
+) -> Path | None:
+    """Return the first existing graph pickle from env, config, or local defaults."""
+    env = os.environ if environ is None else environ
+    candidates: list[Path] = []
+    env_value = env.get(GRAPH_PICKLE_ENV)
+    if env_value:
+        candidates.append(_resolve_path(env_value, project_root))
+    if configured:
+        candidates.append(_resolve_path(configured, project_root))
+    candidates.extend(_resolve_path(value, project_root) for value in GRAPH_PICKLE_CANDIDATES)
+    seen: set[Path] = set()
+    for candidate in candidates:
+        try:
+            resolved = candidate.resolve()
+        except OSError:
+            resolved = candidate
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        if resolved.is_file():
+            return resolved
+    return None
+
+
+def graph_download_warnings(project_root: Path) -> tuple[str, ...]:
+    warnings: list[str] = []
+    for relative_dir in (Path("data/graph"), Path("data/kg")):
+        directory = project_root / relative_dir
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.glob("*.crdownload"), key=lambda item: item.name):
+            warnings.append(f"Graph download appears incomplete: {relative_dir.as_posix()}/{path.name}.")
+    return tuple(warnings)
+
+
+def _apply_graph_runtime_path(
+    config: dict[str, Any],
+    project_root: Path,
+    environ: Mapping[str, str],
+) -> tuple[str, ...]:
+    retrieval = config.get("retrieval")
+    if not isinstance(retrieval, dict):
+        return ()
+    graph = retrieval.get("graph")
+    if not isinstance(graph, dict) or not graph.get("enabled"):
+        return graph_download_warnings(project_root)
+    resolved = resolve_graph_pickle_path(project_root, environ, graph.get("path"))
+    if resolved is not None:
+        graph["path"] = str(resolved)
+        return ()
+    return graph_download_warnings(project_root)
+
+
 def _nested_mapping(value: Mapping[str, Any], *keys: str) -> Mapping[str, Any]:
     current: Any = value
     for key in keys:
@@ -504,5 +718,6 @@ __all__ = [
     "ARTIFACT_SEARCH_ROOTS", "AUTO_MODE", "AnswerProvider", "ArtifactCandidate",
     "DEMO_MODE", "DemoAnswerProvider", "ModeResolution", "PRODUCTION_MODE",
     "ProductionAnswerProvider", "ProductionReadiness", "RUNTIME_MODES",
-    "discover_artifact_candidates", "resolve_runtime_mode", "scan_production_readiness",
+    "discover_artifact_candidates", "graph_download_warnings", "load_demo_qa_examples",
+    "resolve_graph_pickle_path", "resolve_runtime_mode", "scan_production_readiness",
 ]

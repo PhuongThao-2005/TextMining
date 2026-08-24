@@ -4,7 +4,10 @@ from typing import Any
 
 import pytest
 
-from service.ui_runtime import discover_artifact_candidates, scan_production_readiness
+from service.ui_runtime import (
+    discover_artifact_candidates, graph_download_warnings, resolve_graph_pickle_path,
+    scan_production_readiness,
+)
 
 
 def config(tmp_path: Path, *, provider: str = "reference") -> dict[str, Any]:
@@ -106,6 +109,48 @@ def test_valid_manifest_and_runtime_are_ready(tmp_path: Path) -> None:
     assert result.ready and result.selected_artifact is not None
     assert result.selected_artifact.index_dir == index
     assert result.embedding_identity == "fixture-model"
+
+
+def test_graph_path_can_resolve_from_local_kg_or_environment(tmp_path: Path) -> None:
+    local_graph = tmp_path / "data" / "kg" / "knowledge_graph.gpickle"
+    local_graph.parent.mkdir(parents=True)
+    local_graph.write_bytes(b"fixture")
+    assert resolve_graph_pickle_path(tmp_path) == local_graph.resolve()
+
+    custom = tmp_path / "custom" / "graph.gpickle"
+    custom.parent.mkdir()
+    custom.write_bytes(b"fixture")
+    assert resolve_graph_pickle_path(tmp_path, {"GRAPH_PICKLE_PATH": str(custom)}) == custom.resolve()
+
+
+def test_graph_runtime_path_is_applied_before_readiness_preflight(tmp_path: Path) -> None:
+    write_artifact(tmp_path)
+    graph = tmp_path / "data" / "kg" / "knowledge_graph.gpickle"
+    graph.parent.mkdir(parents=True)
+    graph.write_bytes(b"fixture")
+    value = config(tmp_path)
+    value["retrieval"].update({
+        "graph": {
+            "enabled": True, "backend": "structural_pickle",
+            "path": "data/graph/knowledge_graph.gpickle",
+            "max_hop": 2, "max_context": 30,
+        },
+        "fusion": {"enabled": True, "strategy": "rrf", "rrf_k": 60},
+        "reranker": {
+            "enabled": True, "backend": "cross_encoder", "scope": "global",
+            "model": "fixture-cross-encoder", "candidate_limit": 30,
+        },
+    })
+    result = scan(tmp_path, value)
+    assert result.ready
+    assert result.resolved_config["retrieval"]["graph"]["path"] == str(graph.resolve())
+
+
+def test_partial_graph_download_is_reported(tmp_path: Path) -> None:
+    partial = tmp_path / "data" / "kg" / "graph.crdownload"
+    partial.parent.mkdir(parents=True)
+    partial.write_bytes(b"partial")
+    assert graph_download_warnings(tmp_path) == ("Graph download appears incomplete: data/kg/graph.crdownload.",)
 
 
 def test_discovery_is_deterministic_and_multiple_candidates_require_selection(tmp_path: Path) -> None:

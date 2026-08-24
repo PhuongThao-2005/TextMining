@@ -1,9 +1,11 @@
 from dataclasses import replace
+import json
+from pathlib import Path
 
 from service.qa_service import QuestionRequest, QuestionResponse
 from service.ui_runtime import (
     AUTO_MODE, DEMO_MODE, PRODUCTION_MODE, DemoAnswerProvider,
-    ProductionAnswerProvider, ProductionReadiness, resolve_runtime_mode,
+    ProductionAnswerProvider, ProductionReadiness, load_demo_qa_examples, resolve_runtime_mode,
 )
 
 
@@ -94,3 +96,45 @@ def test_demo_followups_are_deterministic_and_turn_citations_restart() -> None:
     assert first.citation_sources[0].citation_id == 1
     assert second.citation_sources[0].citation_id == 1
     assert first.suggested_followups == provider.answer(request("one citation")).suggested_followups
+
+
+def test_demo_provider_can_render_qa_final_jsonl_without_api(tmp_path: Path) -> None:
+    qa_path = tmp_path / "qa_final.jsonl"
+    row = {
+        "qa_id": "qa-demo-1",
+        "question": "Người lao động được nghỉ phép năm bao nhiêu ngày?",
+        "reference_answer": "Người lao động làm đủ 12 tháng được nghỉ hằng năm 12 ngày.",
+        "answer_explanation": "Câu trả lời được lấy từ quy định về nghỉ hằng năm.",
+        "answer_type": "extractive",
+        "ground_truth": {
+            "document_ids": ["doc-1"],
+            "provision_ids": ["doc-1::article::113"],
+            "chunk_ids": ["doc-1::article::113::chunk::1"],
+        },
+        "category": "single_hop",
+        "difficulty": "easy",
+        "corpus_version": "fixture",
+        "as_of_date": "2026-08-24",
+    }
+    qa_path.write_text(json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
+    provider = DemoAnswerProvider(project_root=tmp_path, qa_path=qa_path)
+
+    response = provider.answer(request(row["question"]))
+
+    assert response.mode == "demo" and response.is_mock
+    assert response.diagnostics["production_call_performed"] is False
+    assert response.diagnostics["demo_scenario"] == "qa-final:qa-demo-1"
+    assert response.answer and "12 ngày" in response.answer
+    assert response.citation_sources and response.citation_sources[0].is_mock
+    assert response.contexts and response.contexts[0].chunk_id == "doc-1::article::113::chunk::1"
+
+
+def test_demo_qa_examples_use_answerable_rows(tmp_path: Path) -> None:
+    qa_path = tmp_path / "qa_final.jsonl"
+    rows = [
+        {"question": "Không trả lời được?", "answer_type": "unanswerable"},
+        {"question": "Câu hỏi answerable?", "answer_type": "extractive"},
+    ]
+    qa_path.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in rows), encoding="utf-8")
+
+    assert load_demo_qa_examples(tmp_path, qa_path=qa_path) == (("Quy định", "Câu hỏi answerable?"),)

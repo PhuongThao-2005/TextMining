@@ -1,6 +1,6 @@
 from generation.citations import CitationSource
 from service.qa_service import ContextRow
-from src.ui.view_models import build_source_sections, display_value, safe_html_text
+from src.ui.view_models import build_source_sections, display_value, format_retrieved_text, safe_html_text
 
 
 def source(identifier: int, rank: int, *, mock: bool = False) -> CitationSource:
@@ -38,3 +38,16 @@ def test_untrusted_display_text_is_escaped_and_missing_values_are_na() -> None:
     assert "<script>" not in escaped and "&lt;script&gt;" in escaped
     assert display_value(None) == "N/A" and display_value("") == "N/A"
     assert display_value(0) == "0"
+
+
+def test_cleaned_legal_chunk_gets_readable_display_breaks() -> None:
+    text = (
+        "Điều 1. Quy định như sau: 1. Hỗ trợ thêm 30% so với mức lương. "
+        "2. Hỗ trợ biểu diễn a) Hỗ trợ chính - Đối với diễn viên chính."
+    )
+    formatted = format_retrieved_text(text)
+    assert formatted.startswith("Điều 1. Quy định")
+    assert "sau:\n1. Hỗ trợ" in formatted
+    assert "\n2. Hỗ trợ" in formatted
+    assert "\na) Hỗ trợ" in formatted
+    assert "\n- Đối với" in formatted

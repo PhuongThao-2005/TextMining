@@ -7,6 +7,7 @@ generation/service layer.
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import date
 from typing import Any, Mapping, Sequence
 
 import streamlit as st
@@ -19,20 +20,44 @@ from service.ui_models import (
 )
 from service.ui_runtime import ProductionReadiness
 
+from .i18n import t
 from .view_models import (
-    build_source_sections, build_source_text_segments, display_value, safe_html_text,
-    resolve_source_text, source_segments_html,
+    build_source_sections, build_source_text_segments, display_value, format_retrieved_text,
+    safe_html_text, resolve_source_text, source_segments_html,
 )
 
 
-def render_app_header(active_mode: str, requested_mode: str, ready: bool) -> None:
-    label = _mode_label(active_mode, requested_mode, ready)
+def render_app_header(
+    active_mode: str,
+    requested_mode: str,
+    ready: bool,
+    lang: str = "en",
+    *,
+    theme_choice: str | None = None,
+) -> None:
+    label = _mode_label(active_mode, requested_mode, ready, lang)
     badge_class = "production" if active_mode == "production" and ready else "blocked" if active_mode == "production" else "demo"
+    theme_label = theme_choice or "System"
     st.markdown(
         '<div class="ga-header">'
-        '<div class="ga-brand"><span class="ga-mark" aria-hidden="true"></span>'
-        '<span>Grounded</span><span>Document Answer Engine</span></div>'
-        f'<span class="ga-mode {badge_class}">{safe_html_text(label)}</span></div>',
+        '<div class="ga-page-title">'
+        f'<h2>{safe_html_text(t(lang, "legal_title"))}</h2>'
+        f'<p>{safe_html_text(t(lang, "legal_subtitle"))}</p></div>'
+        '<div class="ga-top-controls">'
+        f'<span class="ga-compact-select">{safe_html_text(theme_label)} <span>⌄</span></span>'
+        f'<span class="ga-compact-select">{safe_html_text(t(lang, "language_label"))} <span>⌄</span></span>'
+        f'<span class="ga-mode {badge_class}"><i></i>{safe_html_text(label)}</span>'
+        '</div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_sidebar_brand(lang: str = "en") -> None:
+    st.markdown(
+        '<div class="ga-sidebar-brand">'
+        '<div class="ga-brand-mark" aria-hidden="true">▤</div>'
+        '<div><strong>Grounded</strong>'
+        f'<span>{safe_html_text(t(lang, "brand_caption"))}</span></div></div>',
         unsafe_allow_html=True,
     )
 
@@ -43,79 +68,96 @@ def render_landing_hero(
     config_name: str,
     readiness: ProductionReadiness,
     examples: Sequence[tuple[str, str]],
+    lang: str = "en",
 ) -> str | None:
     st.markdown(
         '<section class="ga-hero">'
-        '<div class="ga-eyebrow">Grounded answers from your documents</div>'
-        '<h1>What would you like to understand?</h1>'
-        '<p>Ask a question and trace every answer back to its retrieved evidence.</p>'
+        f'<div class="ga-eyebrow">{safe_html_text(t(lang, "hero_eyebrow"))}</div>'
+        f'<h1>{safe_html_text(t(lang, "hero_title"))}</h1>'
+        f'<p>{safe_html_text(t(lang, "hero_body"))}</p>'
         '</section>',
         unsafe_allow_html=True,
     )
     submitted_question: str | None = None
     with st.form("landing-search", clear_on_submit=False):
         question = st.text_area(
-            "Question",
-            height=126,
-            placeholder="Ask a question about the available documents…",
+            t(lang, "question"),
+            height=72,
+            placeholder="Hỏi về luật, điều khoản hoặc quyền lợi của bạn..." if lang == "vi" else "Ask about a law, article, or legal right...",
             label_visibility="collapsed",
         )
-        toolbar_left, toolbar_right = st.columns([5, 1])
-        mode_text = "Demo Preview · no external calls" if active_mode == "demo" else f"Production · {config_name}"
+        toolbar_left, toolbar_shortcut, toolbar_right = st.columns([5, 1, 1])
+        mode_text = f'{t(lang, "mode_demo")} · no external calls' if active_mode == "demo" else f'{t(lang, "mode_production")} · {config_name}'
         toolbar_left.markdown(f'<span class="ga-composer-meta">{safe_html_text(mode_text)}</span>', unsafe_allow_html=True)
-        submitted = toolbar_right.form_submit_button("Ask", type="primary", use_container_width=True)
+        toolbar_shortcut.markdown('<span class="ga-shortcut">⌘ ↵</span>', unsafe_allow_html=True)
+        submitted = toolbar_right.form_submit_button(t(lang, "ask"), type="primary", use_container_width=True)
         if submitted:
             submitted_question = question
 
-    st.markdown('<div class="ga-examples"><div class="ga-section-label">Try an example</div></div>', unsafe_allow_html=True)
-    columns = st.columns(min(4, len(examples)))
-    for index, (label, query) in enumerate(examples):
-        if columns[index % len(columns)].button(label, key=f"example-{index}", use_container_width=True):
-            submitted_question = query
     st.markdown(
-        f'<div class="ga-landing-status"><span class="ga-status-dot"></span>{safe_html_text(_landing_status(active_mode, readiness))}</div>',
+        '<div class="ga-landing-meta">'
+        f'<span class="ga-mode {"demo" if active_mode == "demo" else "production"}"><i></i>{safe_html_text(t(lang, "mode_demo") if active_mode == "demo" else t(lang, "mode_production"))}</span>'
+        f'<span>{safe_html_text(config_name)}</span></div>',
         unsafe_allow_html=True,
     )
-    st.caption("Enter submits with the Ask button; use Shift+Enter for a new line in the composer.")
+    st.markdown(f'<div class="ga-examples"><div class="ga-section-label">{safe_html_text(t(lang, "examples"))}</div></div>', unsafe_allow_html=True)
+    columns = st.columns(min(4, len(examples)))
+    for index, (label, query) in enumerate(examples):
+        button_label = f"{label}\n\n{query}  →"
+        if columns[index % len(columns)].button(button_label, key=f"example-{index}", use_container_width=True):
+            submitted_question = query
+    st.markdown(
+        f'<div class="ga-landing-status"><span class="ga-status-dot"></span>{safe_html_text(_landing_status(active_mode, readiness, lang))}</div>',
+        unsafe_allow_html=True,
+    )
     return submitted_question
 
 
-def render_blocked_setup(readiness: ProductionReadiness) -> None:
+def render_blocked_setup(readiness: ProductionReadiness, lang: str = "en") -> None:
     st.markdown(
-        '<section class="ga-state"><h3>Production is not ready</h3>'
-        '<p>Resolve the required setup items, or switch to Demo Preview to inspect the interface.</p></section>',
+        f'<section class="ga-state"><h3>{safe_html_text(t(lang, "blocked_title"))}</h3>'
+        f'<p>{safe_html_text(t(lang, "blocked_detail"))}</p></section>',
         unsafe_allow_html=True,
     )
     for blocker in readiness.blockers[:5]:
         st.write(f"— {blocker}")
 
 
-def render_turn(response: QuestionResponse, question: str, turn_number: int, show_diagnostics: bool) -> str | None:
+def render_turn(response: QuestionResponse, question: str, turn_number: int, show_diagnostics: bool, lang: str = "en") -> str | None:
     if turn_number > 1:
         st.markdown('<div class="ga-turn-divider"></div>', unsafe_allow_html=True)
     with st.container(key=f"answer-thread-{turn_number}"):
-        st.markdown(f'<h1 class="ga-question">{safe_html_text(question)}</h1>', unsafe_allow_html=True)
         elapsed = response.latency.get("total")
-        elapsed_label = f"{elapsed:.0f} ms" if isinstance(elapsed, (int, float)) else "Time N/A"
-        mode_label = "Demo Preview" if response.is_mock else "Production"
+        elapsed_label = f"{elapsed:.0f} ms" if isinstance(elapsed, (int, float)) else "N/A"
+        mode_label = t(lang, "mode_demo") if response.is_mock else t(lang, "mode_production")
         mock_note = '<span>Mock content · no real retrieval or model call</span>' if response.is_mock else ""
         st.markdown(
+            '<section class="ga-thread-head">'
+            f'<div class="ga-eyebrow">{safe_html_text(t(lang, "query_eyebrow"))} <span>•</span> {safe_html_text(_today_label(lang))}</div>'
+            f'<h1>{safe_html_text(question)}</h1>'
             '<div class="ga-status-row">'
-            f'<span class="ga-mode {"demo" if response.is_mock else "production"}">{mode_label}</span>'
-            f'<span>{len(response.citation_sources)} cited source{"s" if len(response.citation_sources) != 1 else ""}</span>'
-            f'<span>{safe_html_text(elapsed_label)}</span>{mock_note}</div>',
+            f'<span class="ga-mode {"demo" if response.is_mock else "production"}"><i></i>{safe_html_text(mode_label)}</span>'
+            f'<span>{safe_html_text(_source_count_label(len(response.citation_sources), lang))}</span>'
+            f'<span>{safe_html_text(elapsed_label)}</span>{mock_note}</div></section>',
             unsafe_allow_html=True,
         )
 
-        if response.status == "completed":
-            render_answer_article(response, turn_number)
-        elif response.status == "abstained":
-            render_abstention_state()
-        elif response.status in {"blocked", "deferred"}:
-            title = "Configuration deferred" if response.status == "deferred" else "Production is not ready"
-            render_status_state(title, response.error.message if response.error else "Review runtime readiness in Settings.")
-        else:
-            render_error_state(response)
+        with st.container(border=True, key=f"answer-card-{turn_number}"):
+            st.markdown(
+                '<div class="ga-answer-heading"><span class="ga-answer-sigil">G</span>'
+                f'<span>{safe_html_text(t(lang, "verified_answer"))}</span></div>',
+                unsafe_allow_html=True,
+            )
+            if response.status == "completed":
+                render_answer_article(response, turn_number, lang)
+                _render_answer_actions(response, turn_number, lang)
+            elif response.status == "abstained":
+                render_abstention_state(lang)
+            elif response.status in {"blocked", "deferred"}:
+                title = t(lang, "configuration_deferred") if response.status == "deferred" else t(lang, "blocked_title")
+                render_status_state(title, response.error.message if response.error else t(lang, "readiness_details"))
+            else:
+                render_error_state(response, lang)
 
         for warning in (*response.warnings, *response.citation_warnings):
             if response.is_mock and (
@@ -125,16 +167,31 @@ def render_turn(response: QuestionResponse, question: str, turn_number: int, sho
                 continue
             st.warning(warning, icon=None)
 
-        render_selected_source(response, turn_number)
-        render_cited_source_rail(response, turn_number)
-        suggestion = render_followup_suggestions(response.suggested_followups, turn_number)
-        render_diagnostics_tabs(response, turn_number, show_diagnostics)
+        suggestion = render_followup_suggestions(response.suggested_followups, turn_number, lang)
+        render_diagnostics_tabs(response, turn_number, show_diagnostics, lang)
+        render_source_dialog_for_selection(response, turn_number, lang)
     return suggestion
 
 
-def render_answer_article(response: QuestionResponse, turn_number: int) -> None:
+def _render_answer_actions(response: QuestionResponse, turn_number: int, lang: str) -> None:
+    if not response.citation_sources:
+        return
+    st.markdown('<div class="ga-answer-actions-rule"></div>', unsafe_allow_html=True)
+    action_cols = st.columns([1, 1, 1, 3], gap="small")
+    if action_cols[0].button(t(lang, "copy"), key=f"copy-answer-{turn_number}", use_container_width=True):
+        st.toast(t(lang, "copy_notice"))
+    if action_cols[1].button(t(lang, "helpful"), key=f"helpful-answer-{turn_number}", use_container_width=True):
+        st.toast(t(lang, "feedback_notice"))
+    if action_cols[2].button(t(lang, "not_helpful"), key=f"not-helpful-answer-{turn_number}", use_container_width=True):
+        st.toast(t(lang, "feedback_notice"))
+    if action_cols[3].button(t(lang, "view_evidence"), key=f"evidence-answer-{turn_number}", use_container_width=True):
+        _select_source(response.citation_sources, turn_number, response.citation_sources[0].citation_id, viewer_open=False)
+        st.rerun()
+
+
+def render_answer_article(response: QuestionResponse, turn_number: int, lang: str = "en") -> None:
     st.markdown('<div class="ga-answer-marker"></div>', unsafe_allow_html=True)
-    answer = response.answer or "No final answer returned."
+    answer = response.answer or t(lang, "no_final_answer")
     occurrence = 0
     for line_number, line in enumerate(build_answer_lines(answer, response.citation_references)):
         if line.blank:
@@ -158,13 +215,13 @@ def render_answer_article(response: QuestionResponse, turn_number: int) -> None:
                     segment.text,
                     key=citation_control_key(turn_number, citation_id, occurrence),
                     type="tertiary",
-                    help=f"Preview source {citation_id}",
+                    help=f'{t(lang, "preview_context")} {citation_id}',
                 ):
                     _select_source(response.citation_sources, turn_number, citation_id, viewer_open=False)
                     st.rerun()
 
 
-def render_selected_source(response: QuestionResponse, turn_number: int) -> None:
+def render_selected_source(response: QuestionResponse, turn_number: int, lang: str = "en") -> None:
     selection = parse_source_selection(st.session_state.get("selected_source"))
     if selection is None or selection.turn_id != turn_number:
         return
@@ -178,90 +235,146 @@ def render_selected_source(response: QuestionResponse, turn_number: int) -> None
     # the complete retrieved chunk, so the viewer reuses that exact in-memory row.
     card = replace(card, full_text=resolve_source_text(source, response.contexts))
     actions = build_source_actions(source)
-    st.markdown('<div class="ga-section-label">Selected citation</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="ga-section-label">{safe_html_text(t(lang, "selected_citation"))}</div>', unsafe_allow_html=True)
     with st.container(border=True):
         header_left, header_right = st.columns([5, 1])
         header_left.markdown(f"**[{card.citation_id}] {card.title}**")
-        header_right.caption("DEMO SOURCE" if card.is_mock else "RETRIEVED")
+        header_right.caption("DEMO" if card.is_mock else t(lang, "retrieval").upper())
         st.caption(" · ".join(value for value in (
             card.detail or "Article/section N/A",
             f"Page {card.page}" if card.page is not None else "Page N/A",
             f"Rank {card.rank}",
             f"Score {card.score:.3f}" if card.score is not None else "Score N/A",
         )))
-        st.write(card.preview or "No preview available.")
+        _render_source_excerpt(card.preview or t(lang, "no_preview"))
         evidence = build_source_text_segments(card.full_text, card.evidence, context_id=source.context_id)
         status = evidence.label or (
             "Span unavailable" if evidence.status == "unavailable" else "Recorded span invalid"
         )
-        st.caption(f"Evidence-span status · {status}")
+        st.caption(t(lang, "evidence_status", status=status))
         action_columns = st.columns(2 if actions.original_url else 1)
         if action_columns[0].button(
-            actions.view_label, key=f"view-source-preview-{turn_number}-{citation_id}",
+            t(lang, "view_source"), key=f"view-source-preview-{turn_number}-{citation_id}",
             type="primary", use_container_width=True,
         ):
             _select_source(response.citation_sources, turn_number, citation_id, viewer_open=True)
             st.rerun()
         if actions.original_url and actions.original_label:
             action_columns[1].link_button(
-                actions.original_label, actions.original_url, use_container_width=True,
+                t(lang, "open_original"), actions.original_url, use_container_width=True,
             )
     if selection.viewer_open:
-        _render_source_dialog(source, card, evidence)
+        _render_source_dialog(source, card, evidence, lang)
 
 
-@st.dialog("Source details", width="large", dismissible=False)
-def _render_source_dialog(source: Any, card: Any, evidence: Any) -> None:
+@st.dialog("Source details", width="large", dismissible=True)
+def _render_source_dialog(source: Any, card: Any, evidence: Any, lang: str = "en") -> None:
     selection = parse_source_selection(st.session_state.get("selected_source"))
     turn_id = selection.turn_id if selection else 0
-    heading, close_column = st.columns([5, 1])
-    heading.markdown(f"### Source [{card.citation_id}]")
-    if close_column.button(
-        "Close", key=f"close-source-{turn_id}-{card.citation_id}", use_container_width=True,
-    ):
+    close_label = "Close" if lang == "en" else "Đóng"
+    heading, close_column = st.columns([6, 1])
+    heading.markdown(
+        '<div class="ga-dialog-title">'
+        f'<span>{safe_html_text(t(lang, "reference_source"))} · [{card.citation_id}]</span>'
+        f'<h2>{safe_html_text(card.title)}</h2>'
+        f'<p>{safe_html_text(card.detail or card.source_path or "N/A")}</p></div>',
+        unsafe_allow_html=True,
+    )
+    if close_column.button(close_label, key=f"close-source-{turn_id}-{card.citation_id}", use_container_width=True):
         _close_source_viewer()
         st.rerun()
-    st.markdown(f"**{card.title}**")
-    st.caption("DEMO SOURCE · MOCK CONTENT" if card.is_mock else "PRODUCTION · RETRIEVED CHUNK")
-    metadata = (
-        ("Document ID", card.document_id or "N/A"), ("Chunk ID", card.chunk_id or "N/A"),
-        ("Article", source.article or "N/A"), ("Section", source.section or "N/A"),
-        ("Page", card.page if card.page is not None else "N/A"),
-        ("Source path", card.source_path or "N/A"),
-        ("Retrieval rank", card.rank), ("Score", f"{card.score:.3f}" if card.score is not None else "N/A"),
-        ("Citation use", f"[{card.citation_id}]"), ("Evidence span", evidence.label or evidence.status),
+    score_label = f"{card.score:.3f}" if card.score is not None else "N/A"
+    st.markdown(
+        '<div class="ga-dialog-meta">'
+        f'<span>{safe_html_text(t(lang, "original_text"))}</span>'
+        f'<span>Score {safe_html_text(score_label)}</span>'
+        f'<span>Rank {safe_html_text(card.rank)}</span>'
+        f'<span>{safe_html_text(t(lang, "evidence_span"))}: {safe_html_text(evidence.label or evidence.status)}</span>'
+        '</div>',
+        unsafe_allow_html=True,
     )
-    metadata_columns = st.columns(2)
-    for index, (label, value) in enumerate(metadata):
-        metadata_columns[index % 2].caption(f"{label.upper()} · {value}")
-    if card.is_mock:
-        st.caption("Mock content — not an authoritative document")
-    st.markdown("#### Full retrieved context")
     if evidence.status == "valid":
         st.caption(f"{evidence.label} · Recorded evidence for this source")
         st.markdown(source_segments_html(evidence), unsafe_allow_html=True)
     elif evidence.status == "invalid":
         st.warning("The recorded evidence span could not be validated against this source.", icon=None)
-        st.text(card.full_text or "Unavailable")
+        st.markdown(source_segments_html(evidence), unsafe_allow_html=True)
     else:
         st.info("This source was cited, but an exact supporting passage was not recorded.", icon=None)
-        st.text(card.full_text or "Unavailable")
+        st.markdown(source_segments_html(evidence), unsafe_allow_html=True)
     actions = build_source_actions(source)
     footer_columns = st.columns(2 if actions.original_url else 1)
     if footer_columns[0].button(
-        "Close", key=f"close-source-footer-{turn_id}-{card.citation_id}", use_container_width=True,
+        close_label, key=f"close-source-footer-{turn_id}-{card.citation_id}", use_container_width=True,
     ):
         _close_source_viewer()
         st.rerun()
     if actions.original_url and actions.original_label:
-        footer_columns[1].link_button(actions.original_label, actions.original_url, use_container_width=True)
+        footer_columns[1].link_button(t(lang, "open_original"), actions.original_url, use_container_width=True)
 
 
-def render_cited_source_rail(response: QuestionResponse, turn_number: int) -> None:
+def render_source_dialog_for_selection(response: QuestionResponse, turn_number: int, lang: str = "en") -> None:
+    selection = parse_source_selection(st.session_state.get("selected_source"))
+    if selection is None or selection.turn_id != turn_number or not selection.viewer_open:
+        return
+    source, card, evidence = _resolve_selected_source_view(response, selection.citation_id)
+    if source is not None and card is not None and evidence is not None:
+        _render_source_dialog(source, card, evidence, lang)
+
+
+def render_evidence_panel(response: QuestionResponse, turn_number: int, lang: str = "en") -> None:
+    selection = parse_source_selection(st.session_state.get("selected_source"))
+    if selection is None or selection.turn_id != turn_number or selection.viewer_open:
+        return
+    source, card, evidence = _resolve_selected_source_view(response, selection.citation_id)
+    if source is None or card is None or evidence is None:
+        return
+    actions = build_source_actions(source)
+    with st.container(border=True, key=f"evidence-panel-{turn_number}-{card.citation_id}"):
+        header_left, header_right = st.columns([5, 1])
+        header_left.markdown(
+            f'<div class="ga-evidence-title"><span>{safe_html_text(t(lang, "reference_source"))}</span>'
+            f'<h2>{safe_html_text(t(lang, "cited_evidence"))}</h2></div>',
+            unsafe_allow_html=True,
+        )
+        if header_right.button("×", key=f"close-evidence-panel-{turn_number}-{card.citation_id}", help="Close" if lang == "en" else "Đóng"):
+            _close_source_viewer()
+            st.rerun()
+        st.markdown(
+            '<div class="ga-evidence-doc">'
+            '<div class="ga-doc-symbol">▤</div><div>'
+            f'<h3>{safe_html_text(card.title)}</h3>'
+            f'<p>{safe_html_text(card.detail or card.source_path or "N/A")}</p></div></div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div class="ga-doc-pills">'
+            f'<span>{safe_html_text(t(lang, "original_text"))}</span>'
+            f'<span>{safe_html_text(t(lang, "high_confidence"))}</span></div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div class="ga-evidence-tabs">'
+            f'<span class="active">{safe_html_text(t(lang, "legal_content"))}</span>'
+            f'<span>{safe_html_text(t(lang, "document_info"))}</span></div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(source_segments_html(evidence), unsafe_allow_html=True)
+        footer_columns = st.columns(2 if actions.original_url else 1)
+        if footer_columns[0].button(
+            t(lang, "view_source"), key=f"open-evidence-dialog-{turn_number}-{card.citation_id}", use_container_width=True,
+        ):
+            _select_source(response.citation_sources, turn_number, card.citation_id, viewer_open=True)
+            st.rerun()
+        if actions.original_url and actions.original_label:
+            footer_columns[1].link_button(t(lang, "open_original"), actions.original_url, use_container_width=True)
+
+
+def render_cited_source_rail(response: QuestionResponse, turn_number: int, lang: str = "en") -> None:
     cards = build_source_cards(response.citation_sources)
     if not cards:
         return
-    st.markdown('<div class="ga-section-label">Sources referenced</div><div class="ga-source-rail"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="ga-section-label">{safe_html_text(t(lang, "sources_referenced"))}</div><div class="ga-source-rail"></div>', unsafe_allow_html=True)
     columns = st.columns(min(4, len(cards)))
     for index, card in enumerate(cards):
         source = next(item for item in response.citation_sources if item.citation_id == card.citation_id)
@@ -273,130 +386,127 @@ def render_cited_source_rail(response: QuestionResponse, turn_number: int) -> No
                 + f'<div class="ga-source-number">[{card.citation_id}]</div>'
                 + f'<div class="ga-source-title">{safe_html_text(card.title)}</div>'
                 + f'<div class="ga-source-meta">{safe_html_text(card.detail or card.source_path or "Source metadata unavailable")}</div>'
-                + f'<div class="ga-source-excerpt">{safe_html_text(card.preview or "No preview available.")}</div>',
+                + f'<div class="ga-source-excerpt">{safe_html_text(format_retrieved_text(card.preview or "No preview available."))}</div>',
                 unsafe_allow_html=True,
             )
             if st.button(
-                actions.view_label, key=f"view-source-card-{turn_number}-{card.citation_id}",
+                t(lang, "view_source"), key=f"view-source-card-{turn_number}-{card.citation_id}",
                 use_container_width=True,
             ):
                 _select_source(response.citation_sources, turn_number, card.citation_id, viewer_open=True)
                 st.rerun()
             if actions.original_url and actions.original_label:
-                st.link_button(actions.original_label, actions.original_url, use_container_width=True)
+                st.link_button(t(lang, "open_original"), actions.original_url, use_container_width=True)
 
 
-def render_followup_suggestions(suggestions: Sequence[str], turn_number: int) -> str | None:
+def render_followup_suggestions(suggestions: Sequence[str], turn_number: int, lang: str = "en") -> str | None:
     if not suggestions:
         return None
-    st.markdown('<div class="ga-section-label">Explore further</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="ga-section-label">{safe_html_text("Hỏi tiếp" if lang == "vi" else "Explore further")}</div>', unsafe_allow_html=True)
     for index, suggestion in enumerate(suggestions[:3]):
         if st.button(f"{suggestion}  →", key=f"followup-{turn_number}-{index}", use_container_width=True):
             return suggestion
     return None
 
 
-def render_followup_composer() -> str | None:
+def render_followup_composer(lang: str = "en") -> str | None:
     with st.container(key="followup-composer"):
-        return st.chat_input("Ask a follow-up about the available evidence")
+        return st.chat_input(t(lang, "followup_placeholder"))
 
 
-def render_diagnostics_tabs(response: QuestionResponse, turn_number: int, show_diagnostics: bool) -> None:
+def render_diagnostics_tabs(response: QuestionResponse, turn_number: int, show_diagnostics: bool, lang: str = "en") -> None:
+    source_tab_label = f'{t(lang, "sources")} {len(response.citation_sources)}' if response.citation_sources else t(lang, "sources")
     sources_tab, details_tab, latency_tab, trace_tab, diagnostics_tab = st.tabs(
-        ["Sources", "Details", "Latency", "Agent trace", "Diagnostics"]
+        [source_tab_label, t(lang, "details"), t(lang, "latency"), t(lang, "trace"), t(lang, "diagnostics")]
     )
     with sources_tab:
-        render_full_sources(response, turn_number)
+        render_full_sources(response, turn_number, lang)
     with details_tab:
-        render_details(response)
+        render_details(response, lang)
     with latency_tab:
         render_latency_cards(response.latency, is_mock=response.is_mock)
     with trace_tab:
-        render_agent_trace(response)
+        render_agent_trace(response, lang)
     with diagnostics_tab:
-        render_diagnostics(response, show_diagnostics)
+        render_diagnostics(response, show_diagnostics, lang)
 
 
-def render_full_sources(response: QuestionResponse, turn_number: int) -> None:
+def render_full_sources(response: QuestionResponse, turn_number: int, lang: str = "en") -> None:
     sections = build_source_sections(response.citation_sources, response.contexts)
     contexts = {(row.chunk_id, row.rank): row for row in response.contexts}
     if response.citation_sources:
-        st.markdown("### Cited sources")
+        st.markdown(
+            '<div class="ga-sources-heading">'
+            f'<span>{safe_html_text(t(lang, "sources").upper())}</span>'
+            f'<h2>{safe_html_text(t(lang, "cited_sources"))}</h2>'
+            f'<em>{len(sections.cited)} {safe_html_text(t(lang, "sources").lower())}</em></div>',
+            unsafe_allow_html=True,
+        )
         for card in sections.cited:
-            with st.container(border=True):
-                top_left, top_right = st.columns([5, 1])
-                top_left.markdown(f"**[{card.citation_id}] {card.title}**")
-                top_right.caption("DEMO SOURCE" if card.is_mock else "RETRIEVED")
-                metadata = " · ".join((
-                    card.detail or "Article/section N/A",
-                    f"Page {card.page}" if card.page is not None else "Page N/A",
-                    f"Rank {card.rank}",
-                    f"Score {card.score:.3f}" if card.score is not None else "Score N/A",
-                ))
-                st.caption(metadata)
-                st.write(card.preview or "No excerpt available.")
-                source = next(item for item in response.citation_sources if item.citation_id == card.citation_id)
-                source_actions = build_source_actions(source)
-                context = contexts.get((source.chunk_id, card.rank))
-                with st.expander("Preview retrieved context"):
-                    full_text = (context.text if context else card.full_text) or ""
-                    evidence = build_source_text_segments(full_text, card.evidence, context_id=source.context_id)
-                    if evidence.status == "valid":
-                        st.caption(f"{evidence.label} · Recorded evidence for this source")
-                        st.markdown(source_segments_html(evidence), unsafe_allow_html=True)
-                    elif evidence.status == "invalid":
-                        st.warning("The recorded evidence span could not be validated against this source text.", icon=None)
-                        st.text(full_text or "Unavailable")
-                    else:
-                        st.caption("Exact supporting passage was not recorded for this citation.")
-                        st.text(full_text or "Unavailable")
-                action_columns = st.columns(2 if source_actions.original_url else 1)
-                if action_columns[0].button(
-                    source_actions.view_label,
-                    key=f"view-source-tab-{turn_number}-{card.citation_id}",
-                    use_container_width=True,
-                ):
-                    _select_source(response.citation_sources, turn_number, card.citation_id, viewer_open=True)
-                    st.rerun()
-                if source_actions.original_url and source_actions.original_label:
-                    action_columns[1].link_button(
-                        source_actions.original_label, source_actions.original_url,
-                        use_container_width=True,
-                    )
+            source = next(item for item in response.citation_sources if item.citation_id == card.citation_id)
+            context = contexts.get((source.chunk_id, card.rank))
+            full_text = (context.text if context else card.full_text) or ""
+            evidence = build_source_text_segments(full_text, card.evidence, context_id=source.context_id)
+            _render_source_row(source, card, evidence, turn_number, lang)
 
     additional = sections.additional
     if additional:
-        st.markdown("### Additional retrieved sources")
-        st.caption("Retrieved context that was not cited in the answer.")
+        st.markdown(
+            f'<h3 class="ga-retrieved-title">{safe_html_text(t(lang, "additional_context"))} '
+            f'<span>{len(additional)}</span></h3>',
+            unsafe_allow_html=True,
+        )
         for row in additional:
-            with st.container(border=True):
-                st.caption("DEMO SOURCE" if row.is_mock else "ADDITIONAL CONTEXT")
-                st.markdown(f"**{row.title or row.document_id or row.chunk_id or 'Retrieved context'}**")
-                st.caption(f"Rank {row.rank} · Score {row.score if row.score is not None else 'N/A'}")
-                st.write(row.preview or "No excerpt available.")
-                with st.expander("Expand context"):
-                    st.text(row.text or "Unavailable")
+            score = f"{row.score:.3f}" if isinstance(row.score, (int, float)) else "N/A"
+            st.markdown(
+                '<div class="ga-extra-source"><span>▤</span>'
+                f'<strong>{safe_html_text(row.title or row.document_id or row.chunk_id or "Retrieved context")}</strong>'
+                f'<em>Score {safe_html_text(score)} · Rank {safe_html_text(row.rank)}</em></div>',
+                unsafe_allow_html=True,
+            )
     if not response.contexts:
-        st.caption("No retrieved sources are available for this turn.")
+        st.caption(t(lang, "no_context"))
 
 
-def render_details(response: QuestionResponse) -> None:
+def _render_source_row(source: Any, card: Any, evidence: Any, turn_number: int, lang: str) -> None:
+    score_label = f"{card.score:.3f}" if card.score is not None else "N/A"
+    actions = build_source_actions(source)
+    with st.container(key=f"source-row-{turn_number}-{card.citation_id}"):
+        id_col, icon_col, body_col, action_col = st.columns([0.04, 0.06, 0.72, 0.18], gap="small")
+        id_col.markdown(f'<div class="ga-source-id">{safe_html_text(card.citation_id)}</div>', unsafe_allow_html=True)
+        icon_col.markdown('<div class="ga-doc-symbol">▤</div>', unsafe_allow_html=True)
+        body_col.markdown(
+            '<div class="ga-source-row-main">'
+            f'<div class="ga-source-row-title"><h3>{safe_html_text(card.title)}</h3>'
+            f'<span>{safe_html_text(card.detail or source.article or t(lang, "source_details"))}</span></div>'
+            f'<div class="ga-source-meta">Score {safe_html_text(score_label)} · Rank {safe_html_text(card.rank)} · {safe_html_text(evidence.label or evidence.status)}</div>'
+            f'<p>{safe_html_text(format_retrieved_text(card.preview or t(lang, "no_excerpt")))}</p></div>',
+            unsafe_allow_html=True,
+        )
+        if action_col.button(t(lang, "view_source"), key=f"view-source-tab-{turn_number}-{card.citation_id}", use_container_width=True):
+            _select_source((source,), turn_number, card.citation_id, viewer_open=True)
+            st.rerun()
+        if actions.original_url and actions.original_label:
+            action_col.link_button(t(lang, "open_original"), actions.original_url, use_container_width=True)
+
+
+def render_details(response: QuestionResponse, lang: str = "en") -> None:
     diagnostics = response.diagnostics
     values = (
-        ("Config", diagnostics.get("selected_config")),
+        (t(lang, "config"), diagnostics.get("selected_config")),
         ("Retriever", diagnostics.get("retriever_backend")),
-        ("Embedding", diagnostics.get("embedding_identity")),
-        ("Index", _nested(diagnostics, "artifact_identity", "index_version")),
-        ("Corpus", _nested(diagnostics, "artifact_identity", "corpus_identity")),
-        ("Mode", diagnostics.get("runtime_mode") or response.mode),
+        (t(lang, "embedding"), diagnostics.get("embedding_identity")),
+        (t(lang, "index"), _nested(diagnostics, "artifact_identity", "index_version")),
+        (t(lang, "corpus"), _nested(diagnostics, "artifact_identity", "corpus_identity")),
+        (t(lang, "mode"), diagnostics.get("runtime_mode") or response.mode),
     )
     columns = st.columns(2)
     for index, (label, value) in enumerate(values):
         with columns[index % 2].container(border=True):
             st.caption(label.upper())
             st.write(display_value(value))
-    st.caption("Citation metrics are structural placement checks, not semantic entailment.")
-    with st.expander("Citation metrics"):
+    st.caption(t(lang, "citation_metrics_note"))
+    with st.expander(t(lang, "citation_metrics")):
         st.json(response.citation_metrics, expanded=False)
 
 
@@ -417,9 +527,9 @@ def render_latency_cards(latency: Mapping[str, Any], *, is_mock: bool) -> None:
             )
 
 
-def render_agent_trace(response: QuestionResponse) -> None:
+def render_agent_trace(response: QuestionResponse, lang: str = "en") -> None:
     if not response.trace:
-        st.caption("No agent trace applies to this turn.")
+        st.caption(t(lang, "no_agent_trace"))
         return
     if response.is_mock:
         st.caption("DEMO TRACE · No production planner executed.")
@@ -434,24 +544,24 @@ def render_agent_trace(response: QuestionResponse) -> None:
         st.json(list(response.trace), expanded=False)
 
 
-def render_diagnostics(response: QuestionResponse, show_diagnostics: bool) -> None:
+def render_diagnostics(response: QuestionResponse, show_diagnostics: bool, lang: str = "en") -> None:
     if not show_diagnostics:
-        st.caption("Enable Show diagnostics in Settings to inspect safe runtime metadata.")
+        st.caption("Bật Chẩn đoán ở thanh bên để xem metadata an toàn." if lang == "vi" else "Enable Show diagnostics in Settings to inspect safe runtime metadata.")
         return
     warnings = response.citation_warnings
     if warnings:
-        st.markdown("**Citation warnings**")
+        st.markdown(f'**{t(lang, "citation_warnings")}**')
         for warning in warnings:
             st.write(f"— {warning}")
-    with st.expander("Safe runtime diagnostics", expanded=True):
+    with st.expander(t(lang, "safe_diagnostics"), expanded=True):
         st.json(response.diagnostics, expanded=False)
-    with st.expander("Effective configuration"):
+    with st.expander(t(lang, "effective_configuration")):
         st.json(response.resolved_config, expanded=False)
 
 
-def render_readiness_summary(readiness: ProductionReadiness) -> None:
+def render_readiness_summary(readiness: ProductionReadiness, lang: str = "en") -> None:
     ready_count = sum(check.status == "ready" for check in readiness.checks)
-    st.caption(f"{ready_count} of {len(readiness.checks)} checks ready")
+    st.caption(f"{ready_count}/{len(readiness.checks)} mục sẵn sàng" if lang == "vi" else f"{ready_count} of {len(readiness.checks)} checks ready")
     for check in readiness.checks[:7]:
         symbol = "●" if check.status == "ready" else "○" if check.status in {"warning", "deferred"} else "×"
         st.caption(f"{symbol} {check.name.replace('_', ' ').title()} · {check.status}")
@@ -459,23 +569,24 @@ def render_readiness_summary(readiness: ProductionReadiness) -> None:
         st.caption(f"+ {len(readiness.checks) - 7} more checks")
 
 
-def render_abstention_state() -> None:
+def render_abstention_state(lang: str = "en") -> None:
     st.markdown(
-        '<section class="ga-state"><h3>Not enough evidence</h3>'
-        '<p>The available sources did not provide sufficient support for a reliable answer.</p></section>',
+        f'<section class="ga-state"><h3>{safe_html_text(t(lang, "not_enough_title"))}</h3>'
+        f'<p>{safe_html_text(t(lang, "not_enough_body"))}</p></section>',
         unsafe_allow_html=True,
     )
 
 
-def render_error_state(response: QuestionResponse) -> None:
+def render_error_state(response: QuestionResponse, lang: str = "en") -> None:
     stage = safe_html_text(response.error.stage if response.error else "unknown")
     st.markdown(
-        '<section class="ga-state"><h3>Unable to complete this request</h3>'
-        f'<p>Stage: {stage}. Review diagnostics and retry.</p></section>',
+        f'<section class="ga-state"><h3>{safe_html_text(t(lang, "error_title"))}</h3>'
+        f'<p>{safe_html_text(t(lang, "error_body", stage=stage))}</p></section>',
         unsafe_allow_html=True,
     )
     if response.error:
-        st.write(response.error.message)
+        with st.expander(t(lang, "technical_detail"), expanded=False):
+            st.code(response.error.message, language="text")
 
 
 def render_status_state(title: str, message: str) -> None:
@@ -515,22 +626,47 @@ def render_design_preview(response: QuestionResponse) -> None:
     render_error_state(response.__class__(**{**response.__dict__, "status": "failed"}))
 
 
-def _mode_label(active_mode: str, requested_mode: str, ready: bool) -> str:
+def _mode_label(active_mode: str, requested_mode: str, ready: bool, lang: str = "en") -> str:
     if requested_mode == "Auto":
-        return f"Auto · {'Production' if active_mode == 'production' and ready else 'Demo'}"
+        return t(lang, "mode_auto_production") if active_mode == "production" and ready else t(lang, "mode_auto_demo")
     if active_mode == "production" and not ready:
-        return "Production · Blocked"
-    return "Production" if active_mode == "production" else "Demo Preview"
+        return t(lang, "mode_production_blocked")
+    return t(lang, "mode_production") if active_mode == "production" else t(lang, "mode_demo")
 
 
-def _landing_status(active_mode: str, readiness: ProductionReadiness) -> str:
+def _landing_status(active_mode: str, readiness: ProductionReadiness, lang: str = "en") -> str:
     if active_mode == "demo":
-        return "Demo Preview · No retrieval or model call"
+        return "Demo · không gọi model hoặc retriever thật" if lang == "vi" else "Demo Preview · No retrieval or model call"
     if readiness.ready:
         count = len(readiness.candidates) or (1 if readiness.selected_artifact else 0)
-        return f"Production ready · {count} compatible index{'es' if count != 1 else ''} detected"
+        return f"Production sẵn sàng · phát hiện {count} index tương thích" if lang == "vi" else f"Production ready · {count} compatible index{'es' if count != 1 else ''} detected"
     blocker = readiness.blockers[0] if readiness.blockers else "Readiness checks did not pass"
-    return f"Production unavailable · {blocker}"
+    return f"Production chưa sẵn sàng · {blocker}" if lang == "vi" else f"Production unavailable · {blocker}"
+
+
+def _today_label(lang: str) -> str:
+    today = date.today()
+    if lang == "vi":
+        return f"{today.day} tháng {today.month}, {today.year}"
+    month = today.strftime("%B")
+    return f"{month} {today.day}, {today.year}"
+
+
+def _source_count_label(count: int, lang: str) -> str:
+    if lang == "vi":
+        return f"{count} nguồn trích dẫn"
+    noun = "source" if count == 1 else "sources"
+    return f"{count} cited {noun}"
+
+
+def _resolve_selected_source_view(response: QuestionResponse, citation_id: int) -> tuple[Any | None, Any | None, Any | None]:
+    source = next((item for item in response.citation_sources if item.citation_id == citation_id), None)
+    if source is None:
+        return None, None, None
+    card = next(item for item in build_source_cards((source,)) if item.citation_id == citation_id)
+    card = replace(card, full_text=resolve_source_text(source, response.contexts))
+    evidence = build_source_text_segments(card.full_text, card.evidence, context_id=source.context_id)
+    return source, card, evidence
 
 
 def _nested(value: Mapping[str, Any], *keys: str) -> Any:
@@ -540,6 +676,22 @@ def _nested(value: Mapping[str, Any], *keys: str) -> Any:
             return None
         current = current.get(key)
     return current
+
+
+def _render_source_excerpt(value: Any) -> None:
+    text = format_retrieved_text(value)
+    st.markdown(
+        f'<div class="ga-readable-excerpt">{safe_html_text(text or "No excerpt available.")}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _render_full_source_text(value: Any) -> None:
+    text = format_retrieved_text(value)
+    st.markdown(
+        f'<div class="ga-source-text">{safe_html_text(text or "Unavailable")}</div>',
+        unsafe_allow_html=True,
+    )
 
 
 def _select_source(
@@ -559,5 +711,7 @@ def _close_source_viewer() -> None:
 
 __all__ = [
     "render_app_header", "render_blocked_setup", "render_design_preview",
-    "render_followup_composer", "render_landing_hero", "render_readiness_summary", "render_turn",
+    "render_evidence_panel", "render_followup_composer", "render_landing_hero",
+    "render_readiness_summary", "render_sidebar_brand", "render_source_dialog_for_selection",
+    "render_turn",
 ]
