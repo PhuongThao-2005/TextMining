@@ -38,7 +38,7 @@ The landing composer is a shorter legal-search textarea inside a rounded white/b
 
 ## Answer layout
 
-The page becomes a research thread rather than a chat transcript. Each turn uses a legal-query eyebrow with date, question heading, status row, verified answer card, answer actions, selectable exploration prompts, follow-up composer, and secondary tabs. There are no alternating chat bubbles or duplicated landing composers.
+After submission, the answer area now uses a chatbot-style legal assistant layout while preserving the existing white/blue theme. Each turn shows the user question as a right-aligned bubble, the assistant avatar and verified answer card as the main left-aligned response, compact runtime metadata, a primary cited-source strip, answer actions, selectable exploration prompts, follow-up composer, and secondary tabs. The design avoids oversized article headings after a question is asked, so the page reads more like an assistant conversation while still keeping source evidence and diagnostics available.
 
 ## Citations and sources
 
@@ -91,7 +91,7 @@ No production API call is performed in this path. Diagnostics include `productio
 The August 24 UI refresh adapted the reference implementation from `ui/Legal Document Retrieval UI Design` into the existing Streamlit app instead of replacing the app with a separate React frontend. The implementation changed presentation only:
 
 - `ui/app.py` keeps the canonical Streamlit entry point, runtime mode handling, cache controls, resource loading, and production submission path.
-- `src/ui/components.py` now renders the legal Q&A topbar, dark blue sidebar brand, centered landing experience, verified answer card, legal source rows, right-side cited-evidence panel, and redesigned source dialog.
+- `src/ui/components.py` now renders the legal Q&A topbar, dark blue sidebar brand, centered landing experience, chatbot-style answer turns, verified answer card, legal source rows, right-side cited-evidence panel, and redesigned source dialog.
 - `src/ui/styles.py` contains the visual implementation for the reference-inspired shell using the white/blue palette.
 - `src/ui/theme.py` stores the white/blue Light tokens and navy Dark tokens.
 - `src/ui/i18n.py` keeps English/Vietnamese UI copy for the new labels.

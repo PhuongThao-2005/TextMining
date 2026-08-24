@@ -7,7 +7,7 @@ generation/service layer.
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Mapping, Sequence
 
 import streamlit as st
@@ -130,34 +130,44 @@ def render_turn(response: QuestionResponse, question: str, turn_number: int, sho
         elapsed = response.latency.get("total")
         elapsed_label = f"{elapsed:.0f} ms" if isinstance(elapsed, (int, float)) else "N/A"
         mode_label = t(lang, "mode_demo") if response.is_mock else t(lang, "mode_production")
-        mock_note = '<span>Mock content · no real retrieval or model call</span>' if response.is_mock else ""
         st.markdown(
-            '<section class="ga-thread-head">'
-            f'<div class="ga-eyebrow">{safe_html_text(t(lang, "query_eyebrow"))} <span>•</span> {safe_html_text(_today_label(lang))}</div>'
-            f'<h1>{safe_html_text(question)}</h1>'
-            '<div class="ga-status-row">'
-            f'<span class="ga-mode {"demo" if response.is_mock else "production"}"><i></i>{safe_html_text(mode_label)}</span>'
-            f'<span>{safe_html_text(_source_count_label(len(response.citation_sources), lang))}</span>'
-            f'<span>{safe_html_text(elapsed_label)}</span>{mock_note}</div></section>',
+            '<section class="ga-chat-question">'
+            f'<div class="ga-chat-time">{safe_html_text(_clock_label())}</div>'
+            '<div class="ga-user-bubble-wrap">'
+            f'<div class="ga-user-bubble">{safe_html_text(question)}</div>'
+            '<div class="ga-user-avatar" aria-hidden="true">U</div>'
+            '</div></section>',
             unsafe_allow_html=True,
         )
 
-        with st.container(border=True, key=f"answer-card-{turn_number}"):
-            st.markdown(
-                '<div class="ga-answer-heading"><span class="ga-answer-sigil">G</span>'
-                f'<span>{safe_html_text(t(lang, "verified_answer"))}</span></div>',
-                unsafe_allow_html=True,
-            )
-            if response.status == "completed":
-                render_answer_article(response, turn_number, lang)
-                _render_answer_actions(response, turn_number, lang)
-            elif response.status == "abstained":
-                render_abstention_state(lang)
-            elif response.status in {"blocked", "deferred"}:
-                title = t(lang, "configuration_deferred") if response.status == "deferred" else t(lang, "blocked_title")
-                render_status_state(title, response.error.message if response.error else t(lang, "readiness_details"))
-            else:
-                render_error_state(response, lang)
+        avatar_col, answer_col, status_col = st.columns([0.07, 0.75, 0.18], gap="small")
+        avatar_col.markdown('<div class="ga-assistant-avatar" aria-hidden="true">G</div>', unsafe_allow_html=True)
+        with answer_col:
+            with st.container(border=True, key=f"answer-card-{turn_number}"):
+                st.markdown(
+                    '<div class="ga-answer-heading"><span class="ga-answer-sigil">✓</span>'
+                    f'<span>{safe_html_text(t(lang, "verified_answer"))}</span>'
+                    f'<small>{safe_html_text(_source_count_label(len(response.citation_sources), lang))} · {safe_html_text(elapsed_label)}</small></div>',
+                    unsafe_allow_html=True,
+                )
+                if response.status == "completed":
+                    render_answer_article(response, turn_number, lang)
+                    _render_primary_source_strip(response, turn_number, lang)
+                    _render_answer_actions(response, turn_number, lang)
+                elif response.status == "abstained":
+                    render_abstention_state(lang)
+                elif response.status in {"blocked", "deferred"}:
+                    title = t(lang, "configuration_deferred") if response.status == "deferred" else t(lang, "blocked_title")
+                    render_status_state(title, response.error.message if response.error else t(lang, "readiness_details"))
+                else:
+                    render_error_state(response, lang)
+        status_col.markdown(
+            '<div class="ga-chat-status">'
+            f'<span class="ga-mode {"demo" if response.is_mock else "production"}"><i></i>{safe_html_text(mode_label)}</span>'
+            f'<span>{safe_html_text("Mock · no external call" if response.is_mock else _today_label(lang))}</span>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
         for warning in (*response.warnings, *response.citation_warnings):
             if response.is_mock and (
@@ -171,6 +181,24 @@ def render_turn(response: QuestionResponse, question: str, turn_number: int, sho
         render_diagnostics_tabs(response, turn_number, show_diagnostics, lang)
         render_source_dialog_for_selection(response, turn_number, lang)
     return suggestion
+
+
+def _render_primary_source_strip(response: QuestionResponse, turn_number: int, lang: str) -> None:
+    if not response.citation_sources:
+        return
+    source = response.citation_sources[0]
+    card = build_source_cards((source,))[0]
+    st.markdown(
+        '<div class="ga-answer-source-strip">'
+        f'<span>[{safe_html_text(card.citation_id)}]</span>'
+        f'<strong>{safe_html_text(card.title)}</strong>'
+        f'<em>{safe_html_text(card.detail or card.source_path or t(lang, "source_details"))}</em>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    if st.button(t(lang, "view_source"), key=f"answer-primary-source-{turn_number}-{card.citation_id}", use_container_width=True):
+        _select_source(response.citation_sources, turn_number, card.citation_id, viewer_open=False)
+        st.rerun()
 
 
 def _render_answer_actions(response: QuestionResponse, turn_number: int, lang: str) -> None:
@@ -650,6 +678,10 @@ def _today_label(lang: str) -> str:
         return f"{today.day} tháng {today.month}, {today.year}"
     month = today.strftime("%B")
     return f"{month} {today.day}, {today.year}"
+
+
+def _clock_label() -> str:
+    return datetime.now().strftime("%H:%M")
 
 
 def _source_count_label(count: int, lang: str) -> str:

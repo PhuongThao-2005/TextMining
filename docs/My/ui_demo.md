@@ -1,5 +1,166 @@
 # Local Streamlit QA Demo
 
+## Quick Start
+
+This is the main run guide for the local web UI. Use this file when a teammate asks how to start the app and what data must exist on disk.
+
+From the repository root:
+
+```powershell
+cd D:\Study\NamBa\TextMining\TextMining
+D:\anaconda3\python.exe -m pip install -r requirements.txt
+.\scripts\start_ui_local.ps1
+```
+
+If the PowerShell helper is unavailable, run Streamlit directly:
+
+```powershell
+cd D:\Study\NamBa\TextMining\TextMining
+D:\anaconda3\python.exe -m streamlit run ui/app.py --server.port 8501
+```
+
+Open:
+
+```text
+http://localhost:8501
+```
+
+If port `8501` is already occupied, choose another port:
+
+```powershell
+D:\anaconda3\python.exe -m streamlit run ui/app.py --server.port 8508
+```
+
+## Data Required On The Machine
+
+### Demo Preview, no real API call
+
+Demo Preview is the fastest UI test path. It does not require a real LLM API key, FAISS index, graph file, or reranker model.
+
+Required:
+
+```text
+data/qa_final.jsonl
+```
+
+This file is used only for mock Q&A UI testing. It contains questions, reference answers, explanations, and ground-truth IDs. It does not contain full legal source chunks, so the UI labels these sources as mock QA evidence.
+
+Run the UI, select `Demo Preview`, then click an example card or paste a question from `data/qa_final.jsonl`.
+
+### Production, real local retrieval plus live generation
+
+Production requires real retrieval artifacts, local embedding dependencies, and LLM environment variables.
+
+Required FAISS artifact:
+
+```text
+data/chunk metadata/index.faiss
+data/chunk metadata/payloads.jsonl
+data/chunk metadata/index_manifest.json
+```
+
+Optional FAISS cache/support files:
+
+```text
+data/chunk metadata/id_map.json
+data/chunk metadata/payload_cache.sqlite
+```
+
+Required corpus identity for the current local setup:
+
+```text
+data/pre-processed/documents.jsonl
+```
+
+Optional for full evaluation/ablation, not required for one UI question:
+
+```text
+data/benchmark/qa_final.jsonl
+```
+
+Optional Graph + RRF + reranker artifact:
+
+```text
+data/graph/knowledge_graph.gpickle
+```
+
+or:
+
+```text
+data/kg/knowledge_graph.gpickle
+```
+
+or set `GRAPH_PICKLE_PATH` in `.env`.
+
+Check required Production files:
+
+```powershell
+D:\anaconda3\python.exe -c "from pathlib import Path; paths=['data/chunk metadata/index.faiss','data/chunk metadata/payloads.jsonl','data/chunk metadata/index_manifest.json','data/pre-processed/documents.jsonl']; [print(p, Path(p).exists()) for p in paths]"
+```
+
+## Environment Required For Production
+
+Create `.env` from `.env.example`, then fill real values:
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+```
+
+Minimum OpenAI-compatible variables:
+
+```text
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=your-real-key
+LLM_BASE_MODEL=gpt-4o-mini
+LLM_LARGER_MODEL=gpt-4o
+```
+
+Recommended local cache variables, especially when drive `C:` is low:
+
+```text
+HF_HOME=.cache/huggingface
+TRANSFORMERS_CACHE=.cache/huggingface/hub
+SENTENCE_TRANSFORMERS_HOME=.cache/sentence-transformers
+TORCH_HOME=.cache/torch
+XDG_CACHE_HOME=.cache
+HF_HUB_OFFLINE=0
+```
+
+For first-time reranker/model download, keep:
+
+```text
+HF_HUB_OFFLINE=0
+```
+
+After all Hugging Face models are cached locally, you may switch to:
+
+```text
+HF_HUB_OFFLINE=1
+```
+
+Restart Streamlit after changing `.env`, then use **Clear resource cache** in the sidebar.
+
+## Verification Commands
+
+Check Python and packages:
+
+```powershell
+D:\anaconda3\python.exe -c "import sys; print(sys.executable)"
+D:\anaconda3\python.exe -c "import importlib.util as u; mods=['streamlit','faiss','sentence_transformers','transformers','torch','openai']; [print(m, bool(u.find_spec(m))) for m in mods]"
+```
+
+Expected package output:
+
+```text
+streamlit True
+faiss True
+sentence_transformers True
+transformers True
+torch True
+openai True
+```
+
 ## Purpose
 
 `ui/app.py` is the canonical search-first QA/RAG interface. It uses the same named configuration loader, retriever/generator stack builder, bounded agent executor, prompt/parser, and one-case E2E runner as repository ablation execution. Follow-ups execute that same retrieval path again; there is no parallel demo-only RAG pipeline and no per-question evaluation directory.
