@@ -35,6 +35,37 @@ a { color: var(--legal-accent); }
 code, pre { font-family: var(--legal-mono); }
 *:focus-visible { outline: 2px solid color-mix(in srgb, var(--legal-accent) 72%, transparent); outline-offset: 2px; }
 
+/* Toasts render in Streamlit's global notification layer, outside the app content tree. */
+[data-testid="stToast"] {
+  background:var(--legal-panel) !important;
+  border:1px solid var(--legal-line) !important;
+  border-radius:var(--radius-md) !important;
+  color:var(--legal-ink) !important;
+  filter:none !important;
+  box-shadow:var(--shadow-lg) !important;
+}
+[data-testid="stToast"] [data-testid="stToastText"],
+[data-testid="stToast"] [data-testid="stToastText"] * {
+  color:var(--legal-ink) !important;
+  -webkit-text-fill-color:var(--legal-ink) !important;
+}
+[data-testid="stToast"] button[aria-label="Close"] {
+  background:transparent !important;
+  border:0 !important;
+  color:var(--legal-muted) !important;
+  box-shadow:none !important;
+}
+[data-testid="stToast"] button[aria-label="Close"]:hover {
+  background:var(--legal-wash) !important;
+  color:var(--legal-ink) !important;
+}
+[data-testid="stToast"] button[aria-label="Close"] svg {
+  fill:currentColor !important;
+}
+[data-testid="stToast"] [data-testid="stToastViewButton"] {
+  color:var(--legal-accent-text) !important;
+}
+
 [data-testid="stButton"] button,
 [data-testid="stLinkButton"] a {
   border:1px solid var(--legal-line);

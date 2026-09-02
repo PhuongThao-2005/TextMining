@@ -50,6 +50,16 @@ def test_select_arrow_keeps_svg_background_transparent() -> None:
     assert "fill:currentColor !important;" in arrow_rule
 
 
+def test_toast_uses_application_theme_tokens() -> None:
+    css = build_application_css("Dark")
+    toast_rule = css.split('[data-testid="stToast"] {', 1)[1].split("}", 1)[0]
+    toast_text_rule = css.split('[data-testid="stToast"] [data-testid="stToastText"],', 1)[1].split("}", 1)[0]
+
+    assert "background:var(--legal-panel) !important;" in toast_rule
+    assert "color:var(--legal-ink) !important;" in toast_rule
+    assert "color:var(--legal-ink) !important;" in toast_text_rule
+
+
 def test_invalid_theme_is_rejected() -> None:
     with pytest.raises(ValueError):
         build_theme_css("Neon")
