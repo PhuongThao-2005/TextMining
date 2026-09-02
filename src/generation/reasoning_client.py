@@ -88,7 +88,7 @@ class GeneratorClient:
         self,
         prompt: str,
         *,
-        temperature: float = 0.0,
+        temperature: float = 0.5,
         top_p: float = 1.0,
         max_output_tokens: int = 1024,
         timeout_seconds: float = 60.0,
@@ -98,13 +98,14 @@ class GeneratorClient:
         for attempt in range(max_retries + 1):
             try:
                 response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=temperature,
-                    top_p=top_p,
-                    max_tokens=max_output_tokens,
-                    timeout=timeout_seconds,
-                )
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+                top_p=top_p,
+                max_tokens=max_output_tokens,
+                timeout=timeout_seconds,
+                extra_body={"enable_thinking": False},
+            )
                 break
             except Exception as exc:
                 if attempt < max_retries:
@@ -204,7 +205,7 @@ def generate_answer(
     chunks: Sequence[Any],
     *,
     qa_id: str | None = None,
-    temperature: float = 0.0,
+    temperature: float = 0.5,
     top_p: float = 1.0,
     max_output_tokens: int = 1024,
     timeout_seconds: float = 60.0,

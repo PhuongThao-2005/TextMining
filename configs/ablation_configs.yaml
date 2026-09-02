@@ -234,7 +234,8 @@ configs:
   # FAISS index paths intentionally fail preflight until those artifacts exist.
   # Controlled 2x2 LLM comparison. Retrieval is fixed across all four cells:
   # Dense FAISS -> Graph -> RRF(Dense, Graph) -> global Cross-Encoder reranker.
-  # Sparse/BM25 is deliberately disabled.
+  # Sparse/BM25 is deliberately disabled. Final retrieval uses top-10 so all
+  # E2E metrics at @1, @5, and @10 are computed from actual returned ranks.
   LLM-BaseReasoning:
     benchmark:
       path: data/benchmark/qa_final.jsonl
@@ -243,7 +244,7 @@ configs:
       path: data/v2/documents.jsonl
       version: v2
     retrieval:
-      top_k: 5
+      top_k: 10
       filter_profile: broad
       dense:
         enabled: true
@@ -304,7 +305,7 @@ configs:
       path: data/v2/documents.jsonl
       version: v2
     retrieval:
-      top_k: 5
+      top_k: 10
       filter_profile: broad
       dense:
         enabled: true
@@ -365,7 +366,7 @@ configs:
       path: data/v2/documents.jsonl
       version: v2
     retrieval:
-      top_k: 5
+      top_k: 10
       filter_profile: broad
       dense:
         enabled: true
@@ -426,7 +427,7 @@ configs:
       path: data/v2/documents.jsonl
       version: v2
     retrieval:
-      top_k: 5
+      top_k: 10
       filter_profile: broad
       dense:
         enabled: true

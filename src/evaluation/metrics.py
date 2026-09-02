@@ -78,6 +78,13 @@ def hit_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
     return 1.0 if relevant_ids and set(retrieved_ids[:k]) & relevant_ids else 0.0
 
 
+def precision_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
+    """Return the fraction of the first *k* retrieved chunks that are relevant."""
+    if k <= 0:
+        return 0.0
+    return len(set(retrieved_ids[:k]) & relevant_ids) / k
+
+
 def mrr_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
     if not relevant_ids:
         return 0.0

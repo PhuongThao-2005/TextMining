@@ -27,6 +27,7 @@ from .metrics import (
     jaccard_at_k,
     mrr_at_k,
     ndcg_at_k,
+    precision_at_k,
     recall_at_k,
     rouge_l,
     token_f1,
@@ -37,7 +38,7 @@ RETRIEVAL_METRIC_TOP_K = (1, 5, 10)
 RETRIEVAL_METRIC_KEYS = [
     f"{name}@{k}"
     for k in RETRIEVAL_METRIC_TOP_K
-    for name in ("recall", "hit", "mrr", "ndcg", "jaccard")
+    for name in ("recall", "precision", "hit", "mrr", "ndcg", "jaccard")
 ]
 METRIC_KEYS = [
     "exact_match",
@@ -430,6 +431,9 @@ def score_case(
         retrieval_metrics.update(
             {
                 f"recall@{k}": recall_at_k(retrieved_ranked, ground_truth_chunks, k)
+                if has_ground_truth_chunks
+                else None,
+                f"precision@{k}": precision_at_k(retrieved_ranked, ground_truth_chunks, k)
                 if has_ground_truth_chunks
                 else None,
                 f"hit@{k}": hit_at_k(retrieved_ranked, ground_truth_chunks, k)

@@ -5,6 +5,7 @@ from evaluation.metrics import (
     jaccard_at_k,
     mrr_at_k,
     ndcg_at_k,
+    precision_at_k,
     recall_at_k,
     rouge_l,
     token_f1,
@@ -18,6 +19,7 @@ def test_retrieval_metrics_ranked_ids():
     assert recall_at_k(retrieved, relevant, 1) == 0.0
     assert recall_at_k(retrieved, relevant, 3) == 1.0
     assert hit_at_k(retrieved, relevant, 2) == 1.0
+    assert precision_at_k(retrieved, relevant, 3) == 2 / 3
     assert mrr_at_k(retrieved, relevant, 10) == 0.5
     assert 0.0 < ndcg_at_k(retrieved, relevant, 3) < 1.0
     assert jaccard_at_k(retrieved, relevant, 3) == 2 / 3
