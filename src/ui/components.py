@@ -44,8 +44,8 @@ def render_app_header(
         f'<h2>{safe_html_text(t(lang, "legal_title"))}</h2>'
         f'<p>{safe_html_text(t(lang, "legal_subtitle"))}</p></div>'
         '<div class="ga-top-controls">'
-        f'<span class="ga-compact-select">{safe_html_text(theme_label)} <span>⌄</span></span>'
-        f'<span class="ga-compact-select">{safe_html_text(t(lang, "language_label"))} <span>⌄</span></span>'
+        f'<span class="ga-context-pill">{safe_html_text(theme_label)}</span>'
+        f'<span class="ga-context-pill">{safe_html_text(t(lang, "language_label"))}</span>'
         f'<span class="ga-mode {badge_class}"><i></i>{safe_html_text(label)}</span>'
         '</div></div>',
         unsafe_allow_html=True,
@@ -56,7 +56,7 @@ def render_sidebar_brand(lang: str = "en") -> None:
     st.markdown(
         '<div class="ga-sidebar-brand">'
         '<div class="ga-brand-mark" aria-hidden="true">▤</div>'
-        '<div><strong>Grounded</strong>'
+        f'<div><strong>{safe_html_text(t(lang, "brand_name"))}</strong>'
         f'<span>{safe_html_text(t(lang, "brand_caption"))}</span></div></div>',
         unsafe_allow_html=True,
     )
@@ -86,10 +86,10 @@ def render_landing_hero(
             placeholder="Hỏi về luật, điều khoản hoặc quyền lợi của bạn..." if lang == "vi" else "Ask about a law, article, or legal right...",
             label_visibility="collapsed",
         )
-        toolbar_left, toolbar_shortcut, toolbar_right = st.columns([5, 1, 1])
-        mode_text = f'{t(lang, "mode_demo")} · no external calls' if active_mode == "demo" else f'{t(lang, "mode_production")} · {config_name}'
+        toolbar_left, toolbar_shortcut, toolbar_right = st.columns([6, 1, 0.9])
+        mode_text = f'{t(lang, "mode_demo")} · {t(lang, "no_external_calls")}' if active_mode == "demo" else f'{t(lang, "mode_production")} · {config_name}'
         toolbar_left.markdown(f'<span class="ga-composer-meta">{safe_html_text(mode_text)}</span>', unsafe_allow_html=True)
-        toolbar_shortcut.markdown('<span class="ga-shortcut">⌘ ↵</span>', unsafe_allow_html=True)
+        toolbar_shortcut.markdown(f'<span class="ga-shortcut">{safe_html_text(t(lang, "submit_shortcut"))}</span>', unsafe_allow_html=True)
         submitted = toolbar_right.form_submit_button(t(lang, "ask"), type="primary", use_container_width=True)
         if submitted:
             submitted_question = question
@@ -101,11 +101,12 @@ def render_landing_hero(
         unsafe_allow_html=True,
     )
     st.markdown(f'<div class="ga-examples"><div class="ga-section-label">{safe_html_text(t(lang, "examples"))}</div></div>', unsafe_allow_html=True)
-    columns = st.columns(min(4, len(examples)))
-    for index, (label, query) in enumerate(examples):
-        button_label = f"{label}\n\n{query}  →"
-        if columns[index % len(columns)].button(button_label, key=f"example-{index}", use_container_width=True):
-            submitted_question = query
+    with st.container(key="landing-examples"):
+        columns = st.columns(min(4, len(examples)), gap="medium")
+        for index, (label, query) in enumerate(examples):
+            button_label = f"**{label}**\n\n{query} ->"
+            if columns[index % len(columns)].button(button_label, key=f"example-{index}", use_container_width=True):
+                submitted_question = query
     st.markdown(
         f'<div class="ga-landing-status"><span class="ga-status-dot"></span>{safe_html_text(_landing_status(active_mode, readiness, lang))}</div>',
         unsafe_allow_html=True,
@@ -164,7 +165,7 @@ def render_turn(response: QuestionResponse, question: str, turn_number: int, sho
         status_col.markdown(
             '<div class="ga-chat-status">'
             f'<span class="ga-mode {"demo" if response.is_mock else "production"}"><i></i>{safe_html_text(mode_label)}</span>'
-            f'<span>{safe_html_text("Mock · no external call" if response.is_mock else _today_label(lang))}</span>'
+            f'<span>{safe_html_text(t(lang, "mock_no_external_call") if response.is_mock else _today_label(lang))}</span>'
             '</div>',
             unsafe_allow_html=True,
         )
@@ -267,7 +268,7 @@ def render_selected_source(response: QuestionResponse, turn_number: int, lang: s
     with st.container(border=True):
         header_left, header_right = st.columns([5, 1])
         header_left.markdown(f"**[{card.citation_id}] {card.title}**")
-        header_right.caption("DEMO" if card.is_mock else t(lang, "retrieval").upper())
+        header_right.caption(t(lang, "mode_demo") if card.is_mock else t(lang, "retrieval"))
         st.caption(" · ".join(value for value in (
             card.detail or "Article/section N/A",
             f"Page {card.page}" if card.page is not None else "Page N/A",
@@ -531,7 +532,7 @@ def render_details(response: QuestionResponse, lang: str = "en") -> None:
     columns = st.columns(2)
     for index, (label, value) in enumerate(values):
         with columns[index % 2].container(border=True):
-            st.caption(label.upper())
+            st.caption(label)
             st.write(display_value(value))
     st.caption(t(lang, "citation_metrics_note"))
     with st.expander(t(lang, "citation_metrics")):
@@ -560,15 +561,15 @@ def render_agent_trace(response: QuestionResponse, lang: str = "en") -> None:
         st.caption(t(lang, "no_agent_trace"))
         return
     if response.is_mock:
-        st.caption("DEMO TRACE · No production planner executed.")
+        st.caption(t(lang, "demo_trace"))
     for row in response.trace:
         step = row.get("step", "—")
         event = row.get("event") or row.get("action") or "Step"
         status = row.get("status") or "completed"
         with st.container(border=True):
-            st.markdown(f"**Step {step} · {event}**")
+            st.markdown(f"**{t(lang, 'step')} {step} · {event}**")
             st.caption(str(status))
-    with st.expander("Raw bounded trace"):
+    with st.expander(t(lang, "raw_trace")):
         st.json(list(response.trace), expanded=False)
 
 
@@ -592,7 +593,7 @@ def render_readiness_summary(readiness: ProductionReadiness, lang: str = "en") -
     st.caption(f"{ready_count}/{len(readiness.checks)} mục sẵn sàng" if lang == "vi" else f"{ready_count} of {len(readiness.checks)} checks ready")
     for check in readiness.checks[:7]:
         symbol = "●" if check.status == "ready" else "○" if check.status in {"warning", "deferred"} else "×"
-        st.caption(f"{symbol} {check.name.replace('_', ' ').title()} · {check.status}")
+        st.caption(f"{symbol} {check.name.replace('_', ' ')} · {check.status}")
     if len(readiness.checks) > 7:
         st.caption(f"+ {len(readiness.checks) - 7} more checks")
 

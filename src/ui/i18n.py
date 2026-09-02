@@ -48,7 +48,7 @@ _COPY: dict[str, dict[str, str]] = {
         "graph_stack": "Graph + RRF + reranker",
         "graph_stack_help": "Using {path} with RRF fusion and global reranking.",
         "graph_stack_missing": "Place knowledge_graph.gpickle at data/graph/knowledge_graph.gpickle or set GRAPH_PICKLE_PATH in .env.",
-        "hero_eyebrow": "Grounded answers from your documents",
+        "hero_eyebrow": "Cited answers from your documents",
         "hero_title": "What would you like to understand?",
         "hero_body": "Ask a question and trace every answer back to its retrieved evidence.",
         "legal_subtitle": "Trusted legal AI assistant with transparent source citations.",
@@ -211,7 +211,7 @@ _COPY: dict[str, dict[str, str]] = {
 
 _COPY["en"].update({
     "base_model_env": "Base model env",
-    "brand_caption": "Grounded document answers",
+    "brand_caption": "Legal answers with sources",
     "cited_evidence": "Cited evidence",
     "copy": "Copy",
     "copy_notice": "Answer copy action is ready for browser integration.",
@@ -245,6 +245,15 @@ _COPY["en"].update({
     "top_p": "Top-p",
     "verified_answer": "Verified answer",
     "view_evidence": "View evidence ->",
+    "navigation": "Navigation",
+    "preferences": "Preferences",
+    "history_notice": "History is shown for this session.",
+    "no_external_calls": "no external calls",
+    "submit_shortcut": "Ctrl + Enter",
+    "mock_no_external_call": "Demo · no external call",
+    "demo_trace": "Demo trace · no production planner executed.",
+    "step": "Step",
+    "raw_trace": "Raw bounded trace",
 })
 
 _COPY["vi"].update({
@@ -284,6 +293,15 @@ _COPY["vi"].update({
     "top_p": "Top-p",
     "verified_answer": "Trả lời được kiểm chứng",
     "view_evidence": "Xem bằng chứng ->",
+    "navigation": "Điều hướng",
+    "preferences": "Tùy chọn",
+    "history_notice": "Lịch sử đang hiển thị trong phiên hiện tại.",
+    "no_external_calls": "không gọi dịch vụ ngoài",
+    "submit_shortcut": "Ctrl + Enter",
+    "mock_no_external_call": "Demo · không gọi dịch vụ ngoài",
+    "demo_trace": "Demo trace · không chạy planner production.",
+    "step": "Bước",
+    "raw_trace": "Trace thô đã giới hạn",
 })
 
 

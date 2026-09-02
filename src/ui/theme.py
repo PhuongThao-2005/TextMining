@@ -44,11 +44,11 @@ _MONO = '"DM Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace'
 
 LIGHT_THEME = ThemeTokens(
     _SANS, _MONO,
-    "#f7fbff", "#ffffff", "#eef6ff", "#e2eefc", "rgba(255,255,255,.92)",
-    "#0f172a", "#334155", "#64748b", "#ffffff",
-    "#e2e8f0", "#cbd5e1", "#94a3b8",
-    "#2563eb", "#1d4ed8", "#dbeafe", "#1e3a8a",
-    "#16a34a", "#0ea5e9", "#dc2626", "#2563eb",
+    "#f6f8f7", "#ffffff", "#f0f5f2", "#e3ebe7", "rgba(255,255,255,.94)",
+    "#18211f", "#3f4f49", "#6e7d76", "#ffffff",
+    "#e2e7e4", "#c9d3ce", "#9aa8a1",
+    "#0f766e", "#0b5f59", "#d9f0eb", "#134e4a",
+    "#16804f", "#0e7490", "#b42318", "#0f766e",
     "7px", "9px", "13px", "16px",
     "0 1px 2px rgba(48,42,30,.04)",
     "0 8px 20px rgba(48,42,30,.04)",
@@ -58,11 +58,11 @@ LIGHT_THEME = ThemeTokens(
 
 DARK_THEME = ThemeTokens(
     _SANS, _MONO,
-    "#0f172a", "#111827", "#1e293b", "#263449", "rgba(17,24,39,.94)",
-    "#f8fafc", "#cbd5e1", "#94a3b8", "#0f172a",
-    "#1e293b", "#334155", "#475569",
-    "#60a5fa", "#93c5fd", "#1e3a8a", "#dbeafe",
-    "#4ade80", "#38bdf8", "#f87171", "#60a5fa",
+    "#111916", "#17201d", "#202b27", "#2a3732", "rgba(23,32,29,.94)",
+    "#f5f7f6", "#d4ddd8", "#9aa8a1", "#111916",
+    "#26332e", "#36463f", "#4c5e56",
+    "#14b8a6", "#2dd4bf", "#164e46", "#ccfbf1",
+    "#4ade80", "#67e8f9", "#f87171", "#2dd4bf",
     "7px", "9px", "13px", "16px",
     "0 1px 2px rgba(0,0,0,.16)",
     "0 8px 28px rgba(0,0,0,.16)",

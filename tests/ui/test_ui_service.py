@@ -20,6 +20,7 @@ from service.qa_service import (
     UIConfigError,
     answer_question,
     apply_safe_overrides,
+    format_safe_error,
     list_interactive_configs,
     load_ui_config_registry,
     normalize_context_rows,
@@ -99,6 +100,14 @@ def _base_config(tmp_path: Path, *, backend: str = "hashing") -> dict[str, Any]:
         "agent": {"enabled": False, "mode": "none", "implementation_status": "implemented"},
         "output": {"root": str(tmp_path / "runs")}, "seed": 42,
     }
+
+
+def test_safe_error_summarizes_html_provider_response() -> None:
+    error = format_safe_error("<!DOCTYPE html><html><head></head><body>not json</body></html>")
+
+    assert "HTML page" in error
+    assert "LLM_BASE_URL" in error
+    assert "<html>" not in error.lower()
 
 
 def _planner_config(tmp_path: Path) -> dict[str, Any]:

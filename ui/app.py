@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -13,53 +12,9 @@ for import_path in (PROJECT_ROOT, PROJECT_ROOT / "src"):
     if str(import_path) not in sys.path:
         sys.path.insert(0, str(import_path))
 
+from service.local_env import apply_local_environment  # noqa: E402
 
-def _load_local_env(path: Path = PROJECT_ROOT / ".env") -> None:
-    """Load simple KEY=VALUE pairs for local runs.
-
-    Runtime switches are allowed to override inherited shell values so changing
-    `.env` is enough after a Streamlit restart. Secrets still keep real process
-    environment precedence.
-    """
-    if not path.is_file():
-        return
-    override_keys = {
-        "HF_HUB_OFFLINE", "GRAPH_PICKLE_PATH", "HF_HOME", "TRANSFORMERS_CACHE",
-        "SENTENCE_TRANSFORMERS_HOME", "TORCH_HOME", "XDG_CACHE_HOME",
-    }
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and (key in override_keys or key not in os.environ):
-            os.environ[key] = value
-
-
-def _configure_local_cache_dirs() -> None:
-    cache_root = PROJECT_ROOT / ".cache"
-    defaults = {
-        "XDG_CACHE_HOME": cache_root,
-        "HF_HOME": cache_root / "huggingface",
-        "TRANSFORMERS_CACHE": cache_root / "huggingface" / "hub",
-        "SENTENCE_TRANSFORMERS_HOME": cache_root / "sentence-transformers",
-        "TORCH_HOME": cache_root / "torch",
-    }
-    for key, path in defaults.items():
-        os.environ.setdefault(key, str(path))
-        configured = Path(os.environ[key])
-        resolved = configured if configured.is_absolute() else PROJECT_ROOT / configured
-        os.environ[key] = str(resolved)
-        resolved.mkdir(parents=True, exist_ok=True)
-
-
-_load_local_env()
-_configure_local_cache_dirs()
-os.environ.setdefault("USE_TF", "0")
-os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
-os.environ.setdefault("HF_HUB_OFFLINE", "0")
+apply_local_environment(PROJECT_ROOT)
 
 import streamlit as st  # noqa: E402
 
@@ -152,18 +107,19 @@ def _cached_readiness(
 
 
 def main() -> None:
-    st.set_page_config(page_title="Grounded · Document Answer Engine", layout="wide", initial_sidebar_state="auto")
+    st.set_page_config(page_title="LexVN · Legal Q&A", layout="wide", initial_sidebar_state="expanded")
     _initialize_state()
     with st.sidebar:
-        render_sidebar_brand(normalize_language(st.session_state.get("language_choice")))
-        st.markdown("### Navigation")
-        if st.button("＋  Tìm mới", key="sidebar-new-search", use_container_width=True):
+        sidebar_lang = normalize_language(st.session_state.get("language_choice"))
+        render_sidebar_brand(sidebar_lang)
+        st.markdown(f"### {t(sidebar_lang, 'navigation')}")
+        if st.button(t(sidebar_lang, "new_search"), key="sidebar-new-search", use_container_width=True):
             st.session_state["conversation"] = clear_conversation()
             _clear_source_selection()
             st.rerun()
-        if st.button("↻  Lịch sử", key="sidebar-history", use_container_width=True):
-            st.session_state["notice"] = "Lịch sử đang hiển thị trong phiên hiện tại."
-        st.markdown("### Preferences")
+        if st.button(t(sidebar_lang, "nav_history"), key="sidebar-history", use_container_width=True):
+            st.session_state["notice"] = t(sidebar_lang, "history_notice")
+        st.markdown(f"### {t(sidebar_lang, 'preferences')}")
         lang = normalize_language(st.selectbox(
             "Ngôn ngữ / Language",
             LANGUAGE_OPTIONS,
@@ -604,11 +560,11 @@ def _initialize_state() -> None:
 
 def _filter_profile_label(value: str, lang: str) -> str:
     if lang != "vi":
-        return value
+        return value.replace("_", " ").title()
     return {
-        "broad": "rộng",
-        "current_law": "luật hiện hành",
-        "historical": "lịch sử",
+        "broad": "Rộng",
+        "current_law": "Luật hiện hành",
+        "historical": "Lịch sử",
     }.get(value, value)
 
 

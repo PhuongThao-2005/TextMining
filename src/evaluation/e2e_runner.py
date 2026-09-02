@@ -710,6 +710,12 @@ def _sanitize_text(text: str, sensitive_values: Sequence[str]) -> str:
             sanitized = sanitized.replace(value, "***")
     sanitized = _SECRET_PATTERNS[0].sub(r"\1\2***", sanitized)
     sanitized = _SECRET_PATTERNS[1].sub("Bearer ***", sanitized)
+    lowered = sanitized.lstrip().lower()
+    if lowered.startswith("<!doctype html") or lowered.startswith("<html"):
+        return (
+            "Provider returned an HTML page instead of an OpenAI-compatible JSON response. "
+            "Check LLM_BASE_URL; it should point to the API base URL, not a web page."
+        )
     return sanitized
 
 

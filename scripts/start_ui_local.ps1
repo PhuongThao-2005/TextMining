@@ -30,9 +30,23 @@ if (-not $env:TORCH_HOME) { $env:TORCH_HOME = Join-Path $CacheRoot "torch" }
 @($env:XDG_CACHE_HOME, $env:HF_HOME, $env:TRANSFORMERS_CACHE, $env:SENTENCE_TRANSFORMERS_HOME, $env:TORCH_HOME) |
     ForEach-Object { New-Item -ItemType Directory -Force -Path $_ | Out-Null }
 
-$PythonExe = "D:\anaconda3\python.exe"
-if (-not (Test-Path $PythonExe)) {
+$ProjectPython = Join-Path (Get-Location) ".venv\Scripts\python.exe"
+$CondaPython = "D:\anaconda3\python.exe"
+if (Test-Path $ProjectPython) {
+    $PythonExe = $ProjectPython
+} elseif (Test-Path $CondaPython) {
+    $PythonExe = $CondaPython
+} else {
     $PythonExe = (Get-Command python).Source
+}
+
+if ($env:HF_HUB_OFFLINE -ne "1") {
+    foreach ($Key in @("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy")) {
+        $Value = [Environment]::GetEnvironmentVariable($Key, "Process")
+        if ($Value -eq "http://127.0.0.1:9" -or $Value -eq "https://127.0.0.1:9") {
+            [Environment]::SetEnvironmentVariable($Key, $null, "Process")
+        }
+    }
 }
 
 Write-Host "Using Python:"
@@ -42,7 +56,7 @@ Write-Host "Checking required packages:"
 & $PythonExe -c "import importlib.util as u; mods=['streamlit','faiss','sentence_transformers','transformers','torch','openai']; [print(f'{m}: {bool(u.find_spec(m))}') for m in mods]"
 
 Write-Host "Runtime switches:"
-& $PythonExe -c "import os; keys=['HF_HUB_OFFLINE','GRAPH_PICKLE_PATH','HF_HOME','SENTENCE_TRANSFORMERS_HOME','TORCH_HOME']; [print(k + '=' + str(os.environ.get(k))) for k in keys]"
+& $PythonExe -c "import os; keys=['HF_HUB_OFFLINE','GRAPH_PICKLE_PATH','HF_HOME','SENTENCE_TRANSFORMERS_HOME','TORCH_HOME']; [print(k + '=' + str(os.environ.get(k))) for k in keys]; print('HTTP_PROXY=' + ('set' if os.environ.get('HTTP_PROXY') else 'unset')); print('HTTPS_PROXY=' + ('set' if os.environ.get('HTTPS_PROXY') else 'unset'))"
 
 Write-Host "Starting Streamlit UI at http://localhost:8501"
 & $PythonExe -m streamlit run ui/app.py --server.headless true --server.port 8501
