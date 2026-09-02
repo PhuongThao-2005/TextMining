@@ -5,7 +5,8 @@
 #
 # Use the same Python interpreter you use to run Streamlit.
 
-streamlit>=1.52,<2
+# Custom UI selectors are verified against this Streamlit DOM version.
+streamlit==1.62.0
 PyYAML>=6,<7
 openai>=3,<4
 
@@ -19,6 +20,7 @@ torch>=2.2
 # Runtime/data utilities used by the app and evaluation helpers.
 numpy>=1.26,<2
 pandas>=2,<3
+matplotlib>=3.8,<4
 
 # Test runner for local verification.
 pytest>=8,<9

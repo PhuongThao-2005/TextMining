@@ -103,7 +103,7 @@ def source_segments_html(render: SourceTextRender) -> str:
     """Render only escaped text inside application-owned presentation wrappers."""
     parts = []
     for segment in render.segments:
-        escaped = safe_html_text(format_retrieved_text(segment.text))
+        escaped = safe_html_text(segment.text)
         parts.append(f'<span class="ga-evidence-highlight">{escaped}</span>' if segment.highlighted else escaped)
     return '<div class="ga-source-text">' + "".join(parts) + "</div>"
 

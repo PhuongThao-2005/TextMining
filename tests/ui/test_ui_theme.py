@@ -37,6 +37,19 @@ def test_system_theme_contains_dark_media_override() -> None:
     assert "--accent:" in css_variables(LIGHT_THEME)
 
 
+def test_select_arrow_keeps_svg_background_transparent() -> None:
+    css = build_application_css("Dark")
+    transparent_path = 'svg path[fill="none"] {'
+    arrow_path = 'svg path:not([fill="none"]) {'
+
+    assert transparent_path in css
+    assert arrow_path in css
+    transparent_rule = css.split(transparent_path, 1)[1].split("}", 1)[0]
+    arrow_rule = css.split(arrow_path, 1)[1].split("}", 1)[0]
+    assert "fill:none !important;" in transparent_rule
+    assert "fill:currentColor !important;" in arrow_rule
+
+
 def test_invalid_theme_is_rejected() -> None:
     with pytest.raises(ValueError):
         build_theme_css("Neon")

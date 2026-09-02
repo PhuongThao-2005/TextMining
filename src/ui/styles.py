@@ -207,43 +207,12 @@ section.stSidebarCollapsed [data-testid="stSidebarCollapseButton"],
   color:var(--legal-side-text) !important;
   -webkit-text-fill-color:var(--legal-side-text) !important;
 }
-[data-testid="stSidebar"] [data-baseweb="select"] > div > div:last-child {
-  background:transparent !important;
-  border-left:0 !important;
-  box-shadow:none !important;
-  outline:0 !important;
-  color:var(--legal-side-dim) !important;
-  -webkit-text-fill-color:var(--legal-side-dim) !important;
-}
-[data-testid="stSidebar"] [data-baseweb="select"] > div > div:last-child * {
-  color:var(--legal-side-dim) !important;
-  fill:var(--legal-side-dim) !important;
-  stroke:var(--legal-side-dim) !important;
-  -webkit-text-fill-color:var(--legal-side-dim) !important;
-}
-[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="icon"],
-[data-testid="stSidebar"] [data-baseweb="select"] [data-testid="stIconMaterial"],
-[data-testid="stSidebar"] [data-baseweb="select"] svg,
-[data-testid="stSidebar"] [data-baseweb="select"] svg * {
-  background:transparent !important;
-  color:var(--legal-side-dim) !important;
-  fill:var(--legal-side-dim) !important;
-  stroke:var(--legal-side-dim) !important;
-  -webkit-text-fill-color:var(--legal-side-dim) !important;
-}
-[data-testid="stSidebar"] [data-baseweb="select"] svg path,
-[data-testid="stSidebar"] [data-baseweb="select"] svg polyline,
-[data-testid="stSidebar"] [data-baseweb="select"] svg line {
-  fill:currentColor !important;
-  stroke:currentColor !important;
-}
 /* Streamlit 1.62+ renders the select trigger with React Aria, not BaseWeb. */
 [data-testid="stSidebar"] [data-testid="stSelectbox"] button[aria-label="Open"] {
   background:transparent !important;
   border:0 !important;
   box-shadow:none !important;
   color:var(--legal-side-text) !important;
-  -webkit-text-fill-color:var(--legal-side-text) !important;
 }
 [data-testid="stSidebar"] [data-testid="stSelectbox"] button[aria-label="Open"] svg {
   color:inherit !important;

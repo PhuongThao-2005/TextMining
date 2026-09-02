@@ -25,7 +25,7 @@ from evaluation.ablation_analysis import (
 )
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 NOTEBOOK = ROOT / "notebooks" / "ablation_report.ipynb"
 
 
