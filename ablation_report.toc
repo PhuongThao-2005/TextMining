@@ -1,0 +1,51 @@
+\contentsline {section}{\numberline {1}Introduction}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Problem Statement}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Objectives}{2}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Contributions}{2}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Report Structure}{2}{subsection.1.4}%
+\contentsline {section}{\numberline {2}Related Work}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Retrieval-Augmented Generation}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Legal Information Retrieval}{2}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Hybrid Retrieval and Fusion}{2}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Knowledge-Graph-Augmented Retrieval}{2}{subsection.2.4}%
+\contentsline {section}{\numberline {3}System Overview: L\_RAG}{2}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Architecture}{2}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Retrieval Components}{2}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Reranking Components}{2}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Generation Component}{2}{subsection.3.4}%
+\contentsline {section}{\numberline {4}Dataset and Benchmark}{2}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Corpus Description}{2}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}QA Benchmark}{2}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Ground Truth Construction}{2}{subsection.4.3}%
+\contentsline {section}{\numberline {5}Experimental Setup}{2}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Evaluation Metrics}{2}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Evaluation Protocol}{2}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Ablation Configurations}{2}{subsection.5.3}%
+\contentsline {section}{\numberline {6}Ablation Study}{2}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Ablation 1: Chunk-Only vs. Chunk+Metadata Embeddings}{2}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Ablation 2: Retrieval Mode --- Dense vs. Hybrid vs. BM25}{2}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Ablation 3: Knowledge Graph Augmentation}{2}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Ablation 4: Reranking Strategy}{2}{subsection.6.4}%
+\contentsline {subsection}{\numberline {6.5}Ablation 5: LLM Reasoning (Planned)}{2}{subsection.6.5}%
+\contentsline {section}{\numberline {7}Results and Analysis}{2}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Overall Results}{2}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Retrieval Quality}{2}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Generation Quality}{2}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}Category-Level Analysis}{2}{subsection.7.4}%
+\contentsline {subsection}{\numberline {7.5}Difficulty-Level Analysis}{2}{subsection.7.5}%
+\contentsline {subsection}{\numberline {7.6}Answer-Type Analysis}{2}{subsection.7.6}%
+\contentsline {subsection}{\numberline {7.7}Latency Analysis}{2}{subsection.7.7}%
+\contentsline {subsection}{\numberline {7.8}Statistical Significance}{2}{subsection.7.8}%
+\contentsline {section}{\numberline {8}Discussion}{2}{section.8}%
+\contentsline {subsection}{\numberline {8.1}Interpretation of Findings}{2}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}Design Implications}{2}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Threats to Validity}{2}{subsection.8.3}%
+\contentsline {section}{\numberline {9}Limitations}{2}{section.9}%
+\contentsline {section}{\numberline {10}Conclusion and Future Work}{2}{section.10}%
+\contentsline {subsection}{\numberline {10.1}Summary}{2}{subsection.10.1}%
+\contentsline {subsection}{\numberline {10.2}Future Work}{2}{subsection.10.2}%
+\contentsline {section}{\numberline {11}References}{2}{section.11}%
+\contentsline {section}{\numberline {A}Appendix}{2}{appendix.A}%
+\contentsline {subsection}{\numberline {A.1}Full Metric Tables}{2}{subsection.A.1}%
+\contentsline {subsection}{\numberline {A.2}Per-Question Deltas}{2}{subsection.A.2}%
+\contentsline {subsection}{\numberline {A.3}Configuration Manifests}{2}{subsection.A.3}%

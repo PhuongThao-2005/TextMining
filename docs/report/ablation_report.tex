@@ -1,0 +1,359 @@
+% ============================================================================
+%  L_RAG Ablation Study Report
+%  Scientific report backbone: full system context + ablation study core.
+%  Only the structure and short per-section descriptions are provided here.
+%  Fill in the actual content under each section.
+% ============================================================================
+\documentclass[12pt,a4paper]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+
+% --- Metadata ---
+\title{An Ablation Study of Retrieval and Reranking Strategies\\ for Legal Retrieval-Augmented Generation}
+\author{Your Name(s)}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+% Short summary of the L_RAG system, the ablation study design, the key
+% findings (graph augmentation reduces retrieval recall but improves
+% generation quality; RRF+CrossEncoder improves ranking quality at a small
+% latency cost; hybrid retrieval adds significant latency), and the practical
+% recommendation for the final pipeline.
+\end{abstract}
+
+\tableofcontents
+
+% ============================================================================
+\section{Introduction}
+\label{sec:introduction}
+
+% Context: legal information retrieval is hard because answers depend on
+% document hierarchy, validity, citations, and cross-document relationships.
+% Problem: conventional vector-only RAG misses legal structure.
+% Contribution: L_RAG combines dense retrieval, sparse retrieval, knowledge
+% graph reasoning, and reranking. This report presents a systematic ablation
+% study isolating each component's contribution.
+% Structure of the report.
+
+\subsection{Problem Statement}
+\label{sec:problem-statement}
+
+% Legal QA requires evidence that is semantically relevant AND legally valid,
+% authoritative, and traceable. Keyword search misses paraphrases; vector
+% search misses legal relationships; graph-only search misses semantic
+% flexibility.
+
+\subsection{Objectives}
+\label{sec:objectives}
+
+% (1) Build a legal RAG pipeline. (2) Evaluate each component in isolation.
+% (3) Identify which components improve retrieval quality, generation quality,
+% and latency. (4) Recommend a final configuration.
+
+\subsection{Contributions}
+\label{sec:contributions}
+
+% Systematic ablation over retrieval mode (dense/hybrid/BM25), graph
+% augmentation, and reranking strategy (None/RRF/CrossEncoder/RRF+CE).
+% Public benchmark of 500 Vietnamese legal QA pairs.
+
+\subsection{Report Structure}
+\label{sec:report-structure}
+
+% Brief roadmap of the remaining sections.
+
+% ============================================================================
+\section{Related Work}
+\label{sec:related-work}
+
+\subsection{Retrieval-Augmented Generation}
+\label{sec:rag}
+
+% RAG combines retrieval with LLM generation to ground answers in external
+% evidence. Discuss standard RAG architectures and their limitations for
+% domain-specific corpora.
+
+\subsection{Legal Information Retrieval}
+\label{sec:legal-ir}
+
+% Legal IR requires handling document hierarchy, amendment/validity
+% relationships, citation structure, and authority ranking. Contrast with
+% general-purpose IR.
+
+\subsection{Hybrid Retrieval and Fusion}
+\label{sec:hybrid-fusion}
+
+% Dense + sparse hybrid retrieval, Reciprocal Rank Fusion (RRF), score
+% merging, and cross-encoder reranking. Summarize known trade-offs.
+
+\subsection{Knowledge-Graph-Augmented Retrieval}
+\label{sec:graph-rag}
+
+% GraphRAG and graph-guided retrieval: using document relationships to filter,
+% expand, or re-rank evidence. Discuss expected benefits and risks.
+
+% ============================================================================
+\section{System Overview: L\_RAG}
+\label{sec:system-overview}
+
+\subsection{Architecture}
+\label{sec:architecture}
+
+% High-level diagram: dataset preparation -> text structuring -> vector index
+% + knowledge graph -> hybrid retrieval -> reranking -> LLM generation.
+
+\subsection{Retrieval Components}
+\label{sec:retrieval-components}
+
+% Dense retriever (multilingual-e5-large over chunk+metadata embeddings),
+% sparse retriever (BM25), knowledge graph overlay (document-level filtering
+% and expansion), and fusion layer.
+
+\subsection{Reranking Components}
+\label{sec:reranking-components}
+
+% Cross-encoder reranker (mmarco-mMiniLMv2-L12-H384-v1) and RRF fusion.
+
+\subsection{Generation Component}
+\label{sec:generation-component}
+
+% GPT-4o-mini with a Vietnamese legal RAG prompt requiring citation-grounded
+% answers and explicit abstention when context is insufficient.
+
+% ============================================================================
+\section{Dataset and Benchmark}
+\label{sec:dataset-benchmark}
+
+\subsection{Corpus Description}
+\label{sec:corpus}
+
+% Vietnamese legal corpus: documents, provisions, chunks, metadata, and
+% document-to-document relationships (amendment, replacement, validity,
+% reference).
+
+\subsection{QA Benchmark}
+\label{sec:qa-benchmark}
+
+% 500 QA pairs: 400 answerable, 100 unanswerable. Categories: citation,
+% cross-document, legal validity, multi-hop, single-hop. Difficulty: easy,
+% medium, hard. Answer types: abstractive, boolean, extractive, unanswerable.
+
+\subsection{Ground Truth Construction}
+\label{sec:ground-truth}
+
+% How ground-truth chunk IDs were assigned for retrieval evaluation.
+
+% ============================================================================
+\section{Experimental Setup}
+\label{sec:experimental-setup}
+
+\subsection{Evaluation Metrics}
+\label{sec:metrics}
+
+% Retrieval: Recall@k, Hit@k, MRR@k, nDCG@k, Precision@k.
+% Generation: Exact Match, Token F1, ROUGE-L, Unanswerable Accuracy.
+% Efficiency: total latency, median latency, per-stage latency.
+
+\subsection{Evaluation Protocol}
+\label{sec:protocol}
+
+% Fixed benchmark, fixed generator (gpt-4o-mini, temperature 0.0),
+% top-k=30 candidates, top-n=10 final, score threshold 0.3.
+% Answerable-only vs unanswerable-only vs all-cases reporting.
+
+\subsection{Ablation Configurations}
+\label{sec:configurations}
+
+% Table of all runs: BM25-Only, Dense-ChunkMeta, DenseOnly, DenseGraph,
+% HybridOnly, HybridGraph, Rerank-None-Hybrid, Rerank-RRF-Hybrid,
+% Rerank-CrossEncoder-Hybrid, Rerank-RRF+CrossEncoder-Hybrid.
+
+% ============================================================================
+\section{Ablation Study}
+\label{sec:ablation-study}
+
+\subsection{Ablation 1: Chunk-Only vs. Chunk+Metadata Embeddings}
+\label{sec:ablation-chunk-meta}
+
+% Compare Dense-ChunkMeta against the chunk-only baseline (if available).
+% Hypothesis: metadata-enriched chunk text improves retrieval for citation
+% and legal-validity questions. Report Recall@10, MRR@10, nDCG@10.
+
+\subsection{Ablation 2: Retrieval Mode --- Dense vs. Hybrid vs. BM25}
+\label{sec:ablation-retrieval-mode}
+
+% Compare BM25-Only, DenseOnly, and HybridOnly (dense+BM25 score merge).
+% Hypothesis: hybrid fusion improves recall over either single retriever.
+% Report retrieval metrics and latency.
+
+\subsection{Ablation 3: Knowledge Graph Augmentation}
+\label{sec:ablation-graph}
+
+% Compare DenseOnly vs. DenseGraph and HybridOnly vs. HybridGraph.
+% Hypothesis: graph-guided filtering/expansion improves legal-validity and
+% cross-document questions. Report the observed trade-off: graph augmentation
+% reduced retrieval recall but improved generation quality (Token F1, ROUGE-L,
+% Unanswerable Accuracy).
+
+\subsection{Ablation 4: Reranking Strategy}
+\label{sec:ablation-reranking}
+
+% Compare Rerank-None, Rerank-RRF, Rerank-CrossEncoder, and
+% Rerank-RRF+CrossEncoder. Hypothesis: cross-encoder reranking improves
+% ranking quality (MRR, nDCG) at the cost of latency. Report the trade-off
+% between ranking quality and end-to-end latency.
+
+\subsection{Ablation 5: LLM Reasoning (Planned)}
+\label{sec:ablation-reasoning}
+
+% Placeholder for future ablation on generator reasoning: base prompting vs.
+% chain-of-thought vs. larger model. Not yet run; include as future work.
+
+% ============================================================================
+\section{Results and Analysis}
+\label{sec:results}
+
+\subsection{Overall Results}
+\label{sec:overall-results}
+
+% Main comparison table across all configurations for all-cases,
+% answerable-only, and unanswerable-only subsets.
+
+\subsection{Retrieval Quality}
+\label{sec:retrieval-quality}
+
+% Analysis of Recall@10, MRR@10, nDCG@10 across configurations.
+% Key finding: DenseOnly has the highest retrieval recall; graph augmentation
+% consistently reduces recall@10.
+
+\subsection{Generation Quality}
+\label{sec:generation-quality}
+
+% Analysis of Token F1, ROUGE-L, Exact Match, Unanswerable Accuracy.
+% Key finding: graph augmentation improves generation quality and
+% unanswerable accuracy despite lower retrieval recall.
+
+\subsection{Category-Level Analysis}
+\label{sec:category-analysis}
+
+% Breakdown by category: citation, cross-document, legal-validity, multi-hop,
+% single-hop. Identify which categories benefit from graph augmentation and
+% which benefit from reranking.
+
+\subsection{Difficulty-Level Analysis}
+\label{sec:difficulty-analysis}
+
+% Breakdown by easy/medium/hard. Note the small hard subset (n=1) limits
+% conclusions.
+
+\subsection{Answer-Type Analysis}
+\label{sec:answer-type-analysis}
+
+% Breakdown by abstractive/boolean/extractive/unanswerable. Note that
+% boolean questions benefit most from exact-match scoring.
+
+\subsection{Latency Analysis}
+\label{sec:latency-analysis}
+
+% Compare total latency across configurations. Key finding: hybrid retrieval
+% adds ~25s per query; cross-encoder reranking adds ~0.4s; graph augmentation
+% slightly reduces generation latency.
+
+\subsection{Statistical Significance}
+\label{sec:significance}
+
+% Note on whether differences are statistically meaningful given n=500.
+% Suggest paired tests or bootstrap CIs for future work.
+
+% ============================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Interpretation of Findings}
+\label{sec:interpretation}
+
+% Why graph augmentation hurts retrieval recall: graph filtering may exclude
+% relevant chunks; expansion may dilute ranking. Why it helps generation:
+% retrieved context is more legally coherent even if less topically complete.
+
+\subsection{Design Implications}
+\label{sec:design-implications}
+
+% Recommendation: use hybrid retrieval with RRF+CrossEncoder for ranking
+% quality; consider graph augmentation only when legal validity is critical;
+% accept the latency cost or optimize the graph overlay.
+
+\subsection{Threats to Validity}
+\label{sec:threats}
+
+% Small benchmark (500 QA), single generator, single embedding model,
+% single cross-encoder, limited hard questions, potential ground-truth noise.
+
+% ============================================================================
+\section{Limitations}
+\label{sec:limitations}
+
+% Dataset coverage, missing text, relationship direction ambiguity,
+% retrieval limitations, generation limitations, legal reliability concerns.
+
+% ============================================================================
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+
+\subsection{Summary}
+\label{sec:summary}
+
+% Recap the ablation study and the main findings.
+
+\subsection{Future Work}
+\label{sec:future-work}
+
+% LLM reasoning ablation (CoT, larger models), cross-encoder model comparison,
+% RRF k-parameter tuning, graph traversal budget tuning, larger benchmark,
+% statistical significance testing.
+
+% ============================================================================
+\section{References}
+\label{sec:references}
+
+% BibTeX bibliography for RAG, legal IR, hybrid retrieval, RRF, cross-encoder
+% reranking, GraphRAG.
+
+% ============================================================================
+\appendix
+\section{Appendix}
+\label{sec:appendix}
+
+\subsection{Full Metric Tables}
+\label{appendix:full-tables}
+
+% All per-configuration metric tables from ablation_study/*/retrieval_metrics.json.
+
+\subsection{Per-Question Deltas}
+\label{appendix:per-question}
+
+% Per-question delta analysis for graph gain and hybrid-vs-dense gain.
+
+\subsection{Configuration Manifests}
+\label{appendix:manifests}
+
+% Full retriever/generator configuration for each run.
+
+\end{document}
