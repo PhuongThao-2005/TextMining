@@ -1,0 +1,17 @@
+{
+  "config": "Dense-ChunkMeta",
+  "avg": {
+    "dense_latency_s": 1.0095,
+    "sparse_latency_s": 0.0,
+    "fusion_latency_s": 0.0,
+    "generation_latency_s": 3.2807,
+    "total_latency_s": 4.2902
+  },
+  "median": {
+    "dense_latency_s": 0.989,
+    "sparse_latency_s": 0.0,
+    "fusion_latency_s": 0.0,
+    "generation_latency_s": 2.9396,
+    "total_latency_s": 3.9381
+  }
+}

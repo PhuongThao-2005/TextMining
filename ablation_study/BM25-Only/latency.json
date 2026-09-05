@@ -1,0 +1,17 @@
+{
+  "config": "BM25-Only",
+  "avg": {
+    "dense_latency_s": 0.0,
+    "sparse_latency_s": 0.0001,
+    "fusion_latency_s": 0.0,
+    "generation_latency_s": 3.2356,
+    "total_latency_s": 3.2357
+  },
+  "median": {
+    "dense_latency_s": 0.0,
+    "sparse_latency_s": 0.0001,
+    "fusion_latency_s": 0.0,
+    "generation_latency_s": 2.9449,
+    "total_latency_s": 2.945
+  }
+}

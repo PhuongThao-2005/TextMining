@@ -1,0 +1,17 @@
+{
+  "config": "Retrieval-Hybrid-SparseDense",
+  "avg": {
+    "dense_latency_s": 0.9822,
+    "sparse_latency_s": 0.0,
+    "fusion_latency_s": 0.001,
+    "generation_latency_s": 4.1168,
+    "total_latency_s": 5.1
+  },
+  "median": {
+    "dense_latency_s": 0.9681,
+    "sparse_latency_s": 0.0,
+    "fusion_latency_s": 0.0009,
+    "generation_latency_s": 3.7599,
+    "total_latency_s": 4.7789
+  }
+}

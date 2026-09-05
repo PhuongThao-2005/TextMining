@@ -1,0 +1,13 @@
+{
+  "config": "Rerank-None-Hybrid",
+  "timestamp": "2026-08-16T23:19:24.904621+00:00",
+  "eval_count": 500,
+  "embedding_model": "intfloat/multilingual-e5-large",
+  "cross_encoder_model": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+  "generator_model": "gpt-4o-mini",
+  "top_k": 30,
+  "top_n": 10,
+  "rrf_k": 60,
+  "ce_candidate_mult": 3,
+  "device": "cuda"
+}
