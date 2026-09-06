@@ -199,6 +199,7 @@ section.stSidebarCollapsed [data-testid="stSidebarCollapseButton"],
 [data-testid="stSidebar"] [data-testid="stSelectbox"],
 [data-testid="stSidebar"] [data-testid="stNumberInput"],
 [data-testid="stSidebar"] [data-testid="stToggle"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"],
 [data-testid="stSidebar"] [data-testid="stExpander"] {
   margin-bottom:2px;
 }
@@ -288,6 +289,211 @@ section.stSidebarCollapsed [data-testid="stSidebarCollapseButton"],
 [data-testid="stSidebar"] [data-testid="stButton"] button:hover {
   border-color:color-mix(in srgb, var(--legal-accent) 38%, var(--legal-side-line));
   background:var(--legal-side-control-hover); color:var(--legal-accent-text); transform:none;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] {
+  background:color-mix(in srgb, var(--legal-side-control) 84%, var(--text-primary) 16%);
+  border:1px solid var(--border-strong);
+  border-radius:8px;
+  padding:3px;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button {
+  min-height:32px !important;
+  border:1px solid transparent !important;
+  border-radius:6px !important;
+  background:transparent !important;
+  color:var(--legal-side-text) !important;
+  -webkit-text-fill-color:var(--legal-side-text) !important;
+  box-shadow:none !important;
+  font-size:12px !important;
+  font-weight:700 !important;
+  justify-content:center !important;
+  padding:4px 8px !important;
+  transform:none !important;
+  opacity:1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button p,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button span {
+  color:inherit !important;
+  -webkit-text-fill-color:inherit !important;
+  opacity:1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] input:checked + div,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label:has(input:checked),
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-pressed="true"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-selected="true"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-checked="true"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[data-selected="true"] {
+  background:var(--legal-accent) !important;
+  border-color:var(--legal-accent) !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+  box-shadow:0 1px 4px color-mix(in srgb, var(--legal-accent) 30%, transparent) !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] input:checked + div *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label:has(input:checked) *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-pressed="true"] *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-selected="true"] *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-checked="true"] *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[data-selected="true"] * {
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+  opacity:1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button:hover {
+  background:var(--legal-side-control-hover) !important;
+  border-color:color-mix(in srgb, var(--legal-accent) 46%, var(--legal-side-line)) !important;
+  color:var(--legal-side-text) !important;
+  -webkit-text-fill-color:var(--legal-side-text) !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label:has(input:checked):hover,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-pressed="true"]:hover,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-selected="true"]:hover,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-checked="true"]:hover,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[data-selected="true"]:hover {
+  background:var(--accent-hover) !important;
+  border-color:var(--accent-hover) !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+}
+/* Streamlit's segmented control can render as labels + divs instead of buttons. */
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label > div {
+  min-height:32px !important;
+  border:1px solid transparent !important;
+  border-radius:6px !important;
+  background:var(--legal-side-control) !important;
+  color:var(--legal-side-text) !important;
+  -webkit-text-fill-color:var(--legal-side-text) !important;
+  opacity:1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label > div * {
+  color:inherit !important;
+  -webkit-text-fill-color:inherit !important;
+  opacity:1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label:not(:has(input:checked)):hover > div,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button:not([aria-pressed="true"]):not([aria-selected="true"]):not([aria-checked="true"]):not([data-selected="true"]):hover {
+  background:var(--legal-side-control-hover) !important;
+  border-color:color-mix(in srgb, var(--legal-accent) 46%, var(--legal-side-line)) !important;
+  color:var(--legal-side-text) !important;
+  -webkit-text-fill-color:var(--legal-side-text) !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label:has(input:checked),
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label:has(input:checked) > div {
+  background:var(--legal-accent) !important;
+  border-color:var(--legal-accent) !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+  box-shadow:0 1px 4px color-mix(in srgb, var(--legal-accent) 30%, transparent) !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label:has(input:checked) *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label:has(input:checked) > div * {
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+  opacity:1 !important;
+}
+[data-baseweb="popover"] [role="listbox"],
+[data-baseweb="popover"] ul,
+[role="listbox"] {
+  background:var(--legal-side-control) !important;
+  border-color:var(--legal-side-line) !important;
+  color:var(--legal-side-text) !important;
+}
+[data-baseweb="popover"] [role="option"],
+[data-baseweb="popover"] li,
+[role="listbox"] [role="option"] {
+  background:var(--legal-side-control) !important;
+  color:var(--legal-side-text) !important;
+  -webkit-text-fill-color:var(--legal-side-text) !important;
+  opacity:1 !important;
+}
+[data-baseweb="popover"] [role="option"] *,
+[data-baseweb="popover"] li *,
+[role="listbox"] [role="option"] * {
+  color:inherit !important;
+  -webkit-text-fill-color:inherit !important;
+  opacity:1 !important;
+}
+[data-baseweb="popover"] [role="option"]:hover,
+[data-baseweb="popover"] [role="option"][aria-selected="true"],
+[data-baseweb="popover"] [role="option"][data-focus="true"],
+[data-baseweb="popover"] li:hover,
+[data-baseweb="popover"] li[aria-selected="true"],
+[role="listbox"] [role="option"]:hover,
+[role="listbox"] [role="option"][aria-selected="true"],
+[role="listbox"] [role="option"][data-focus="true"] {
+  background:var(--legal-accent) !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+}
+/* Final high-specificity pass for Streamlit segmented controls in dark sidebars. */
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] {
+  background:var(--surface-tertiary) !important;
+  border:1px solid var(--border-strong) !important;
+  border-radius:8px !important;
+  padding:3px !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label > div,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label > div > div,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"] > div,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] input:not(:checked) + div {
+  background:var(--surface-primary) !important;
+  border-color:transparent !important;
+  color:var(--text-primary) !important;
+  -webkit-text-fill-color:var(--text-primary) !important;
+  opacity:1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label > div *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label > div > div *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"] *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] input:not(:checked) + div * {
+  color:var(--text-primary) !important;
+  -webkit-text-fill-color:var(--text-primary) !important;
+  opacity:1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label::before,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label::after,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label > div::before,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label > div::after,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"]::before,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"]::after {
+  background:var(--surface-primary) !important;
+  color:var(--text-primary) !important;
+  -webkit-text-fill-color:var(--text-primary) !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked),
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked) > div,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked) > div > div,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"]:has(input:checked),
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] input:checked + div {
+  background:var(--accent) !important;
+  border-color:var(--accent) !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked) *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked) > div *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked) > div > div *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"]:has(input:checked) *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] input:checked + div * {
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+  opacity:1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked)::before,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked)::after,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked) > div::before,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radiogroup"] label:has(input:checked) > div::after,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"]:has(input:checked)::before,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"]:has(input:checked)::after {
+  background:var(--accent) !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
 }
 [data-testid="stSidebar"] [data-testid="stNumberInput"] input {
   background:var(--legal-side-control) !important;
@@ -734,6 +940,7 @@ div[data-testid="stVerticalBlock"]:has(.ga-answer-marker) [data-testid="stMarkdo
   [data-testid="stSidebar"] [data-testid="stSelectbox"],
   [data-testid="stSidebar"] [data-testid="stNumberInput"],
   [data-testid="stSidebar"] [data-testid="stToggle"],
+  [data-testid="stSidebar"] [data-testid="stSegmentedControl"],
   [data-testid="stSidebar"] [data-testid="stExpander"],
   [data-testid="stSidebar"] [data-testid="stCaptionContainer"] { display:none; }
   .ga-sidebar-brand { justify-content:center; border-bottom:0; padding-bottom:4px; }
@@ -766,6 +973,119 @@ div[data-testid="stVerticalBlock"]:has(.ga-answer-marker) [data-testid="stMarkdo
 
 @media (prefers-reduced-motion:reduce) {
   *, *::before, *::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; }
+}
+
+/* Last-resort contrast fix for Streamlit segmented controls. */
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] {
+  background:#25342f !important;
+  border-color:#4c5e56 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label > div,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label > div > div,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radio"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] input:not(:checked) + div {
+  background:#17201d !important;
+  color:#f5f7f6 !important;
+  -webkit-text-fill-color:#f5f7f6 !important;
+  opacity:1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radio"] *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"] *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] input:not(:checked) + div * {
+  color:#f5f7f6 !important;
+  -webkit-text-fill-color:#f5f7f6 !important;
+  opacity:1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-pressed="true"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-selected="true"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-checked="true"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[data-selected="true"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label:has(input:checked),
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label:has(input:checked) > div,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radio"][aria-checked="true"],
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"]:has(input:checked),
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] input:checked + div {
+  background:#0f766e !important;
+  border-color:#14b8a6 !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+  opacity:1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-pressed="true"] *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-selected="true"] *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[aria-checked="true"] *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] button[data-selected="true"] *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] label:has(input:checked) *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [role="radio"][aria-checked="true"] *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] [data-baseweb="radio"]:has(input:checked) *,
+[data-testid="stSidebar"] [data-testid="stSegmentedControl"] input:checked + div * {
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+  opacity:1 !important;
+}
+
+.ga-toggle-label {
+  margin:0 4px 6px;
+  color:#f5f7f6;
+  font:700 13px var(--legal-sans);
+  line-height:1.35;
+}
+[data-testid="stSidebar"] [class*="st-key-choice_"] {
+  margin:0 !important;
+}
+[data-testid="stSidebar"] [class*="st-key-choice_"] button {
+  min-height:40px !important;
+  width:100% !important;
+  justify-content:center !important;
+  border:1px solid #4c5e56 !important;
+  border-radius:8px !important;
+  background:#17201d !important;
+  color:#f5f7f6 !important;
+  -webkit-text-fill-color:#f5f7f6 !important;
+  box-shadow:none !important;
+  transform:none !important;
+  opacity:1 !important;
+  padding:0 8px !important;
+  font-size:12px !important;
+  font-weight:750 !important;
+  line-height:1.15 !important;
+  white-space:nowrap !important;
+}
+[data-testid="stSidebar"] [class*="st-key-choice_"] button *,
+[data-testid="stSidebar"] [class*="st-key-choice_"] button p,
+[data-testid="stSidebar"] [class*="st-key-choice_"] button span {
+  color:inherit !important;
+  -webkit-text-fill-color:inherit !important;
+  opacity:1 !important;
+  font-size:inherit !important;
+  font-weight:inherit !important;
+  line-height:inherit !important;
+  white-space:nowrap !important;
+}
+[data-testid="stSidebar"] [class*="st-key-choice_"] button:hover {
+  border-color:#14b8a6 !important;
+  background:#202b27 !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+}
+[data-testid="stSidebar"] [class*="st-key-choice_"][class*="_selected"] button,
+[data-testid="stSidebar"] [class*="st-key-choice_"][class*="_selected"] button:hover {
+  border-color:#14b8a6 !important;
+  background:#0f766e !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+}
+[data-testid="stSidebar"] [class*="st-key-choice_"][class*="_selected"] button *,
+[data-testid="stSidebar"] [class*="st-key-choice_"][class*="_selected"] button p,
+[data-testid="stSidebar"] [class*="st-key-choice_"][class*="_selected"] button span {
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+  opacity:1 !important;
 }
 """
 

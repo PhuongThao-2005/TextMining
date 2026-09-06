@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from knowledge_graph.context_schema import GraphGuidedFilter
@@ -74,6 +75,20 @@ class BM25RemoteRetriever:
 
         chunks.sort(key=lambda chunk: chunk.vector_score, reverse=True)
         return RetrievalResult(chunks[:top_n], len(chunks), filter_profile, empty_filter_warning=False)
+
+    def search_with_latency(self, query: str, *, top_k: int = 20) -> tuple[list[SearchHit], float]:
+        started = time.perf_counter()
+        result = self.retrieve(query, filter_profile="broad", top_k=top_k, top_n=top_k)
+        latency = time.perf_counter() - started
+        hits = [
+            SearchHit(
+                point_id=chunk.chunk_id,
+                score=chunk.vector_score,
+                payload=chunk.metadata,
+            )
+            for chunk in result.chunks
+        ]
+        return hits, latency
 
     def _build_filters(
         self,

@@ -37,15 +37,13 @@ def render_app_header(
 ) -> None:
     label = _mode_label(active_mode, requested_mode, ready, lang)
     badge_class = "production" if active_mode == "production" and ready else "blocked" if active_mode == "production" else "demo"
-    theme_label = theme_choice or "System"
+    del theme_choice
     st.markdown(
         '<div class="ga-header">'
         '<div class="ga-page-title">'
         f'<h2>{safe_html_text(t(lang, "legal_title"))}</h2>'
         f'<p>{safe_html_text(t(lang, "legal_subtitle"))}</p></div>'
         '<div class="ga-top-controls">'
-        f'<span class="ga-context-pill">{safe_html_text(theme_label)}</span>'
-        f'<span class="ga-context-pill">{safe_html_text(t(lang, "language_label"))}</span>'
         f'<span class="ga-mode {badge_class}"><i></i>{safe_html_text(label)}</span>'
         '</div></div>',
         unsafe_allow_html=True,
@@ -444,20 +442,8 @@ def render_followup_composer(lang: str = "en") -> str | None:
 
 
 def render_diagnostics_tabs(response: QuestionResponse, turn_number: int, show_diagnostics: bool, lang: str = "en") -> None:
-    source_tab_label = f'{t(lang, "sources")} {len(response.citation_sources)}' if response.citation_sources else t(lang, "sources")
-    sources_tab, details_tab, latency_tab, trace_tab, diagnostics_tab = st.tabs(
-        [source_tab_label, t(lang, "details"), t(lang, "latency"), t(lang, "trace"), t(lang, "diagnostics")]
-    )
-    with sources_tab:
-        render_full_sources(response, turn_number, lang)
-    with details_tab:
-        render_details(response, lang)
-    with latency_tab:
-        render_latency_cards(response.latency, is_mock=response.is_mock)
-    with trace_tab:
-        render_agent_trace(response, lang)
-    with diagnostics_tab:
-        render_diagnostics(response, show_diagnostics, lang)
+    del show_diagnostics
+    render_full_sources(response, turn_number, lang)
 
 
 def render_full_sources(response: QuestionResponse, turn_number: int, lang: str = "en") -> None:

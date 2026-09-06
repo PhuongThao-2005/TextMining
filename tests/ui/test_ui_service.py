@@ -173,15 +173,37 @@ def test_preflight_deferred_and_graph_rrf_stack_states(tmp_path: Path) -> None:
     result = run_preflight(deferred, config_name="multi", project_root=tmp_path)
     assert result.status == "deferred" and "needs tools" in result.blockers
 
-    for component in ("graph", "reranker"):
-        config = _base_config(tmp_path)
-        config["retrieval"][component]["enabled"] = True
-        blocked = run_preflight(config, config_name=component, project_root=tmp_path)
-        assert not blocked.runnable
-        assert any("dense, graph, fusion, and reranker together" in value for value in blocked.blockers)
-
     graph_path = tmp_path / "knowledge_graph.gpickle"
     graph_path.write_bytes(b"fixture")
+
+    graph_only = _base_config(tmp_path)
+    graph_only["retrieval"]["graph"] = {
+        "enabled": True, "backend": "structural_pickle", "path": str(graph_path),
+        "max_hop": 2, "max_context": 30,
+    }
+    graph_ready = run_preflight(
+        graph_only,
+        config_name="graph-only",
+        project_root=tmp_path,
+        package_available=lambda name: True,
+    )
+    assert graph_ready.runnable
+    assert "graph" in {check.name for check in graph_ready.checks if check.status == "ready"}
+
+    reranker_only = _base_config(tmp_path)
+    reranker_only["retrieval"]["reranker"] = {
+        "enabled": True, "backend": "cross_encoder", "scope": "global",
+        "model": "fixture-cross-encoder", "candidate_limit": 30,
+    }
+    reranker_ready = run_preflight(
+        reranker_only,
+        config_name="reranker",
+        project_root=tmp_path,
+        package_available=lambda name: True,
+    )
+    assert reranker_ready.runnable
+    assert "reranker" in {check.name for check in reranker_ready.checks if check.status == "ready"}
+
     config = _base_config(tmp_path)
     config["retrieval"].update({
         "graph": {
@@ -263,10 +285,19 @@ def test_generation_overrides_are_bounded_and_non_mutating(tmp_path: Path) -> No
 
 def test_graph_and_reranker_enable_the_complete_stack(tmp_path: Path) -> None:
     config = _base_config(tmp_path, backend="faiss")
-    with pytest.raises(UIConfigError, match="enabled together"):
-        apply_safe_overrides(config, QuestionRequest("q", "fixture", graph_enabled_override=True))
-    with pytest.raises(UIConfigError, match="enabled together"):
-        apply_safe_overrides(config, QuestionRequest("q", "fixture", reranker_enabled_override=True))
+    dense_sparse = apply_safe_overrides(config, QuestionRequest("q", "fixture", sparse_enabled_override=True))
+    assert dense_sparse["retrieval"]["sparse"]["enabled"] is True
+    assert dense_sparse["retrieval"]["sparse"]["backend"] == "bm25_local"
+    assert dense_sparse["retrieval"]["sparse"]["index_path"] == "data/sparse_index"
+
+    graph_only = apply_safe_overrides(config, QuestionRequest("q", "fixture", graph_enabled_override=True))
+    assert graph_only["retrieval"]["graph"]["enabled"] is True
+    assert graph_only["retrieval"]["fusion"]["enabled"] is False
+    assert graph_only["retrieval"]["reranker"]["enabled"] is False
+    reranker_only = apply_safe_overrides(config, QuestionRequest("q", "fixture", reranker_enabled_override=True))
+    assert reranker_only["retrieval"]["graph"]["enabled"] is False
+    assert reranker_only["retrieval"]["fusion"]["enabled"] is False
+    assert reranker_only["retrieval"]["reranker"]["enabled"] is True
     effective = apply_safe_overrides(
         config,
         QuestionRequest("q", "fixture", graph_enabled_override=True, reranker_enabled_override=True),

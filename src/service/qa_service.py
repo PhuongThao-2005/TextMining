@@ -57,7 +57,9 @@ class QuestionRequest:
     question: str
     config_name: str
     top_k_override: int | None = None
+    sparse_enabled_override: bool | None = None
     graph_enabled_override: bool | None = None
+    fusion_enabled_override: bool | None = None
     reranker_enabled_override: bool | None = None
     filter_profile: str | None = None
     generation_model_override: str | None = None
@@ -201,20 +203,19 @@ def apply_safe_overrides(config: Mapping[str, Any], request: QuestionRequest) ->
         if request.filter_profile not in FILTER_PROFILES:
             raise UIConfigError(f"Unknown filter profile {request.filter_profile!r}.")
         retrieval["filter_profile"] = request.filter_profile
-    graph_override = request.graph_enabled_override
-    reranker_override = request.reranker_enabled_override
-    if graph_override is not None or reranker_override is not None:
-        graph_enabled = bool(graph_override)
-        reranker_enabled = bool(reranker_override)
-        if graph_enabled or reranker_enabled:
-            if not (graph_enabled and reranker_enabled):
-                raise UIConfigError("Graph and reranker must be enabled together for the supported RRF stack.")
-            _enable_graph_rrf_stack(retrieval)
-        else:
-            for field_name in ("graph", "fusion", "reranker"):
-                section = retrieval.get(field_name)
-                if isinstance(section, dict):
-                    section["enabled"] = False
+    if request.sparse_enabled_override is not None:
+        _apply_sparse_override(retrieval, bool(request.sparse_enabled_override))
+    if (
+        request.graph_enabled_override is not None
+        or request.fusion_enabled_override is not None
+        or request.reranker_enabled_override is not None
+    ):
+        _apply_retrieval_stack_overrides(
+            retrieval,
+            graph_enabled=request.graph_enabled_override,
+            fusion_enabled=request.fusion_enabled_override,
+            reranker_enabled=request.reranker_enabled_override,
+        )
     if request.generation_model_override is not None:
         model = request.generation_model_override.strip()
         if not model or len(model) > 160:
@@ -280,27 +281,88 @@ def validate_override_compatibility(config: Mapping[str, Any]) -> None:
     if not isinstance(retrieval, Mapping):
         raise UIConfigError("Retrieval configuration is missing.")
     dense = retrieval.get("dense")
+    sparse = retrieval.get("sparse")
     graph = retrieval.get("graph")
     fusion = retrieval.get("fusion")
     reranker = retrieval.get("reranker")
-    flags = tuple(
-        bool(section.get("enabled"))
-        for section in (graph, fusion, reranker)
-        if isinstance(section, Mapping)
-    )
-    if any(flags):
-        if not isinstance(dense, Mapping) or dense.get("backend") != "faiss":
-            raise UIConfigError("Graph-RRF requires the FAISS dense retriever.")
-        if not all(flags):
-            raise UIConfigError("Graph, RRF fusion, and reranker must be enabled together.")
+    sparse_enabled = bool(sparse.get("enabled")) if isinstance(sparse, Mapping) else False
+    graph_enabled = bool(graph.get("enabled")) if isinstance(graph, Mapping) else False
+    fusion_enabled = bool(fusion.get("enabled")) if isinstance(fusion, Mapping) else False
+    reranker_enabled = bool(reranker.get("enabled")) if isinstance(reranker, Mapping) else False
+    if any((sparse_enabled, graph_enabled, fusion_enabled, reranker_enabled)):
+        if not isinstance(dense, Mapping) or dense.get("backend") not in {"faiss", "hashing", "qdrant"}:
+            raise UIConfigError("Sparse/graph/reranker retrieval requires a vector dense retriever.")
+        if fusion_enabled and not graph_enabled:
+            raise UIConfigError("RRF fusion requires graph retrieval.")
 
 
-def _enable_graph_rrf_stack(retrieval: dict[str, Any]) -> None:
+def _apply_retrieval_stack_overrides(
+    retrieval: dict[str, Any],
+    *,
+    graph_enabled: bool | None,
+    fusion_enabled: bool | None,
+    reranker_enabled: bool | None,
+) -> None:
+    graph_current = _section_enabled(retrieval, "graph")
+    fusion_current = _section_enabled(retrieval, "fusion")
+    reranker_current = _section_enabled(retrieval, "reranker")
+    graph = graph_current if graph_enabled is None else bool(graph_enabled)
+    reranker = reranker_current if reranker_enabled is None else bool(reranker_enabled)
+    if fusion_enabled is None:
+        fusion = fusion_current or (graph and reranker and (graph_enabled is not None or reranker_enabled is not None))
+    else:
+        fusion = bool(fusion_enabled)
+    if fusion and not graph:
+        raise UIConfigError("RRF fusion requires graph retrieval.")
+    if graph:
+        _enable_graph_stack(retrieval)
+    else:
+        _set_section_enabled(retrieval, "graph", False)
+    if fusion:
+        _enable_rrf_fusion(retrieval)
+    else:
+        _set_section_enabled(retrieval, "fusion", False)
+    if reranker:
+        _enable_global_reranker(retrieval)
+    else:
+        _set_section_enabled(retrieval, "reranker", False)
+
+
+def _apply_sparse_override(retrieval: dict[str, Any], enabled: bool) -> None:
+    sparse = retrieval.setdefault("sparse", {})
+    if not isinstance(sparse, dict):
+        raise UIConfigError("Sparse section must be a mapping.")
+    if not enabled:
+        sparse["enabled"] = False
+        return
+    backend = sparse.get("backend") or ("bm25_remote" if os.environ.get("BM25_SERVICE_URL") else "bm25_local")
+    sparse.update({
+        "enabled": True,
+        "backend": backend,
+        "index_path": sparse.get("index_path") or "data/sparse_index",
+        "service_url_env": sparse.get("service_url_env") or "BM25_SERVICE_URL",
+        "api_key_env": sparse.get("api_key_env") or "BM25_API_KEY",
+        "timeout_seconds": sparse.get("timeout_seconds", 300.0),
+        "rrf_k": sparse.get("rrf_k", 60),
+    })
+
+
+def _section_enabled(retrieval: Mapping[str, Any], section_name: str) -> bool:
+    section = retrieval.get(section_name)
+    return bool(section.get("enabled")) if isinstance(section, Mapping) else False
+
+
+def _set_section_enabled(retrieval: dict[str, Any], section_name: str, enabled: bool) -> None:
+    section = retrieval.setdefault(section_name, {})
+    if not isinstance(section, dict):
+        raise UIConfigError(f"{section_name} section must be a mapping.")
+    section["enabled"] = enabled
+
+
+def _enable_graph_stack(retrieval: dict[str, Any]) -> None:
     graph = retrieval.setdefault("graph", {})
-    fusion = retrieval.setdefault("fusion", {})
-    reranker = retrieval.setdefault("reranker", {})
-    if not isinstance(graph, dict) or not isinstance(fusion, dict) or not isinstance(reranker, dict):
-        raise UIConfigError("Graph-RRF stack sections must be mappings.")
+    if not isinstance(graph, dict):
+        raise UIConfigError("Graph stack section must be a mapping.")
     graph.update({
         "enabled": True,
         "backend": graph.get("backend") or "structural_pickle",
@@ -309,11 +371,23 @@ def _enable_graph_rrf_stack(retrieval: dict[str, Any]) -> None:
         "max_hop": graph.get("max_hop", 2),
         "max_context": graph.get("max_context", 30),
     })
+
+
+def _enable_rrf_fusion(retrieval: dict[str, Any]) -> None:
+    fusion = retrieval.setdefault("fusion", {})
+    if not isinstance(fusion, dict):
+        raise UIConfigError("RRF fusion section must be a mapping.")
     fusion.update({
         "enabled": True,
         "strategy": fusion.get("strategy") or "rrf",
         "rrf_k": fusion.get("rrf_k", 60),
     })
+
+
+def _enable_global_reranker(retrieval: dict[str, Any]) -> None:
+    reranker = retrieval.setdefault("reranker", {})
+    if not isinstance(reranker, dict):
+        raise UIConfigError("Reranker section must be a mapping.")
     reranker.update({
         "enabled": True,
         "backend": reranker.get("backend") or "cross_encoder",
@@ -425,16 +499,18 @@ def run_preflight(
     fusion = retrieval.get("fusion", {})
     reranker = retrieval.get("reranker", {})
     sparse = retrieval.get("sparse", {})
-    graph_rrf_flags = tuple(
-        bool(section.get("enabled"))
-        for section in (graph, fusion, reranker)
-        if isinstance(section, Mapping)
-    )
-    if any(graph_rrf_flags) and not all(graph_rrf_flags):
-        message = "Dense+Graph+RRF+Global-Reranker must be enabled as one complete stack."
+    graph_enabled = bool(graph.get("enabled")) if isinstance(graph, Mapping) else False
+    fusion_enabled = bool(fusion.get("enabled")) if isinstance(fusion, Mapping) else False
+    reranker_enabled = bool(reranker.get("enabled")) if isinstance(reranker, Mapping) else False
+    if any((graph_enabled, fusion_enabled, reranker_enabled)) and backend not in {"faiss", "hashing", "qdrant"}:
+        message = "Graph/reranker retrieval requires a vector dense retriever."
         blockers.append(message)
-        checks.append(PreflightCheck("graph_rrf_stack", "blocked", message))
-    elif graph_rrf_flags and all(graph_rrf_flags):
+        checks.append(PreflightCheck("graph_stack", "blocked", message))
+    if fusion_enabled and not graph_enabled:
+        message = "RRF fusion requires graph retrieval."
+        blockers.append(message)
+        checks.append(PreflightCheck("fusion", "blocked", message))
+    if graph_enabled:
         graph_path = _resolve_path(graph.get("path"), project_root) if graph.get("path") else None
         if graph_path is not None and graph_path.is_file():
             checks.append(PreflightCheck("graph", "ready", f"{_display_path(graph_path, project_root)} is available."))
@@ -442,7 +518,9 @@ def run_preflight(
             message = "Knowledge-graph pickle is missing."
             blockers.append(message)
             checks.append(PreflightCheck("graph", "blocked", message))
+    if fusion_enabled:
         checks.append(PreflightCheck("fusion", "ready", "RRF fusion is configured."))
+    if reranker_enabled:
         if backend != "faiss":
             _check_package("sentence_transformers", "sentence-transformers", has_package, checks, blockers)
         checks.append(PreflightCheck("reranker", "ready", "Global Cross-Encoder reranking is configured."))
@@ -457,15 +535,51 @@ def run_preflight(
         elif reranker_model:
             checks.append(PreflightCheck("reranker_model_cache", "ready", "Reranker model cache/network setting is usable."))
     if isinstance(sparse, Mapping) and sparse.get("enabled"):
-        message = "Sparse/BM25 must remain disabled for the Dense+Graph+RRF pipeline."
-        blockers.append(message)
-        checks.append(PreflightCheck("sparse", "blocked", message))
+        sparse_backend = str(sparse.get("backend") or "bm25_local")
+        if sparse_backend == "bm25_local":
+            sparse_dir = _resolve_path(sparse.get("index_path") or "data/sparse_index", project_root)
+            missing_sparse = [
+                name for name in ("bm25_index.pkl", "bm25_metadata.pkl")
+                if not (sparse_dir / name).is_file()
+            ]
+            if missing_sparse:
+                message = (
+                    f"Missing BM25 sparse artifact(s) in {_display_path(sparse_dir, project_root)}: "
+                    f"{', '.join(missing_sparse)}."
+                )
+                blockers.append(message)
+                checks.append(PreflightCheck("sparse", "blocked", message))
+            else:
+                checks.append(PreflightCheck("sparse", "ready", f"{_display_path(sparse_dir, project_root)} is available."))
+            _check_package("rank_bm25", "rank_bm25", has_package, checks, blockers)
+        elif sparse_backend == "bm25_remote":
+            service_url_env = str(sparse.get("service_url_env") or "BM25_SERVICE_URL")
+            if env.get(service_url_env):
+                checks.append(PreflightCheck("bm25_service_url", "ready", f"{service_url_env}: configured."))
+            else:
+                message = f"{service_url_env}: missing. Configure it after the BM25 server is started."
+                blockers.append(message)
+                checks.append(PreflightCheck("bm25_service_url", "blocked", message))
+            api_key_env = str(sparse.get("api_key_env") or "BM25_API_KEY")
+            checks.append(
+                PreflightCheck(
+                    "bm25_api_key",
+                    "ready" if env.get(api_key_env) else "not_required",
+                    f"{api_key_env}: {'configured' if env.get(api_key_env) else 'optional and missing'}.",
+                )
+            )
+        else:
+            message = f"Unsupported sparse backend {sparse_backend!r}; expected 'bm25_local' or 'bm25_remote'."
+            blockers.append(message)
+            checks.append(PreflightCheck("sparse", "blocked", message))
 
     for identity in ("benchmark", "corpus"):
         value = resolved.get(identity, {}).get("path")
         identity_path = _resolve_path(value, project_root) if value else None
         if identity_path is not None and identity_path.exists():
             checks.append(PreflightCheck(identity, "ready", f"{identity.capitalize()} identity path is available."))
+        elif identity == "benchmark":
+            continue
         else:
             message = f"{identity.capitalize()} path is unavailable; it is not required for a single interactive question."
             warnings.append(message)

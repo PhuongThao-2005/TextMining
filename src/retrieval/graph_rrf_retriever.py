@@ -1,4 +1,4 @@
-"""Dense + graph expansion + RRF + global Cross-Encoder retrieval pipeline."""
+"""Dense retrieval with optional graph expansion, RRF, and global Cross-Encoder reranking."""
 from __future__ import annotations
 
 import time
@@ -30,8 +30,9 @@ class GraphRRFGlobalReranker:
         self,
         *,
         dense_retriever: VectorRetriever,
-        graph_expansion: GraphExpansion,
-        cross_encoder_name: str,
+        graph_expansion: GraphExpansion | None,
+        cross_encoder_name: str | None = None,
+        use_cross_encoder: bool = True,
         rrf_k: int = 60,
         graph_max_hop: int = 2,
         graph_max_context: int = 30,
@@ -44,15 +45,16 @@ class GraphRRFGlobalReranker:
             raise ValueError("graph and reranker limits must be positive")
         self.dense_retriever = dense_retriever
         self.graph_expansion = graph_expansion
-        self.cross_encoder_name = cross_encoder_name
+        self.use_cross_encoder = use_cross_encoder
+        self.cross_encoder_name = cross_encoder_name or ""
         self.rrf_k = rrf_k
         self.graph_max_hop = graph_max_hop
         self.graph_max_context = graph_max_context
         self.rerank_candidate_limit = rerank_candidate_limit
         self._cross_encoder = (
             cross_encoder
-            if cross_encoder is not None
-            else self._load_cross_encoder(cross_encoder_name)
+            if cross_encoder is not None or not use_cross_encoder
+            else self._load_cross_encoder(self.cross_encoder_name)
         )
 
     @staticmethod
@@ -106,22 +108,28 @@ class GraphRRFGlobalReranker:
         dense_latency = time.perf_counter() - dense_started
 
         graph_started = time.perf_counter()
-        dense_ids = [chunk.chunk_id for chunk in dense_result.chunks]
-        expansion = self.graph_expansion.expand(
-            dense_ids,
-            max_hop=self.graph_max_hop,
-            max_context=self.graph_max_context,
-        )
-        graph_chunks = self._hydrate_graph_chunks(expansion.ordered_context_chunks)
+        if self.graph_expansion is None:
+            graph_chunks = []
+        else:
+            dense_ids = [chunk.chunk_id for chunk in dense_result.chunks]
+            expansion = self.graph_expansion.expand(
+                dense_ids,
+                max_hop=self.graph_max_hop,
+                max_context=self.graph_max_context,
+            )
+            graph_chunks = self._hydrate_graph_chunks(expansion.ordered_context_chunks)
         graph_latency = time.perf_counter() - graph_started
 
         fusion_started = time.perf_counter()
-        fused = self._rrf_fuse(dense_result.chunks, graph_chunks)
+        fused = self._rrf_fuse(dense_result.chunks, graph_chunks) if graph_chunks else list(dense_result.chunks)
         fusion_latency = time.perf_counter() - fusion_started
 
         rerank_started = time.perf_counter()
-        candidates = fused[: self.rerank_candidate_limit]
-        reranked = self._global_rerank(query, candidates)[:top_n]
+        if self.use_cross_encoder:
+            candidates = fused[: self.rerank_candidate_limit]
+            reranked = self._global_rerank(query, candidates)[:top_n]
+        else:
+            reranked = fused[:top_n]
         rerank_latency = time.perf_counter() - rerank_started
 
         total_latency = time.perf_counter() - total_started

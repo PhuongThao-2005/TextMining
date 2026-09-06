@@ -63,7 +63,7 @@ def format_retrieved_text(value: Any) -> str:
     if not text:
         return ""
     text = re.sub(r"\s+(?=(?:Chương|Mục|Điều)\s+\d+[.:])", "\n\n", text)
-    text = re.sub(r"\s+(?=\d{1,2}[.)]\s+\D)", _numbered_break, text)
+    text = re.sub(r"\s+(?=\d{1,2}[.)-]\s*\D)", _numbered_break, text)
     text = re.sub(r"\s+(?=[a-zđ]\)\s+)", "\n", text)
     text = re.sub(r"\s+-\s+", "\n- ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
@@ -103,7 +103,7 @@ def source_segments_html(render: SourceTextRender) -> str:
     """Render only escaped text inside application-owned presentation wrappers."""
     parts = []
     for segment in render.segments:
-        escaped = safe_html_text(segment.text)
+        escaped = safe_html_text(format_retrieved_text(segment.text))
         parts.append(f'<span class="ga-evidence-highlight">{escaped}</span>' if segment.highlighted else escaped)
     return '<div class="ga-source-text">' + "".join(parts) + "</div>"
 
