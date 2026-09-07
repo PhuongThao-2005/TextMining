@@ -573,20 +573,50 @@ div[data-testid="stVerticalBlock"]:has(.ga-answer-marker) [data-testid="stMarkdo
 [class*="st-key-citation-line-"] [data-testid="stButton"] button:hover {
   background:var(--legal-accent-soft); border-color:var(--legal-accent); color:var(--legal-accent-text); transform:none;
 }
+[class*="st-key-followup-suggestions-"] .ga-section-label {
+  margin:28px 0 10px;
+}
+[class*="st-key-followup-suggestions-"] {
+  max-width:760px; margin:0 auto;
+}
+[class*="st-key-followup-suggestions-"] [data-testid="stButton"] button {
+  position:relative; min-height:48px; justify-content:center !important; padding:10px 52px 10px 16px;
+  border:1px solid var(--legal-line); border-radius:9px; background:var(--legal-panel); color:var(--legal-ink);
+  font:500 14px/1.4 var(--legal-sans); text-align:center;
+}
+[class*="st-key-followup-suggestions-"] [data-testid="stButton"] button p {
+  width:100%; margin:0; text-align:center !important;
+}
+[class*="st-key-followup-suggestions-"] [data-testid="stButton"] button::after {
+  content:"→"; position:absolute; right:16px; color:var(--legal-accent); font-size:17px; line-height:1;
+}
+[class*="st-key-followup-suggestions-"] [data-testid="stButton"] button:hover {
+  border-color:color-mix(in srgb, var(--legal-accent) 48%, var(--legal-line));
+  background:color-mix(in srgb, var(--legal-accent-soft) 35%, var(--legal-panel));
+}
 .ga-answer-actions-rule { height:1px; background:var(--legal-line); margin:22px 0 12px; }
 [class*="st-key-copy-answer"] button,
 [class*="st-key-helpful-answer"] button,
 [class*="st-key-not-helpful-answer"] button,
 [class*="st-key-evidence-answer"] button {
   min-height:36px; border:1px solid var(--legal-line); border-radius:8px;
-  background:var(--legal-panel); color:var(--legal-ink);
-  font-size:13px; font-weight:600; justify-content:center; padding:6px 10px;
+  background:var(--legal-panel); color:var(--legal-ink); font-size:13px; font-weight:600;
+  justify-content:center !important; padding:6px 10px; text-align:center;
 }
-[class*="st-key-evidence-answer"] button { justify-content:center; color:var(--legal-accent-text); background:var(--legal-accent-soft); }
+[class*="st-key-copy-answer"] button p,
+[class*="st-key-helpful-answer"] button p,
+[class*="st-key-not-helpful-answer"] button p,
+[class*="st-key-evidence-answer"] button p { width:100%; margin:0; text-align:center !important; }
+[class*="st-key-evidence-answer"] button { color:var(--legal-accent-text); background:var(--legal-accent-soft); }
+[class*="st-key-answer-primary-source-"] {
+  max-width:180px; margin:8px auto 0;
+}
 [class*="st-key-answer-primary-source-"] button {
-  min-height:38px; margin-top:8px; border:1px solid var(--legal-line); border-radius:8px;
+  width:100%; min-height:38px; margin:0; border:1px solid var(--legal-line); border-radius:8px;
   background:var(--legal-wash); color:var(--legal-accent-text); font-size:13px; font-weight:650;
+  justify-content:center !important; text-align:center;
 }
+[class*="st-key-answer-primary-source-"] button p { width:100%; margin:0; text-align:center !important; }
 .ga-answer-source-strip {
   display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px;
   margin:18px 0 4px; padding:12px 14px; border:1px solid var(--legal-line); border-radius:10px;
@@ -687,11 +717,44 @@ div[data-testid="stVerticalBlock"]:has(.ga-answer-marker) [data-testid="stMarkdo
   background:var(--legal-accent-soft); color:var(--legal-ink);
 }
 [data-testid="stDialog"] [role="dialog"] {
-  width:min(860px, calc(100vw - 64px)); max-width:860px; max-height:88vh; overflow:hidden;
+  width:100%; max-width:none; max-height:88vh; overflow:hidden;
+  border:0; border-radius:0; background:transparent;
+  box-shadow:none;
+}
+[data-testid="stDialog"] {
+  background:color-mix(in srgb, var(--page-bg) 60%, transparent) !important;
+  padding:32px !important;
+}
+[data-testid="stDialog"] > div {
+  width:min(860px, calc(100vw - 64px)) !important; max-width:860px !important; max-height:88vh;
   border:1px solid var(--legal-line); border-radius:16px; background:var(--legal-panel); color:var(--legal-ink);
   box-shadow:0 24px 64px rgba(34,29,22,.26);
 }
 [data-testid="stDialog"] [role="dialog"] > div { max-height:88vh; overflow-y:auto; overflow-x:hidden; }
+[data-testid="stDialog"] button[aria-label="Close"] {
+  background:transparent !important; border:1px solid transparent !important; color:var(--legal-muted) !important;
+  box-shadow:none !important;
+}
+[data-testid="stDialog"] button[aria-label="Close"]:hover {
+  background:var(--legal-wash) !important; border-color:var(--legal-line) !important; color:var(--legal-ink) !important;
+}
+[data-testid="stDialog"] button[aria-label="Close"] svg {
+  fill:none !important; stroke:currentColor !important;
+}
+[data-testid="stDialog"] [role="dialog"] > div,
+[data-testid="stDialog"] .ga-source-text {
+  scrollbar-color:var(--border-strong) var(--legal-wash); scrollbar-width:thin;
+}
+[data-testid="stDialog"] [role="dialog"] > div::-webkit-scrollbar,
+[data-testid="stDialog"] .ga-source-text::-webkit-scrollbar { width:10px; }
+[data-testid="stDialog"] [role="dialog"] > div::-webkit-scrollbar-track,
+[data-testid="stDialog"] .ga-source-text::-webkit-scrollbar-track { background:var(--legal-wash); }
+[data-testid="stDialog"] [role="dialog"] > div::-webkit-scrollbar-thumb,
+[data-testid="stDialog"] .ga-source-text::-webkit-scrollbar-thumb {
+  background:var(--border-strong); border:2px solid var(--legal-wash); border-radius:999px;
+}
+[data-testid="stDialog"] [role="dialog"] > div::-webkit-scrollbar-thumb:hover,
+[data-testid="stDialog"] .ga-source-text::-webkit-scrollbar-thumb:hover { background:var(--legal-accent); }
 .ga-dialog-title h2 { margin:8px 0 6px; color:var(--legal-ink); font:600 30px/1.12 var(--legal-serif); }
 .ga-dialog-title p { margin:0; color:var(--legal-muted); font:11px var(--legal-mono); }
 .ga-dialog-meta {
@@ -722,9 +785,21 @@ div[data-testid="stVerticalBlock"]:has(.ga-answer-marker) [data-testid="stMarkdo
 .ga-metric-unit { color:var(--legal-muted); font-size:12px; }
 .st-key-followup-composer { max-width:930px; margin:22px auto 0; }
 [data-testid="stChatInput"] {
-  border:1px solid var(--legal-line); background:var(--legal-panel); border-radius:15px;
+  background:transparent !important; border:0 !important; border-radius:15px;
+  box-shadow:none !important;
+}
+[data-testid="stChatInput"] > div {
+  border:1px solid var(--legal-line) !important; background:var(--legal-panel) !important; border-radius:15px !important;
   box-shadow:0 9px 24px rgba(47,42,34,.08);
 }
+[data-testid="stChatInput"] textarea { background:transparent !important; }
+[data-testid="stChatInputSubmitButton"] {
+  background:var(--legal-accent) !important; color:#ffffff !important;
+  border:1px solid color-mix(in srgb, var(--legal-accent) 72%, var(--legal-line)) !important;
+  box-shadow:0 6px 14px color-mix(in srgb, var(--legal-accent) 20%, transparent) !important;
+}
+[data-testid="stChatInputSubmitButton"]:hover:not(:disabled) { background:var(--accent-hover) !important; }
+[data-testid="stChatInputSubmitButton"] svg { fill:currentColor !important; }
 
 @media (max-width:1023px) {
   [data-testid="stSidebar"] { width:76px !important; min-width:76px !important; max-width:76px !important; }

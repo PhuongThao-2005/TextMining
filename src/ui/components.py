@@ -11,6 +11,7 @@ from datetime import date, datetime
 from typing import Any, Mapping, Sequence
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from service.qa_service import QuestionResponse, normalize_latency_rows
 from service.ui_models import (
@@ -124,7 +125,15 @@ def render_blocked_setup(readiness: ProductionReadiness, lang: str = "en") -> No
         st.write(f"— {blocker}")
 
 
-def render_turn(response: QuestionResponse, question: str, turn_number: int, show_diagnostics: bool, lang: str = "en") -> str | None:
+def render_turn(
+    response: QuestionResponse,
+    question: str,
+    turn_number: int,
+    show_diagnostics: bool,
+    lang: str = "en",
+    *,
+    show_followups: bool = True,
+) -> str | None:
     if turn_number > 1:
         st.markdown('<div class="ga-turn-divider"></div>', unsafe_allow_html=True)
     with st.container(key=f"answer-thread-{turn_number}"):
@@ -178,7 +187,12 @@ def render_turn(response: QuestionResponse, question: str, turn_number: int, sho
                 continue
             st.warning(warning, icon=None)
 
-        suggestion = render_followup_suggestions(response.suggested_followups, turn_number, lang)
+        suggestion = None
+        if show_followups:
+            _, followup_column, _ = st.columns([0.07, 0.75, 0.18], gap="small")
+            with followup_column:
+                with st.container(key=f"followup-suggestions-{turn_number}"):
+                    suggestion = render_followup_suggestions(response.suggested_followups, turn_number, lang)
         render_diagnostics_tabs(response, turn_number, show_diagnostics, lang)
         render_source_dialog_for_selection(response, turn_number, lang)
     return suggestion
@@ -206,7 +220,7 @@ def _render_answer_actions(response: QuestionResponse, turn_number: int, lang: s
     if not response.citation_sources:
         return
     st.markdown('<div class="ga-answer-actions-rule"></div>', unsafe_allow_html=True)
-    action_cols = st.columns([1, 1, 1, 3], gap="small")
+    action_cols = st.columns(4, gap="small")
     if action_cols[0].button(t(lang, "copy"), key=f"copy-answer-{turn_number}", use_container_width=True):
         st.toast(t(lang, "copy_notice"))
     if action_cols[1].button(t(lang, "helpful"), key=f"helpful-answer-{turn_number}", use_container_width=True):
@@ -298,20 +312,13 @@ def render_selected_source(response: QuestionResponse, turn_number: int, lang: s
 
 @st.dialog("Source details", width="large", dismissible=True)
 def _render_source_dialog(source: Any, card: Any, evidence: Any, lang: str = "en") -> None:
-    selection = parse_source_selection(st.session_state.get("selected_source"))
-    turn_id = selection.turn_id if selection else 0
-    close_label = "Close" if lang == "en" else "Đóng"
-    heading, close_column = st.columns([6, 1])
-    heading.markdown(
+    st.markdown(
         '<div class="ga-dialog-title">'
         f'<span>{safe_html_text(t(lang, "reference_source"))} · [{card.citation_id}]</span>'
         f'<h2>{safe_html_text(card.title)}</h2>'
         f'<p>{safe_html_text(card.detail or card.source_path or "N/A")}</p></div>',
         unsafe_allow_html=True,
     )
-    if close_column.button(close_label, key=f"close-source-{turn_id}-{card.citation_id}", use_container_width=True):
-        _close_source_viewer()
-        st.rerun()
     score_label = f"{card.score:.3f}" if card.score is not None else "N/A"
     st.markdown(
         '<div class="ga-dialog-meta">'
@@ -332,14 +339,8 @@ def _render_source_dialog(source: Any, card: Any, evidence: Any, lang: str = "en
         st.info("This source was cited, but an exact supporting passage was not recorded.", icon=None)
         st.markdown(source_segments_html(evidence), unsafe_allow_html=True)
     actions = build_source_actions(source)
-    footer_columns = st.columns(2 if actions.original_url else 1)
-    if footer_columns[0].button(
-        close_label, key=f"close-source-footer-{turn_id}-{card.citation_id}", use_container_width=True,
-    ):
-        _close_source_viewer()
-        st.rerun()
     if actions.original_url and actions.original_label:
-        footer_columns[1].link_button(t(lang, "open_original"), actions.original_url, use_container_width=True)
+        st.link_button(t(lang, "open_original"), actions.original_url, use_container_width=True)
 
 
 def render_source_dialog_for_selection(response: QuestionResponse, turn_number: int, lang: str = "en") -> None:
@@ -433,7 +434,7 @@ def render_followup_suggestions(suggestions: Sequence[str], turn_number: int, la
         return None
     st.markdown(f'<div class="ga-section-label">{safe_html_text("Hỏi tiếp" if lang == "vi" else "Explore further")}</div>', unsafe_allow_html=True)
     for index, suggestion in enumerate(suggestions[:3]):
-        if st.button(f"{suggestion}  →", key=f"followup-{turn_number}-{index}", use_container_width=True):
+        if st.button(suggestion, key=f"followup-{turn_number}-{index}", use_container_width=True):
             return suggestion
     return None
 
@@ -441,6 +442,23 @@ def render_followup_suggestions(suggestions: Sequence[str], turn_number: int, la
 def render_followup_composer(lang: str = "en") -> str | None:
     with st.container(key="followup-composer"):
         return st.chat_input(t(lang, "followup_placeholder"))
+
+
+def scroll_to_latest_turn() -> None:
+    """Move the viewport to the newly rendered conversation turn after submit."""
+    components.html(
+        """
+        <script>
+        const scrollToLatestTurn = () => {
+          const target = window.parent.document.getElementById("ga-latest-turn-anchor");
+          target?.scrollIntoView({ behavior: "smooth", block: "end" });
+        };
+        requestAnimationFrame(scrollToLatestTurn);
+        window.setTimeout(scrollToLatestTurn, 250);
+        </script>
+        """,
+        height=0,
+    )
 
 
 def render_diagnostics_tabs(response: QuestionResponse, turn_number: int, show_diagnostics: bool, lang: str = "en") -> None:
@@ -746,5 +764,5 @@ __all__ = [
     "render_app_header", "render_blocked_setup", "render_design_preview",
     "render_evidence_panel", "render_followup_composer", "render_landing_hero",
     "render_readiness_summary", "render_sidebar_brand", "render_source_dialog_for_selection",
-    "render_turn",
+    "render_turn", "scroll_to_latest_turn",
 ]

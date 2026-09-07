@@ -60,6 +60,49 @@ def test_toast_uses_application_theme_tokens() -> None:
     assert "color:var(--legal-ink) !important;" in toast_text_rule
 
 
+def test_followup_composer_uses_streamlit_current_dom_contract() -> None:
+    css = build_application_css("Dark")
+
+    assert '[data-testid="stChatInput"] > div {' in css
+    assert '[data-testid="stChatInputSubmitButton"] {' in css
+    assert 'background:var(--legal-accent) !important;' in css
+
+
+def test_source_dialog_constrains_streamlit_modal_content() -> None:
+    css = build_application_css("Dark")
+
+    assert '[data-testid="stDialog"] > div {' in css
+    assert 'width:min(860px, calc(100vw - 64px)) !important;' in css
+    assert '[data-testid="stDialog"] [role="dialog"] {' in css
+    assert 'width:100%; max-width:none;' in css
+
+
+def test_followup_suggestions_are_scoped_to_the_answer_column() -> None:
+    css = build_application_css("Dark")
+
+    assert '[class*="st-key-followup-suggestions-"] [data-testid="stButton"] button {' in css
+    assert 'max-width:760px; margin:0 auto;' in css
+    assert 'justify-content:center !important;' in css
+    assert 'content:"→"; position:absolute; right:16px;' in css
+
+
+def test_answer_actions_use_balanced_centered_button_styles() -> None:
+    css = build_application_css("Dark")
+
+    assert '[class*="st-key-answer-primary-source-"] {' in css
+    assert 'max-width:180px; margin:8px auto 0;' in css
+    assert '[class*="st-key-evidence-answer"] button p { width:100%; margin:0; text-align:center !important; }' in css
+
+
+def test_source_dialog_close_button_and_scrollbar_use_theme_tokens() -> None:
+    css = build_application_css("Dark")
+
+    assert '[data-testid="stDialog"] button[aria-label="Close"] {' in css
+    assert 'color:var(--legal-muted) !important;' in css
+    assert 'scrollbar-color:var(--border-strong) var(--legal-wash);' in css
+    assert 'background:var(--border-strong);' in css
+
+
 def test_invalid_theme_is_rejected() -> None:
     with pytest.raises(ValueError):
         build_theme_css("Neon")

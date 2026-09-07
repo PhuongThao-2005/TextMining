@@ -35,7 +35,7 @@ from service.ui_runtime import (  # noqa: E402
 from src.ui.components import (  # noqa: E402
     render_app_header, render_blocked_setup, render_design_preview,
     render_evidence_panel, render_followup_composer, render_landing_hero,
-    render_readiness_summary, render_sidebar_brand, render_turn,
+    render_readiness_summary, render_sidebar_brand, render_turn, scroll_to_latest_turn,
 )
 from src.ui.i18n import LANGUAGE_LABELS, LANGUAGE_OPTIONS, normalize_language, t, theme_label  # noqa: E402
 from src.ui.styles import build_application_css  # noqa: E402
@@ -218,8 +218,10 @@ def main() -> None:
         if evidence_turn is None:
             for index, turn in enumerate(turns, 1):
                 turn_id = turn.turn_id if turn.turn_id is not None else index
-                value = render_turn(turn.response, turn.question, turn_id, settings["show_diagnostics"], lang)
-                suggested = suggested or value
+                suggested = render_turn(
+                    turn.response, turn.question, turn_id, settings["show_diagnostics"], lang,
+                    show_followups=index == len(turns),
+                )
             followup = suggested or render_followup_composer(lang)
             if followup:
                 _submit(followup, settings, readiness, resolution.active_mode)
@@ -228,13 +230,19 @@ def main() -> None:
             with main_col:
                 for index, turn in enumerate(turns, 1):
                     turn_id = turn.turn_id if turn.turn_id is not None else index
-                    value = render_turn(turn.response, turn.question, turn_id, settings["show_diagnostics"], lang)
-                    suggested = suggested or value
+                    suggested = render_turn(
+                        turn.response, turn.question, turn_id, settings["show_diagnostics"], lang,
+                        show_followups=index == len(turns),
+                    )
                 followup = suggested or render_followup_composer(lang)
                 if followup:
                     _submit(followup, settings, readiness, resolution.active_mode)
             with evidence_col:
                 render_evidence_panel(evidence_turn.response, evidence_turn.turn_id or len(turns), lang)
+
+        st.markdown('<div id="ga-latest-turn-anchor"></div>', unsafe_allow_html=True)
+        if st.session_state.pop("scroll_to_latest_turn", False):
+            scroll_to_latest_turn()
 
     if st.session_state.get("notice"):
         st.toast(st.session_state["notice"])
@@ -386,6 +394,7 @@ def _submit(question: str, settings: dict[str, Any], readiness: ProductionReadin
             ),
         )
         st.session_state["next_turn_id"] += 1
+        st.session_state["scroll_to_latest_turn"] = True
         _clear_source_selection()
         st.rerun()
     except Exception as exc:
@@ -552,6 +561,7 @@ def _initialize_state() -> None:
     st.session_state.setdefault("language_choice", "vi")
     st.session_state.setdefault("next_turn_id", 1)
     st.session_state.setdefault("selected_source", None)
+    st.session_state.setdefault("scroll_to_latest_turn", False)
     query_theme = st.query_params.get("theme")
     if query_theme in THEME_CHOICES and st.session_state.get("query_theme") != query_theme:
         st.session_state["theme_choice"] = query_theme
