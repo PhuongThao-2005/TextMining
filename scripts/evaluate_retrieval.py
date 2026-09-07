@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import gc
+import os
 import sys
 from pathlib import Path
 from typing import Any
+
+os.environ.setdefault("PYTORCH_ALLOC_CONF", "expandable_segments:True")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
@@ -94,6 +98,13 @@ def main() -> int:
         cases.append(row)
         if len(cases) % 25 == 0:
             print(f"Evaluated {len(cases)} retrieval cases...")
+            gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except Exception:
+                pass
 
     metric_keys = [f"{name}@{k}" for k in args.top_k for name in ("recall", "hit", "mrr", "ndcg", "jaccard")]
     summary = {
