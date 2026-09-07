@@ -1,0 +1,52 @@
+% ============================================================================
+%  Section 1: Introduction
+% ============================================================================
+\section{Introduction}
+\label{sec:introduction}
+
+Legal Information Retrieval (IR) and Question Answering (QA) represent critical components in modern legal technology, enabling legal professionals, citizens, and researchers to efficiently navigate vast repositories of statutes, decrees, circulars, and judicial precedents. However, applying general-purpose Retrieval-Augmented Generation (RAG) models to legal domains presents distinct domain-specific challenges. Unlike open-domain Wikipedia-style QA, legal reasoning demands strict grounding in authoritative statutory context, precise citation of applicable legal provisions (e.g., Articles, Clauses, Items), and strict temporal validity verification (ensuring that superseded or annulled laws are not cited).
+
+\subsection{Problem Statement}
+\label{sec:problem-statement}
+
+Conventional RAG pipelines rely heavily on single-stage dense vector retrieval powered by pre-trained embedding models. While dense retrieval captures high-level semantic intent, it suffers from three core limitations when deployed on complex Vietnamese legal corpora:
+
+\begin{enumerate}
+    \item \textbf{The Semantic-Statutory Vocabulary Gap:} Natural language user queries (e.g., \textit{"Tôi bị phạt bao nhiêu tiền khi không đội mũ bảo hiểm?"}) differ significantly in terminology from legal codifications (e.g., \textit{"Điều 6 Nghị định 100/2019/NĐ-CP: Phạt tiền từ 300.000 đồng đến 400.000 đồng..."}). Pure vector search often maps natural queries to general descriptions rather than the exact punitive provision.
+    \item \textbf{Structural and Hierarchy Blindness:} Legal documents follow strict hierarchical compositions (Law $\rightarrow$ Chapter $\rightarrow$ Article $\rightarrow$ Clause $\rightarrow$ Item). Standard fixed-length text chunking fragments these structural relationships, causing vector search to retrieve isolated clauses missing their governing article definitions or parent law scope.
+    \item \textbf{Temporal and Inter-Document Citation Complexity:} Legal provisions do not exist in isolation; they amend, replace, repeal, or reference other statutory provisions across multiple legal instruments. Pure semantic similarity fails to account for statutory precedence (e.g., Constitution $\succ$ Law $\succ$ Decree) or dynamic validity timelines.
+\end{enumerate}
+
+To resolve these challenges, a legal RAG system must unify dense semantic matching, exact sparse keyword matching, statutory structure traversal, and fine-grained cross-encoder reranking.
+
+\subsection{Objectives}
+\label{sec:objectives}
+
+The primary goal of the \textbf{L\_RAG} project is to design, implement, and analyze a novel, robust Knowledge-Graph-Augmented Hybrid RAG framework specifically engineered for Vietnamese legal corpora. The specific technical objectives are:
+
+\begin{itemize}
+    \item \textbf{Architect an End-to-End Hybrid RAG Pipeline:} Combine dense vector retrieval (\texttt{intfloat/multilingual-e5-large}), sparse tokenized keyword search (\texttt{BM25}), and Reciprocal Rank Fusion (RRF) to maximize recall across diverse query types.
+    \item \textbf{Develop a Knowledge Graph (G-LRAG) Overlay Module:} Construct an in-memory legal knowledge graph that models containment hierarchies (\texttt{DOCUMENT\_HAS\_PROVISION}, \texttt{PROVISION\_HAS\_CHUNK}) and structural reading orders (\texttt{CHUNK\_NEXT}, \texttt{PROVISION\_NEXT}) to dynamically supply document filtering whitelists and same-provision context expansions.
+    \item \textbf{Integrate Advanced Multi-Reranker Pipelines:} Deploy and evaluate local Cross-Encoder models—including \texttt{mMiniLMv2}, \texttt{BGE-Reranker-v2-m3}, \texttt{Jina-Reranker-v2}, and \texttt{Qwen3-Reranker-0.6B}—to refine candidate rankings prior to LLM generation.
+    \item \textbf{Construct a Standardized 500-Query Vietnamese Legal Benchmark:} Curate a comprehensive benchmark of 500 legal QA pairs covering answerable, unanswerable, single-hop, multi-hop, citation, cross-document, and legal validity categories.
+\end{itemize}
+
+\subsection{Contributions}
+\label{sec:contributions}
+
+The key contributions of this work include:
+
+\begin{enumerate}
+    \item \textbf{Comprehensive System Implementation:} We deliver a production-ready, modular codebase supporting end-to-end legal data ingestion, vector indexing, knowledge graph building, hybrid fusion, reranking, and citation-grounded LLM synthesis (\texttt{gpt-4o-mini}).
+    \item \textbf{Dynamic Knowledge Graph Validity \& Traversal Engine:} We implement query-time overlay joining and precedence sorting algorithms that enforce legal hierarchy and temporal validity without requiring rigid database re-indexing.
+    \item \textbf{Multi-Reranker Benchmarking \& Optimization:} We provide an extensive empirical comparison across four state-of-the-art cross-encoders, introducing optimized FP16 batching and monkey-patch solutions for seamless Kaggle GPU execution.
+\end{enumerate}
+
+\subsection{Report Structure}
+\label{sec:report-structure}
+
+The remainder of this report is organized as follows:
+Section~\ref{sec:related-work} reviews related work in RAG, Legal IR, hybrid search, and Knowledge-Graph-augmented systems.
+Section~\ref{sec:system-overview} presents the overall L\_RAG system architecture and describes each component (retrieval, knowledge graph, reranking, generation) in detail.
+Section~\ref{sec:dataset-benchmark} details the Vietnamese legal corpus, knowledge graph schema, and the 500-query benchmark dataset.
+Section~\ref{sec:experimental-setup} through Section~\ref{sec:discussion} (in subsequent chapters) define the experimental protocol, present ablation results, and analyze system trade-offs.

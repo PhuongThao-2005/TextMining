@@ -1,0 +1,49 @@
+\begin{titlepage}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\centering
+
+\textsc{\Large Vietnam National University Ho Chi Minh City}\\[0.4cm]
+\textsc{\Large University Of Science}\\[0.4cm]
+\textsc{\large Faculty Of Information Technology}\\[0.5cm]
+
+\IfFileExists{img/hcmus-logo.png}{%
+  \includegraphics[scale=.25]{img/hcmus-logo.png}\\[0.5cm]%
+}{%
+  \IfFileExists{hcmus-logo.png}{%
+    \includegraphics[scale=.25]{hcmus-logo.png}\\[0.5cm]%
+  }{%
+    \vspace{0.5cm}%
+  }%
+}
+
+\HRule \\[0.3cm]
+{ 
+\huge{\bfseries{\reporttitle}}\\[0.4cm]
+\ifdefined\reportname
+  \ifx\reportname\empty\else
+    \large{\bfseries{\reportname}}\\[0.2cm]
+  \fi
+\fi
+}
+\HRule \\[0.4cm]
+
+\textbf{\large Course: \coursename}\\[0.5cm]
+
+\begin{minipage}[t]{0.48\textwidth}
+\begin{flushleft} \large
+\emph{Students:}\\
+\studentname
+\end{flushleft}
+\end{minipage}
+~
+\begin{minipage}[t]{0.48\textwidth}
+\begin{flushright} \large
+\emph{Lecturers:} \\
+\teachername
+\end{flushright}
+\end{minipage}\\[1cm]
+
+\vfill
+{\large \today}\\[1cm]
+
+\end{titlepage}

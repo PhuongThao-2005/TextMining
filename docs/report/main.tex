@@ -1,0 +1,69 @@
+% !TEX program = xelatex
+\documentclass[12pt]{article}
+
+% --- HCMUS Report Style Package ---
+\usepackage{hcmus-report-template}
+
+% --- Additional Packages for L_RAG System Architecture ---
+\usepackage{fontspec}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{titlesec}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning}
+
+% Disable indentation on new paragraphs
+\setlength{\parindent}{0pt}
+
+% Line spacing 1.2
+\renewcommand{\baselinestretch}{1.2}
+
+% --- Course and Report Metadata ---
+\newcommand{\coursename}{Text Mining}
+\newcommand{\reporttitle}{L\_RAG: Knowledge-Graph-Augmented Hybrid Legal RAG System}
+\newcommand{\reportname}{System Architecture, Corpus Design, and Retrieval Components}
+
+\newcommand{\studentname}{\textbf{Tran Tuan Kiet} (23127215) \\ \textbf{Binh}}
+\newcommand{\teachername}{Dr. Nguyen Ngoc Thao \\ M.Sc. Huynh Lam Hai Dang \\ B.Sc. Tran Huy Ban}
+
+% --- Header & Footer Configuration ---
+\lhead{\reporttitle}
+\rhead{
+VNUHCM -- University of Science\\
+\coursename
+}
+
+% ============ DOCUMENT ============
+\begin{document}
+
+\pagenumbering{roman}
+\input{title.tex}
+
+\tableofcontents
+\pagebreak
+
+\begin{abstract}
+Legal Information Retrieval (IR) and Question Answering (QA) pose significant technical challenges due to domain-specific terminology, complex document hierarchies, temporal validity constraints, and cross-document statutory references. Standard dense retrieval systems often fail to capture exact statutory citations and cross-article dependencies, while traditional keyword search misses semantic paraphrasing. In this work, we introduce \textbf{L\_RAG}, a comprehensive Knowledge-Graph-augmented hybrid RAG architecture designed for Vietnamese legal corpora. The system integrates dual-stage retrieval (Dense \texttt{multilingual-e5-large} + Sparse BM25), Knowledge Graph dynamic overlays for legal validity and structural traversal, Reciprocal Rank Fusion (RRF), multi-reranker candidate refinement (CrossEncoder, BGE-v2, Jina-v2, Qwen3-Reranker), and citation-grounded LLM synthesis. This document presents a complete description of the system architecture, component specifications, knowledge graph schema, and corpus design up to the experimental evaluation setup.
+\end{abstract}
+
+\newpage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% --- System Description Sections (Completed by Kiet) ---
+\input{sections/1_introduction}
+\input{sections/2_related_work}
+\input{sections/3_system_overview}
+\input{sections/4_dataset_and_corpus}
+
+% ============================================================================
+% --- Future Evaluation & Results Sections (To be filled by Binh) ---
+% \input{sections/5_experimental_setup}
+% \input{sections/6_results}
+% \input{sections/7_discussion}
+% \input{sections/8_conclusion}
+% ============================================================================
+
+\end{document}

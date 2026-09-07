@@ -1,0 +1,48 @@
+% ============================================================================
+%  Section 2: Related Work
+% ============================================================================
+\section{Related Work}
+\label{sec:related-work}
+
+This section reviews existing literature and foundational paradigms relevant to Retrieval-Augmented Generation, domain-specific Legal Information Retrieval, hybrid retrieval strategies, and Knowledge-Graph-augmented systems.
+
+\subsection{Retrieval-Augmented Generation (RAG)}
+\label{sec:rag}
+
+Retrieval-Augmented Generation \cite{lewis2020retrieval} has emerged as a dominant framework to mitigate hallucinations, overcome outdated parameter knowledge, and ground Large Language Models (LLMs) in verifiable external knowledge. Standard RAG architectures operate in two main steps: (1) retrieving relevant document chunks from a vector store using dense bi-encoder embeddings, and (2) concatenating retrieved chunks into the prompt context for an LLM to generate an answer. 
+
+Despite their success in general-domain benchmarks, baseline RAG architectures face severe limitations in specialized, highly technical domains. In unstructured domain corpora, dense retrieval frequently suffers from low precision due to semantic ambiguity, while fixed-size text chunking loses structural dependencies spanning across paragraphs or document chapters. Advanced RAG paradigms—such as Self-RAG \cite{asai2023self} and Corrective RAG (CRAG) \cite{yan2024corrective}—introduce self-reflection and web-search fallback mechanisms, but they do not explicitly model formal domain taxonomies or statutory legal validity.
+
+\subsection{Legal Information Retrieval}
+\label{sec:legal-ir}
+
+Legal Information Retrieval (Legal IR) is a specialized subfield at the intersection of Information Retrieval and Legal Informatics \cite{locke2022legal}. Legal IR differs fundamentally from open-domain text search due to four intrinsic characteristics of legal text:
+
+\begin{enumerate}
+    \item \textbf{Hierarchical Structure:} Legal statutes are organized into strict logical trees (Code $\rightarrow$ Part $\rightarrow$ Chapter $\rightarrow$ Section $\rightarrow$ Article $\rightarrow$ Clause $\rightarrow$ Item).
+    \item \textbf{High Precision Requirements:} A single misplaced word or omission of an exception clause can alter the legal interpretation completely.
+    \item \textbf{Statutory Precedence:} Legal systems follow formal legal hierarchies (e.g., the Constitution overrides National Assembly Laws, which in turn override Government Decrees and Ministry Circulars).
+    \item \textbf{Dynamic Validity \& Amendments:} Legal provisions are constantly updated, amended, or repealed by subsequent legal instruments over time.
+\end{enumerate}
+
+Early Legal IR research focused on rule-based citation parsing and expert systems. Recent approaches leverage specialized transformer models, such as Legal-BERT \cite{chalkidis2020legal_bert} and Law-Former \cite{xiao2021lawformer}, to encode statutory texts. However, relying solely on neural embeddings remains insufficient for capturing complex statutory relationships and temporal applicability.
+
+\subsection{Hybrid Retrieval and Reranking Fusion}
+\label{sec:hybrid-fusion}
+
+To overcome the vocabulary mismatch problem of dense embeddings and the semantic rigidity of sparse keyword search, hybrid retrieval combines both modalities \cite{cormack2009reciprocal}. Sparse algorithms (e.g., BM25) excel at exact keyword matching—critical for capturing specific legal codes, numbers, and technical terminology—whereas dense bi-encoders (e.g., E5 \cite{wang2022e5}) excel at conceptual paraphrasing.
+
+Combining retrieved lists from heterogeneous engines requires robust rank fusion. Reciprocal Rank Fusion (RRF) \cite{cormack2009reciprocal} merges ranked outputs based on positional reciprocal scores:
+\begin{equation}
+    \text{RRF\_Score}(d \in D) = \sum_{m \in M} \frac{1}{k + r_m(d)}
+\end{equation}
+where $M$ is the set of retrieval systems, $r_m(d)$ is the rank of document $d$ in system $m$, and $k$ is a smoothing constant (typically $k=60$).
+
+Following initial retrieval, cross-encoder rerankers \cite{nogueira2019passage} evaluate full joint attention between the query and candidate passages $(q, d)$. Unlike bi-encoders, which compute separate vectors, cross-encoders achieve significantly higher ranking precision (measured via MRR and nDCG) at the expense of higher inference latency. Recent state-of-the-art multilingual rerankers include BGE-Reranker-v2-m3 \cite{chen2024bge}, Jina-Reranker-v2 \cite{jina2024jina}, and Qwen3-Reranker \cite{qwen2025qwen3}.
+
+\subsection{Knowledge-Graph-Augmented Retrieval (GraphRAG)}
+\label{sec:graph-rag}
+
+Knowledge Graphs (KGs) represent domain entities and their explicit relationships as structured nodes and edges $(e_1, r, e_2)$. GraphRAG \cite{edge2024graphrag} integrates graph traversal with vector search, enabling LLMs to reason over multi-hop relationships and hierarchical structures.
+
+In the legal domain, GraphRAG approaches construct statutory graphs linking documents, provisions, definitions, and legal concepts. At query time, graph traversal algorithms (e.g., Breadth-First Search) expand seed vector hits by navigating structural edges (\texttt{HAS\_PROVISION}) and citation edges (\texttt{CITES}, \texttt{AMENDS}). This guarantees that retrieved contexts maintain statutory completeness and legal coherence.

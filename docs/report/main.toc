@@ -1,0 +1,28 @@
+\contentsline {section}{\numberline {1}Introduction}{1}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Problem Statement}{1}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Objectives}{2}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Contributions}{2}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Report Structure}{3}{subsection.1.4}%
+\contentsline {section}{\numberline {2}Related Work}{3}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Retrieval-Augmented Generation (RAG)}{3}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Legal Information Retrieval}{3}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Hybrid Retrieval and Reranking Fusion}{4}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Knowledge-Graph-Augmented Retrieval (GraphRAG)}{5}{subsection.2.4}%
+\contentsline {section}{\numberline {3}System Overview: L\_RAG}{5}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Architecture}{5}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Retrieval Components}{5}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1}Dense Vector Search}{6}{subsubsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {3.2.2}Sparse Keyword Search (BM25)}{6}{subsubsection.3.2.2}%
+\contentsline {subsubsection}{\numberline {3.2.3}Knowledge Graph Overlay (G-LRAG Module)}{6}{subsubsection.3.2.3}%
+\contentsline {subsubsection}{\numberline {3.2.4}Fusion Layer}{6}{subsubsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.3}Reranking Components}{7}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Generation Component}{7}{subsection.3.4}%
+\contentsline {section}{\numberline {4}Dataset and Benchmark}{8}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Corpus Description}{8}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Knowledge Graph Structure (G-LRAG Schema)}{8}{subsection.4.2}%
+\contentsline {subsubsection}{\numberline {4.2.1}Node Schema}{8}{subsubsection.4.2.1}%
+\contentsline {subsubsection}{\numberline {4.2.2}Edge Schema}{9}{subsubsection.4.2.2}%
+\contentsline {subsubsection}{\numberline {4.2.3}Quarantine \& Verification Integrity Gating}{9}{subsubsection.4.2.3}%
+\contentsline {subsection}{\numberline {4.3}QA Benchmark Dataset}{9}{subsection.4.3}%
+\contentsline {subsubsection}{\numberline {4.3.1}Dataset Composition}{9}{subsubsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.4}Ground Truth Construction}{10}{subsection.4.4}%

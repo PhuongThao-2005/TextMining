@@ -1,0 +1,102 @@
+% ============================================================================
+%  Section 3: System Overview: L_RAG
+% ============================================================================
+\section{System Overview: L\_RAG}
+\label{sec:system-overview}
+
+This section details the end-to-end architecture of \textbf{L\_RAG}, a Knowledge-Graph-augmented hybrid RAG system engineered for legal information retrieval and question answering over Vietnamese legal corpora.
+
+\subsection{Architecture}
+\label{sec:architecture}
+
+The L\_RAG pipeline unifies structured graph processing, hybrid vector-sparse search, cross-encoder candidate reranking, and citation-grounded LLM synthesis. Figure~\ref{fig:architecture} illustrates the system dataflow across four distinct operational phases: (1) Corpus Ingestion \& Graph/Vector Indexing, (2) Multi-Modal Hybrid Retrieval, (3) Knowledge Graph Overlay \& Context Expansion, (4) Sequential Candidate Reranking, and (5) LLM Prompting \& Generation.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=1.5cm, auto,
+    block/.style={rectangle, draw=blue!80, fill=blue!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners},
+    kgblock/.style={rectangle, draw=green!60!black, fill=green!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners},
+    llmblock/.style={rectangle, draw=red!70, fill=red!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners},
+    line/.style={draw, -latex', thick}]
+    
+    % Nodes
+    \node [block] (query) {User Query $q$\\+(Target Date / Scope)};
+    \node [block, right=1.5cm of query] (hybrid) {Hybrid Retriever\\(Dense E5 + Sparse BM25)};
+    \node [kgblock, below=1.2cm of hybrid] (kg) {G-LRAG Knowledge Graph\\Overlay Joiner \& Traversal};
+    \node [block, right=1.5cm of hybrid] (fusion) {Fusion \& Whitelist Filter\\(RRF + ID Masking)};
+    \node [block, right=1.5cm of fusion] (reranker) {Multi-Reranker Stage\\(CrossEncoder / Jina / Qwen3)};
+    \node [llmblock, below=1.2cm of reranker] (llm) {LLM Generation\\(\texttt{gpt-4o-mini})};
+    \node [block, left=1.5cm of llm] (output) {Final Answer\\+ Verified Citations};
+
+    % Paths
+    \path [line] (query) -- (hybrid);
+    \path [line] (query) |- (kg);
+    \path [line] (hybrid) -- (fusion);
+    \path [line] (kg) -- (fusion);
+    \path [line] (fusion) -- (reranker);
+    \path [line] (reranker) -- (llm);
+    \path [line] (llm) -- (output);
+\end{tikzpicture}
+\caption{End-to-end operational workflow of the L\_RAG system.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Retrieval Components}
+\label{sec:retrieval-components}
+
+The retrieval module combines three complementary retrieval approaches:
+
+\subsubsection{Dense Vector Search}
+Dense retrieval is powered by \texttt{intfloat/multilingual-e5-large}, a 560M parameter transformer embedding model. To solve the structural blindness of standalone chunks, each text chunk is preprocessed into a \textbf{Metadata-Enriched Representation}:
+\begin{equation}
+    \text{Text}_{\text{embedded}} = \text{Doc\_Title} \parallel \text{Provision\_Header} \parallel \text{Chunk\_Content}
+\end{equation}
+Chunks are stored in an optimized FAISS vector database using \texttt{IndexFlatIP} with L2-normalized embeddings for fast cosine similarity search.
+
+\subsubsection{Sparse Keyword Search (BM25)}
+Sparse retrieval utilizes an inverted index built with \texttt{rank\_bm25}. Raw legal texts are tokenized using the \texttt{underthesea} Vietnamese morphological tokenizer, ensuring compound legal terms (e.g., \textit{"bất\_động\_sản"}, \textit{"trách\_nhiệm\_hình\_sự"}) are indexed as unified lexical tokens. BM25 parameters are set to standard defaults ($k_1=1.5, b=0.75$).
+
+\subsubsection{Knowledge Graph Overlay (G-LRAG Module)}
+The Knowledge Graph module acts as a query coordinator that generates dynamic document filter whitelists (\texttt{id\_str\_filter}) and performs horizontal reading-order expansions. Key features include:
+
+\begin{itemize}
+    \item \textbf{Dynamic Overlay Folding:} Validity timelines are joined at query time relative to an \texttt{as\_of\_date} parameter, ensuring superseded provisions are excluded.
+    \item \textbf{Precedence Sorting:} Conflicts between legal authority ranks are resolved using statutory hierarchy rules:
+    \begin{equation}
+        \text{Hiến pháp} \succ \text{Bộ luật / Luật} \succ \text{Nghị định} \succ \text{Thông tư}
+    \end{equation}
+    \item \textbf{Reading-Order Traversal:} Structural edge pointers (\texttt{CHUNK\_NEXT}, \texttt{PROVISION\_NEXT}) slide context windows horizontally across sibling chunks within the same parent provision.
+\end{itemize}
+
+\subsubsection{Fusion Layer}
+Search hit lists from dense search ($R_{\text{dense}}$) and sparse search ($R_{\text{BM25}}$) are merged using Reciprocal Rank Fusion (RRF) with constant $k=60$. In configurations without RRF, score normalization is applied using min-max scaling prior to rank merging.
+
+\subsection{Reranking Components}
+\label{sec:reranking-components}
+
+Initial retrieval selects $K=30$ candidate chunks per query. To maximize precision, candidate lists pass through a specialized Cross-Encoder Reranker that scores the full $(query, chunk\_text)$ pair. 
+
+L\_RAG supports four distinct reranking backends loaded sequentially onto GPU:
+\begin{enumerate}
+    \item \textbf{\texttt{mMiniLMv2}:} \texttt{cross-encoder/mmarco-mMiniLMv2-L12-H384-v1} (Lightweight baseline, 117M params).
+    \item \textbf{\texttt{BGE-Reranker-v2-m3}:} \texttt{BAAI/bge-reranker-v2-m3} (Multilingual 567M params with sigmoid activation).
+    \item \textbf{\texttt{Jina-Reranker-v2}:} \texttt{jinaai/jina-reranker-v2-base-multilingual} (278M params, featuring dynamic position embedding patches).
+    \item \textbf{\texttt{Qwen3-Reranker}:} \texttt{Qwen/Qwen3-Reranker-0.6B} (CausalLM-based 0.6B parameter model evaluated in FP16 precision).
+\end{enumerate}
+
+To prevent GPU Out-Of-Memory (OOM) failures during multi-model evaluation, the loader executes a strict \textbf{Sequential Load-Run-Unload Cycle}:
+\begin{equation}
+    \text{Load}(M_i) \longrightarrow \text{Execute}(M_i) \longrightarrow \text{Delete}(M_i) \longrightarrow \text{torch.cuda.empty\_cache}()
+\end{equation}
+
+\subsection{Generation Component}
+\label{sec:generation-component}
+
+The top $N=10$ reranked chunks are formatted into a structured prompt context supplied to \texttt{gpt-4o-mini} (temperature $T=0.0$, max tokens $1024$). 
+
+The system prompt enforces three critical compliance rules:
+\begin{enumerate}
+    \item \textbf{Strict Citation Grounding:} Answers must explicitly cite governing statutory sources (e.g., \textit{"Theo Điều 15, Luật Đất đai 2024..."}).
+    \item \textbf{Unanswerable Abstention:} If the retrieved context lacks sufficient evidence, the LLM must output \texttt{INSUFFICIENT\_CONTEXT} rather than hallucination.
+    \item \textbf{Answer-Type Formatting:} Outputs are formatted according to the query type (\textit{boolean}, \textit{extractive}, \textit{abstractive}, or \textit{unanswerable}).
+\end{enumerate}
