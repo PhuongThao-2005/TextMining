@@ -28,7 +28,6 @@ from typing import Any
 
 from .retriever import VectorRetriever
 from .schema import RetrievalResult, RetrievedChunk
-from .sparse_retriever import BM25SparseRetriever
 from .stores import SearchHit
 
 logger = logging.getLogger(__name__)
@@ -78,7 +77,7 @@ class HybridRetriever:
         self,
         *,
         dense_retriever: VectorRetriever,
-        sparse_retriever: BM25SparseRetriever,
+        sparse_retriever: Any,
         cross_encoder_name: str | None = None,
         use_rrf: bool = False,
         use_cross_encoder: bool = False,
@@ -96,6 +95,10 @@ class HybridRetriever:
                 cross_encoder_name = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
             self._cross_encoder = self._load_cross_encoder(cross_encoder_name)
             self._cross_encoder_name = cross_encoder_name
+
+    @property
+    def store(self) -> Any:
+        return self.dense_retriever.store
 
     @staticmethod
     def _load_cross_encoder(model_name: str):

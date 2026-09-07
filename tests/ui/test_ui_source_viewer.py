@@ -9,7 +9,10 @@ from service.ui_models import (
     citation_control_key, clear_source_selection, parse_source_selection,
     resolve_turn_citation, select_source_for_turn,
 )
-from src.ui.view_models import build_source_text_segments, resolve_source_text, source_segments_html
+from src.ui.view_models import (
+    build_source_text_segments, format_retrieved_text, resolve_source_text,
+    source_segments_html,
+)
 
 
 def source(*, url: str | None = None, mock: bool = False, text: str = "Full retrieved chunk") -> CitationSource:
@@ -136,3 +139,41 @@ def test_exact_unique_quote_and_invalid_offsets_never_guess() -> None:
     assert invalid.status == "invalid"
     assert not any(segment.highlighted for segment in invalid.segments)
     assert "".join(segment.text for segment in invalid.segments) == text
+
+
+def test_retrieved_legal_text_is_formatted_for_source_viewing() -> None:
+    text = (
+        "Điều 111. Nghỉ hằng năm 1. Người lao động có đủ 12 tháng làm việc "
+        "thì được nghỉ hằng năm như sau: a) 12 ngày làm việc đối với người "
+        "làm công việc trong điều kiện bình thường; b) 14 ngày làm việc đối "
+        "với người làm công việc nặng nhọc; c) 16 ngày làm việc đối với người "
+        "làm công việc đặc biệt nặng nhọc. 2. Người sử dụng lao động có quyền "
+        "quy định lịch nghỉ hằng năm."
+    )
+    formatted = format_retrieved_text(text)
+
+    assert formatted.startswith("Điều 111. Nghỉ hằng năm\n1. Người lao động")
+    assert "\na) 12 ngày" in formatted
+    assert "\nb) 14 ngày" in formatted
+    assert "\nc) 16 ngày" in formatted
+    assert "\n2. Người sử dụng lao động" in formatted
+
+    html = source_segments_html(build_source_text_segments(text, None, context_id="chunk-ctx"))
+    assert "<br" not in html
+    assert "\na) 12 ngày" in html
+
+
+def test_retrieved_legal_text_splits_dash_numbered_clauses() -> None:
+    text = (
+        "Điều 74. 1- Người lao động có 12 tháng làm việc thì được nghỉ hằng năm, "
+        "hưởng nguyên lương theo quy định sau đây: a) 12 ngày làm việc; "
+        "b) 14 ngày làm việc; c) 16 ngày làm việc. 2- Thời gian đi đường "
+        "ngoài ngày nghỉ hằng năm do Chính phủ quy định."
+    )
+    formatted = format_retrieved_text(text)
+
+    assert formatted.startswith("Điều 74.\n1- Người lao động")
+    assert "\na) 12 ngày" in formatted
+    assert "\nb) 14 ngày" in formatted
+    assert "\nc) 16 ngày" in formatted
+    assert "\n2- Thời gian đi đường" in formatted
