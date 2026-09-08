@@ -24,7 +24,8 @@ COPY services services
 COPY src src
 COPY deployment/retrieval_runpod/start_services.sh /usr/local/bin/start_services.sh
 
-RUN chmod +x /usr/local/bin/start_services.sh
+RUN sed -i 's/\r$//' /usr/local/bin/start_services.sh \
+    && chmod +x /usr/local/bin/start_services.sh
 
-EXPOSE 8000 8001
+EXPOSE 8000 8001 8002 8003
 CMD ["/usr/local/bin/start_services.sh"]

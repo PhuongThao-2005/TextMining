@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from types import SimpleNamespace
 
+import pytest
+from fastapi.testclient import TestClient
+
 from retrieval.graph_rrf_retriever import GraphRRFGlobalReranker
+from retrieval.remote_stages import RemoteCrossEncoder, RemoteGraph
 from retrieval.schema import RetrievalResult, RetrievedChunk
 from retrieval.stores import SearchHit
+from services.graph_reranker_service import create_app
 
 
 def _chunk(chunk_id: str, text: str, score: float) -> RetrievedChunk:
@@ -99,3 +105,81 @@ def test_dense_graph_rrf_global_reranker_pipeline_and_latency() -> None:
     assert latency.fusion_latency_s >= 0
     assert latency.rerank_latency_s >= 0
     assert latency.total_latency_s >= 0
+
+
+def test_remote_graph_hydrates_without_local_store() -> None:
+    class Client:
+        def request(self, path, payload):
+            assert path == "/graph"
+            return {"hits": [asdict(_chunk("c3", "graph only", 0.0))]}
+
+    graph = RemoteGraph(Client())
+    expansion = graph.expand(["c1"], max_hop=1, max_context=5)
+    assert expansion.ordered_context_chunks == ["c3"]
+    assert graph.load_chunks(["c3"])[0].citation_anchor == "c3"
+
+
+def test_remote_reranker_validates_model_and_score_count() -> None:
+    class Client:
+        def request(self, path, payload):
+            return {"model": "fixture", "scores": [0.7]}
+
+    reranker = RemoteCrossEncoder(Client(), expected_model="fixture")
+    assert reranker.predict([("question", "answer")]) == [0.7]
+    with pytest.raises(ValueError, match="one query"):
+        reranker.predict([("q1", "a1"), ("q2", "a2")])
+
+
+def test_reranker_api_requires_auth_and_preserves_order(monkeypatch) -> None:
+    class Engine:
+        identity = {"model": "fixture"}
+
+        def run(self, request):
+            return {"model": "fixture", "scores": list(range(len(request.texts)))}
+
+    monkeypatch.setenv("RERANKER_API_KEY", "secret")
+    with TestClient(create_app("reranker", Engine)) as client:
+        assert client.get("/readyz").status_code == 401
+        response = client.post(
+            "/rerank",
+            headers={"Authorization": "Bearer secret"},
+            json={"query": "q", "texts": ["a", "b"]},
+        )
+    assert response.json()["scores"] == [0, 1]
+
+
+def test_runner_builds_remote_graph_and_reranker_without_local_models(
+    monkeypatch,
+) -> None:
+    import scripts.run_ablation_config as runner
+    from service.qa_service import (
+        _enable_global_reranker,
+        _enable_graph_stack,
+        load_ui_config_registry,
+    )
+
+    monkeypatch.setenv("GRAPH_SERVICE_URL", "http://graph")
+    monkeypatch.setenv("GRAPH_API_KEY", "key")
+    monkeypatch.setenv("RERANKER_SERVICE_URL", "http://reranker")
+    monkeypatch.setenv("RERANKER_API_KEY", "key")
+    config = load_ui_config_registry()["Agent-None-RemoteDense"]
+    _enable_graph_stack(config["retrieval"])
+    _enable_global_reranker(config["retrieval"])
+    config["retrieval"]["fusion"] = {
+        "enabled": True,
+        "strategy": "rrf",
+        "rrf_k": 60,
+    }
+    monkeypatch.setattr(
+        runner,
+        "build_vector_retriever",
+        lambda runtime: SimpleNamespace(retrieve=lambda *args, **kwargs: None),
+    )
+    monkeypatch.setattr(runner, "_build_generator", lambda config: (None, []))
+    monkeypatch.setattr(runner, "_build_judge", lambda config: (None, []))
+
+    pipeline, _, _, _ = runner.build_ablation_stack(config)
+
+    assert isinstance(pipeline.graph_expansion, RemoteGraph)
+    assert isinstance(pipeline._cross_encoder, RemoteCrossEncoder)
+    assert pipeline.chunk_loader is not None

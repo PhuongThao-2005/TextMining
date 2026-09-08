@@ -136,6 +136,18 @@ def test_hybrid_runs_dense_and_bm25_concurrently_and_propagates_current_law() ->
     assert latency.total_latency_s < 0.32
 
 
+def test_hybrid_accepts_and_forwards_expand_units() -> None:
+    dense = _Dense([_chunk("dense-1", 0.9)])
+    retriever = HybridRetriever(
+        dense_retriever=dense,
+        sparse_retriever=_Sparse([]),
+    )
+
+    retriever.retrieve("question", expand_units=True)
+
+    assert dense.calls[0]["expand_units"] is True
+
+
 def test_weighted_rrf_uses_equal_weights_like_legacy_rrf() -> None:
     dense = [SearchHit("d1", 0.9, _payload("d1")), SearchHit("shared", 0.8, _payload("shared"))]
     sparse = [SearchHit("s1", 5.0, _payload("s1")), SearchHit("shared", 4.0, _payload("shared"))]

@@ -132,6 +132,7 @@ class HybridRetriever:
         top_k: int,
         filter_profile: str = "broad",
         score_threshold: float | None = None,
+        expand_units: bool | None = False,
     ) -> tuple[list[SearchHit], float]:
         """Run Dense retrieval via ``VectorRetriever``, return ``(hits, latency)``."""
         t0 = time.perf_counter()
@@ -141,7 +142,7 @@ class HybridRetriever:
             top_k=top_k,
             top_n=top_k,  # get all top_k, we fuse later
             score_threshold=score_threshold,
-            expand_units=False,
+            expand_units=expand_units,
         )
         latency = time.perf_counter() - t0
 
@@ -357,6 +358,7 @@ class HybridRetriever:
         top_n: int = 10,
         filter_profile: str = "broad",
         score_threshold: float | None = None,
+        expand_units: bool | None = False,
     ) -> RetrievalResult:
         """Run the full hybrid pipeline and return a ``RetrievalResult``."""
         result, _ = self.retrieve_with_latency(
@@ -365,6 +367,7 @@ class HybridRetriever:
             top_n=top_n,
             filter_profile=filter_profile,
             score_threshold=score_threshold,
+            expand_units=expand_units,
         )
         return result
 
@@ -376,6 +379,7 @@ class HybridRetriever:
         top_n: int = 10,
         filter_profile: str = "broad",
         score_threshold: float | None = None,
+        expand_units: bool | None = False,
     ) -> tuple[RetrievalResult, LatencyBreakdown]:
         """Run the full hybrid pipeline, returning ``(RetrievalResult, LatencyBreakdown)``."""
         total_t0 = time.perf_counter()
@@ -387,6 +391,7 @@ class HybridRetriever:
                 top_k=top_k,
                 filter_profile=filter_profile,
                 score_threshold=score_threshold,
+                expand_units=expand_units,
             )
             sparse_future = executor.submit(
                 self._sparse_search,

@@ -245,17 +245,22 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
             raise AblationConfigError(
                 f"{config_name} graph/reranker retrieval requires a vector Dense backend, not BM25."
             )
-        if graph_enabled and dense.get("backend") == "dense_remote":
+        if (
+            graph_enabled
+            and dense.get("backend") == "dense_remote"
+            and retrieval["graph"].get("backend") != "graph_remote"
+        ):
             raise AblationConfigError(
                 f"{config_name} graph retrieval with dense_remote needs a remote graph/payload hydration adapter."
             )
         if graph_enabled:
             graph = retrieval["graph"]
-            if graph.get("backend") != "structural_pickle":
+            if graph.get("backend") not in {"structural_pickle", "graph_remote"}:
                 raise AblationConfigError(
-                    f"{config_name}.retrieval.graph.backend must be 'structural_pickle'."
+                    f"{config_name}.retrieval.graph.backend must be 'structural_pickle' or 'graph_remote'."
                 )
-            _require_non_empty_string(graph, "path", f"{config_name}.retrieval.graph")
+            if graph.get("backend") != "graph_remote":
+                _require_non_empty_string(graph, "path", f"{config_name}.retrieval.graph")
             for field, default in (("max_hop", 2), ("max_context", 30)):
                 value = graph.get(field, default)
                 if not isinstance(value, int) or isinstance(value, bool) or value < 1:
@@ -273,9 +278,9 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
                 raise AblationConfigError(f"{config_name}.retrieval.fusion.rrf_k must be a positive integer.")
         if reranker_enabled:
             reranker = retrieval["reranker"]
-            if reranker.get("backend") != "cross_encoder":
+            if reranker.get("backend") not in {"cross_encoder", "reranker_remote"}:
                 raise AblationConfigError(
-                    f"{config_name}.retrieval.reranker.backend must be 'cross_encoder'."
+                    f"{config_name}.retrieval.reranker.backend must be 'cross_encoder' or 'reranker_remote'."
                 )
             _require_non_empty_string(reranker, "model", f"{config_name}.retrieval.reranker")
             if reranker.get("scope", "global") != "global":
@@ -438,7 +443,7 @@ def validate_required_paths(config: dict[str, Any], *, project_root: Path = PROJ
     ):
         required.append(("retrieval.dense.index_path", _resolved_path(dense["index_path"], project_root)))
     graph = config["retrieval"].get("graph", {})
-    if graph.get("enabled"):
+    if graph.get("enabled") and graph.get("backend") != "graph_remote":
         graph_path = graph.get("path")
         if not isinstance(graph_path, str) or not graph_path:
             raise AblationConfigError("Enabled graph retrieval requires retrieval.graph.path.")
@@ -521,7 +526,11 @@ def build_ablation_stack(
             raise UnsupportedComponentError(
                 f"Unsupported sparse backend {sparse_backend!r}; expected 'bm25_local' or 'bm25_remote'."
             )
-        rerank_inside_hybrid = reranker_enabled and not graph_enabled
+        rerank_inside_hybrid = (
+            reranker_enabled
+            and not graph_enabled
+            and retrieval.get("reranker", {}).get("backend") != "reranker_remote"
+        )
         reranker_config = retrieval.get("reranker", {})
         retriever = HybridRetriever(
             dense_retriever=retriever,
@@ -539,12 +548,28 @@ def build_ablation_stack(
         if not hasattr(retriever, "retrieve"):
             raise UnsupportedComponentError("Graph/reranker retrieval requires a vector-backed Dense retriever.")
         graph_expansion = None
+        chunk_loader = None
         graph_config = retrieval.get("graph", {})
-        if graph_enabled:
+        from retrieval.remote_stages import RemoteCrossEncoder, RemoteGraph, StageClient
+
+        def stage_client(prefix: str) -> StageClient:
+            return StageClient(
+                _env_value(prefix + "_SERVICE_URL") or "",
+                _env_value(prefix + "_API_KEY") or "",
+            )
+
+        if graph_enabled and graph_config.get("backend") == "graph_remote":
+            graph_expansion = RemoteGraph(stage_client("GRAPH"))
+            chunk_loader = graph_expansion.load_chunks
+        elif graph_enabled:
             graph_path = _resolved_path(graph_config["path"], project_root)
             graph = load_knowledge_graph(graph_path).graph
             graph_expansion = GraphExpansion(graph)
-        if fusion_enabled or (reranker_enabled and not graph_enabled):
+        if (
+            fusion_enabled
+            or (reranker_enabled and not graph_enabled)
+            or chunk_loader is not None
+        ):
             fusion_config = retrieval.get("fusion", {})
             reranker_config = retrieval.get("reranker", {})
             retriever = GraphRRFGlobalReranker(
@@ -552,6 +577,16 @@ def build_ablation_stack(
                 graph_expansion=graph_expansion,
                 cross_encoder_name=str(reranker_config.get("model") or ""),
                 use_cross_encoder=reranker_enabled,
+                cross_encoder=(
+                    RemoteCrossEncoder(
+                        stage_client("RERANKER"),
+                        str(reranker_config.get("model") or ""),
+                    )
+                    if reranker_enabled
+                    and reranker_config.get("backend") == "reranker_remote"
+                    else None
+                ),
+                chunk_loader=chunk_loader,
                 rrf_k=int(fusion_config.get("rrf_k", 60)),
                 graph_max_hop=int(graph_config.get("max_hop", 2)),
                 graph_max_context=int(graph_config.get("max_context", 30)),
@@ -569,6 +604,8 @@ def build_ablation_stack(
         bm25_api_key or "",
         sparse_api_key,
         dense_api_key or "",
+        _env_value("GRAPH_API_KEY") or "",
+        _env_value("RERANKER_API_KEY") or "",
     ]
 
 

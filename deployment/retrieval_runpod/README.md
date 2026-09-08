@@ -1,16 +1,17 @@
 # Retrieval RunPod Deployment
 
-This deployment runs two separate services in one RunPod Pod:
+This deployment can run four separate services in one RunPod Pod:
 
 ```text
 Dense service :8000  -> services.dense_service
 BM25 service  :8001  -> services.bm25_service
+Graph service :8002  -> services.graph_reranker_service:graph_app
+Reranker      :8003  -> services.graph_reranker_service:reranker_app
 ```
 
 They are colocated for cost and deployment convenience only. The APIs, clients,
-retrieval logic, environment variables, and ports remain separate, so the two
-services can later move to different Pods by changing `DENSE_SERVICE_URL` and
-`BM25_SERVICE_URL`.
+retrieval logic, environment variables, and ports remain separate, so each
+service can later move to another Pod by changing its service URL.
 
 ## Artifact Layout
 
@@ -26,10 +27,12 @@ and the existing BM25 artifacts stay visible at
 │   ├── payload_cache.sqlite      # recommended; rebuilt if absent and writable
 │   ├── index_manifest.json
 │   └── id_map.json               # optional; used only if present
-└── cache/
+├── cache/
     ├── huggingface/
     ├── sentence-transformers/
     └── torch/
+└── graph/
+    └── knowledge_graph.gpickle
 
 /workspace/bm25_service/bm25/shards/
 ├── shard_00/
@@ -66,13 +69,23 @@ BM25_INDEX_VERSION=lexvn-bm25-v1
 BM25_PAYLOAD_CACHE_PATH=/workspace/artifacts/dense/payload_cache.sqlite
 BM25_SEARCH_WORKERS=4
 
+ENABLE_GRAPH=true
+ENABLE_RERANKER=true
+GRAPH_PICKLE_PATH=/workspace/artifacts/graph/knowledge_graph.gpickle
+GRAPH_PAYLOAD_CACHE=/workspace/artifacts/dense/payload_cache.sqlite
+GRAPH_API_KEY=replace-with-secret
+RERANKER_API_KEY=replace-with-secret
+RERANKER_MODEL=cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+RERANKER_DEVICE=cuda
+RERANKER_BATCH_SIZE=2
+
 HF_HOME=/workspace/artifacts/cache/huggingface
 SENTENCE_TRANSFORMERS_HOME=/workspace/artifacts/cache/sentence-transformers
 TORCH_HOME=/workspace/artifacts/cache/torch
 ```
 
 Use internal/local URLs if the UI runs in the same private network. Use RunPod
-proxy URLs only after the Pod exposes ports `8000` and `8001`.
+proxy URLs only after the Pod exposes ports `8000`, `8001`, `8002`, and `8003`.
 
 ## Prepare Artifacts Locally
 
@@ -96,7 +109,7 @@ D:\anaconda3\python.exe scripts\build_sparse_index.py --chunks-path data\pre-pro
 
 Do not upload `.env` or API keys.
 
-If the Pod has SSH enabled, copy only Dense artifacts into the mounted volume:
+If the Pod has SSH enabled, copy the missing artifacts into the mounted volume:
 
 ```powershell
 $Pod = "root@YOUR_POD_HOST"
@@ -105,6 +118,7 @@ scp "data/chunk metadata/payloads.jsonl" "${Pod}:/workspace/artifacts/dense/"
 scp "data/chunk metadata/payload_cache.sqlite" "${Pod}:/workspace/artifacts/dense/"
 scp "data/chunk metadata/index_manifest.json" "${Pod}:/workspace/artifacts/dense/"
 scp "data/chunk metadata/id_map.json" "${Pod}:/workspace/artifacts/dense/"
+scp "data/graph/knowledge_graph.gpickle" "${Pod}:/workspace/artifacts/graph/"
 ```
 
 If using object storage, upload from local and sync from the Pod:
@@ -238,11 +252,12 @@ instead, replace the BM25 env and mount with:
 7. Create a GPU Pod from the image.
 8. Mount persistent storage so both `/workspace/artifacts` and `/workspace/bm25_service` are available. If your Network Volume is already mounted at `/workspace`, keep that layout.
 9. Configure environment variables and secrets.
-10. Expose ports `8000` and `8001`.
+10. Expose ports `8000`, `8001`, `8002`, and `8003`.
 11. Launch the container.
 12. Test Dense `/healthz`, `/readyz`, `/version`, and `/search`.
 13. Test BM25 `/healthz` and `/bm25`.
-14. Set UI env vars `DENSE_SERVICE_URL` and `BM25_SERVICE_URL`.
-15. Run an end-to-end UI smoke question and confirm diagnostics show `filter_profile=current_law`, Dense-Sparse retrieval, and BM25 resident indexes/search workers.
+14. Test Graph `/readyz` and `/graph`, then Reranker `/readyz` and `/rerank`.
+15. Set all four service URLs and keys on the UI machine.
+16. Run an end-to-end UI smoke question and confirm diagnostics show `filter_profile=current_law` and the selected retrieval stages.
 
 Do not hard-code Pod IDs, proxy URLs, or secrets into the repository.

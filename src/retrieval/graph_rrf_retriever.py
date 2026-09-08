@@ -1,9 +1,10 @@
 """Dense retrieval with optional graph expansion, RRF, and global Cross-Encoder reranking."""
 from __future__ import annotations
 
+import math
 import time
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 from knowledge_graph.expansion import GraphExpansion
 
@@ -38,6 +39,7 @@ class GraphRRFGlobalReranker:
         graph_max_context: int = 30,
         rerank_candidate_limit: int = 30,
         cross_encoder: Any | None = None,
+        chunk_loader: Callable[[Sequence[str]], list[RetrievedChunk]] | None = None,
     ) -> None:
         if rrf_k < 1:
             raise ValueError("rrf_k must be at least 1")
@@ -45,6 +47,7 @@ class GraphRRFGlobalReranker:
             raise ValueError("graph and reranker limits must be positive")
         self.dense_retriever = dense_retriever
         self.graph_expansion = graph_expansion
+        self.chunk_loader = chunk_loader
         self.use_cross_encoder = use_cross_encoder
         self.cross_encoder_name = cross_encoder_name or ""
         self.rrf_k = rrf_k
@@ -118,6 +121,19 @@ class GraphRRFGlobalReranker:
                 max_context=self.graph_max_context,
             )
             graph_chunks = self._hydrate_graph_chunks(expansion.ordered_context_chunks)
+            allowed = {
+                "current_law": {"active", "partial", "future"},
+                "historical": {"expired", "active", "partial"},
+                "broad": {"active", "partial", "future", "expired", "unknown"},
+                "graph_guided": {"active", "partial", "future", "expired", "unknown"},
+            }
+            if filter_profile not in allowed:
+                raise ValueError(f"Unsupported filter profile: {filter_profile}")
+            graph_chunks = [
+                chunk
+                for chunk in graph_chunks
+                if chunk.validity_group in allowed[filter_profile]
+            ]
         graph_latency = time.perf_counter() - graph_started
 
         fusion_started = time.perf_counter()
@@ -151,6 +167,18 @@ class GraphRRFGlobalReranker:
         ids = list(dict.fromkeys(str(value) for value in ordered_chunk_ids if value))
         if not ids:
             return []
+        if self.chunk_loader is not None:
+            by_id = {chunk.chunk_id: chunk for chunk in self.chunk_loader(ids)}
+            missing = [chunk_id for chunk_id in ids if chunk_id not in by_id]
+            if missing:
+                raise ValueError(
+                    f"Graph payloads missing for {len(missing)} chunk(s): {missing[:3]}"
+                )
+            return [by_id[chunk_id] for chunk_id in ids]
+        if not hasattr(self.dense_retriever, "store"):
+            raise ValueError(
+                "Remote Dense + Graph requires a chunk loader for expanded payloads."
+            )
         hits = self.dense_retriever.store.scroll(
             {"chunk_id": {"in": ids}},
             limit=len(ids),
@@ -188,6 +216,8 @@ class GraphRRFGlobalReranker:
         scores = self._cross_encoder.predict(pairs)
         if len(scores) != len(candidates):
             raise RuntimeError("Cross-Encoder returned an unexpected number of scores.")
+        if not all(math.isfinite(float(score)) for score in scores):
+            raise RuntimeError("Cross-Encoder returned a non-finite score.")
         reranked = [
             self._copy_chunk(chunk, rerank_score=float(score))
             for chunk, score in zip(candidates, scores)

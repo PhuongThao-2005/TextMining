@@ -298,7 +298,11 @@ def validate_override_compatibility(config: Mapping[str, Any]) -> None:
     if any((sparse_enabled, graph_enabled, fusion_enabled, reranker_enabled)):
         if not isinstance(dense, Mapping) or dense.get("backend") not in {"faiss", "hashing", "qdrant", "dense_remote"}:
             raise UIConfigError("Sparse/graph/reranker retrieval requires a vector dense retriever.")
-        if graph_enabled and dense.get("backend") == "dense_remote":
+        if (
+            graph_enabled
+            and dense.get("backend") == "dense_remote"
+            and graph.get("backend") != "graph_remote"
+        ):
             raise UIConfigError("Graph retrieval with dense_remote requires a remote graph/payload hydration adapter.")
         if sparse_enabled and dense.get("backend") == "dense_remote":
             sparse_backend = str(sparse.get("backend") or "bm25_local") if isinstance(sparse, Mapping) else "bm25_local"
@@ -377,7 +381,11 @@ def _enable_graph_stack(retrieval: dict[str, Any]) -> None:
         raise UIConfigError("Graph stack section must be a mapping.")
     graph.update({
         "enabled": True,
-        "backend": graph.get("backend") or "structural_pickle",
+        "backend": (
+            "graph_remote"
+            if os.environ.get("GRAPH_SERVICE_URL")
+            else (graph.get("backend") or "structural_pickle")
+        ),
         "path": graph.get("path") or "data/graph/knowledge_graph.gpickle",
         "version": graph.get("version") or "local-knowledge-graph",
         "max_hop": graph.get("max_hop", 2),
@@ -402,7 +410,11 @@ def _enable_global_reranker(retrieval: dict[str, Any]) -> None:
         raise UIConfigError("Reranker section must be a mapping.")
     reranker.update({
         "enabled": True,
-        "backend": reranker.get("backend") or "cross_encoder",
+        "backend": (
+            "reranker_remote"
+            if os.environ.get("RERANKER_SERVICE_URL")
+            else (reranker.get("backend") or "cross_encoder")
+        ),
         "scope": reranker.get("scope") or "global",
         "model": reranker.get("model") or "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
         "candidate_limit": reranker.get("candidate_limit", 30),
@@ -560,7 +572,35 @@ def run_preflight(
         message = "Graph/reranker retrieval requires a vector dense retriever."
         blockers.append(message)
         checks.append(PreflightCheck("graph_stack", "blocked", message))
-    if graph_enabled and backend == "dense_remote":
+    graph_remote = graph.get("backend") == "graph_remote"
+    reranker_remote = reranker.get("backend") == "reranker_remote"
+    remote_stages = (
+        ("GRAPH", graph_enabled and graph_remote, "/readyz", "ready"),
+        ("RERANKER", reranker_enabled and reranker_remote, "/readyz", "ready"),
+    )
+    for prefix, enabled, path, expected_status in remote_stages:
+        if not enabled:
+            continue
+        service_url = _preflight_env_value(env, prefix + "_SERVICE_URL")
+        api_key = _preflight_env_value(env, prefix + "_API_KEY")
+        if not service_url:
+            message = f"{prefix}_SERVICE_URL: missing for remote service."
+            blockers.append(message)
+            checks.append(PreflightCheck(prefix.lower(), "blocked", message))
+        if not api_key:
+            message = f"{prefix}_API_KEY: missing for remote service."
+            blockers.append(message)
+            checks.append(PreflightCheck(prefix.lower() + "_key", "blocked", message))
+        if service_url and api_key:
+            ok, message = check_service(
+                service_url, path, api_key, 60.0, expected_status
+            )
+            checks.append(
+                PreflightCheck(prefix.lower(), "ready" if ok else "blocked", message)
+            )
+            if not ok:
+                blockers.append(message)
+    if graph_enabled and backend == "dense_remote" and not graph_remote:
         message = "Graph retrieval with dense_remote requires a remote graph/payload hydration adapter."
         blockers.append(message)
         checks.append(PreflightCheck("graph", "blocked", message))
@@ -568,7 +608,7 @@ def run_preflight(
         message = "RRF fusion requires graph retrieval."
         blockers.append(message)
         checks.append(PreflightCheck("fusion", "blocked", message))
-    if graph_enabled:
+    if graph_enabled and not graph_remote:
         graph_path = _resolve_path(graph.get("path"), project_root) if graph.get("path") else None
         if graph_path is not None and graph_path.is_file():
             checks.append(PreflightCheck("graph", "ready", f"{_display_path(graph_path, project_root)} is available."))
@@ -578,7 +618,7 @@ def run_preflight(
             checks.append(PreflightCheck("graph", "blocked", message))
     if fusion_enabled:
         checks.append(PreflightCheck("fusion", "ready", "RRF fusion is configured."))
-    if reranker_enabled:
+    if reranker_enabled and not reranker_remote:
         if backend != "faiss":
             _check_package("sentence_transformers", "sentence-transformers", has_package, checks, blockers)
         checks.append(PreflightCheck("reranker", "ready", "Global Cross-Encoder reranking is configured."))

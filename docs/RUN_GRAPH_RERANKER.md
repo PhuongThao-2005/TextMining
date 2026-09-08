@@ -145,4 +145,40 @@ Production preflight chưa sẵn sàng:
   kiểm tra Dense /readyz = ready và BM25 /healthz = ok
 ```
 
-Graph/Reranker là bước integration tiếp theo. Remote Dense + Remote BM25 hybrid hiện đã sẵn để làm đầu vào cho phần đó.
+## Graph và Reranker remote
+
+Image kế tiếp chạy thêm Graph ở port `8002` và Reranker ở port `8003`.
+
+Graph artifact:
+
+```text
+/workspace/artifacts/graph/knowledge_graph.gpickle
+```
+
+Graph dùng lại `/workspace/artifacts/dense/payload_cache.sqlite`; không sao chép
+FAISS. Cấu hình trên Pod:
+
+```env
+ENABLE_GRAPH=true
+ENABLE_RERANKER=true
+GRAPH_API_KEY=<SECRET>
+RERANKER_API_KEY=<SECRET>
+GRAPH_PICKLE_PATH=/workspace/artifacts/graph/knowledge_graph.gpickle
+GRAPH_PAYLOAD_CACHE=/workspace/artifacts/dense/payload_cache.sqlite
+RERANKER_MODEL=cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+RERANKER_DEVICE=cuda
+RERANKER_BATCH_SIZE=2
+HF_HUB_OFFLINE=0
+```
+
+Cấu hình trên máy chạy UI:
+
+```env
+GRAPH_SERVICE_URL=https://<RUNPOD_ID>-8002.proxy.runpod.net
+GRAPH_API_KEY=<SECRET>
+RERANKER_SERVICE_URL=https://<RUNPOD_ID>-8003.proxy.runpod.net
+RERANKER_API_KEY=<SECRET>
+```
+
+Sau khi đổi biến, restart Pod và bấm `Clear resource cache` trong UI. Thử lần
+lượt Dense-Sparse, thêm Reranker, thêm Graph, rồi bật cả Graph + Reranker.

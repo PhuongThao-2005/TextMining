@@ -8,3 +8,5 @@ runcode.txt
 .env.*
 !.env.example
 .cache/
+credentials.txt
+deployment/retrieval_runpod/*.tar.gz
