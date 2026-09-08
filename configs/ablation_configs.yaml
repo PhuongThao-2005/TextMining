@@ -16,7 +16,7 @@
 #   output: {root}
 #
 # Supported now:
-#   dense.backend: faiss | qdrant | hashing | bm25
+#   dense.backend: faiss | qdrant | hashing | bm25 | dense_remote
 #   generation.provider: reference | gemini | openai_compatible
 #   judge.provider: none | gemini
 #
@@ -27,6 +27,45 @@
 schema_version: 1
 
 configs:
+  # Dense service returns complete chunks; no local FAISS/model is loaded.
+  Dense-Remote-E2E:
+    benchmark: {path: data/benchmark/qa_final.jsonl, version: qa-final-v1}
+    corpus: {path: data/pre-processed/documents.jsonl, version: pre-processed-v1}
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: dense_remote
+        model: intfloat/multilingual-e5-large
+        embedding_dimension: 1024
+        index_version: chunk-metadata-faiss-v1
+        service_url_env: DENSE_SERVICE_URL
+        api_key_env: DENSE_API_KEY
+        timeout_seconds: 30
+        score_threshold: 0.3
+        expand_units: false
+      sparse: {enabled: false}
+      graph: {enabled: false}
+      fusion: {enabled: false}
+      reranker: {enabled: false}
+    generation:
+      provider: openai_compatible
+      model: env:LLM_BASE_MODEL
+      prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge: {provider: none}
+    agent: {enabled: false, mode: none, implementation_status: implemented}
+    output: {root: evaluation_runs/ablation}
+    seed: 42
+
   BM25-Remote-E2E:
     benchmark:
       path: data/benchmark/qa_final.jsonl

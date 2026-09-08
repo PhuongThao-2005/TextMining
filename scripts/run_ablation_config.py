@@ -66,7 +66,7 @@ from generation.reasoning_client import (  # noqa: E402
 
 DEFAULT_CONFIG_FILE = PROJECT_ROOT / "configs" / "ablation_configs.yaml"
 DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "evaluation_runs" / "ablation"
-SUPPORTED_DENSE_BACKENDS = {"faiss", "qdrant", "hashing", "bm25"}
+SUPPORTED_DENSE_BACKENDS = {"faiss", "qdrant", "hashing", "bm25", "dense_remote"}
 SUPPORTED_GENERATORS = {"reference", "gemini", "openai_compatible"}
 SUPPORTED_JUDGES = {"none", "gemini"}
 RUN_STATUSES = {"completed", "failed", "skipped", "deferred", "needs-rerun"}
@@ -191,6 +191,11 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
             _require_non_empty_string(dense, "index_path", f"{config_name}.retrieval.dense")
         if backend == "qdrant":
             _require_non_empty_string(dense, "collection", f"{config_name}.retrieval.dense")
+        if backend == "dense_remote":
+            for key in ("service_url_env", "model", "index_version"):
+                _require_non_empty_string(dense, key, f"{config_name}.retrieval.dense")
+            if any(retrieval.get(name, {}).get("enabled") for name in ("sparse", "graph", "fusion", "reranker")):
+                raise AblationConfigError("Remote dense v1 requires sparse, graph, fusion and reranker disabled.")
         if backend == "bm25":
             _require_non_empty_string(dense, "service_url_env", f"{config_name}.retrieval.dense")
             payload_store = dense.get("payload_store", "faiss")
@@ -452,8 +457,13 @@ def build_ablation_stack(
     payload_store = str(dense.get("payload_store") or "faiss") if backend == "bm25" else None
     runtime_store = payload_store or ("faiss" if backend in {"faiss", "hashing"} else "qdrant")
     bm25_api_key = _env_value(dense.get("api_key_env") or "BM25_API_KEY") if backend == "bm25" else None
+    remote_options = {}
+    if backend == "dense_remote":
+        from retrieval.dense_client import connection_options
+        remote_options = connection_options(dense, os.environ, corpus_version=config["corpus"]["version"])
     runtime = RetrieverRuntimeConfig(
-        backend="bm25" if backend == "bm25" else "vector",
+        backend=backend if backend in {"bm25", "dense_remote"} else "vector",
+        dense_remote_options=remote_options,
         store=runtime_store,
         index_dir=_resolved_path(dense.get("index_path", "data/faiss_index"), project_root),
         qdrant_url=str(dense.get("url") or "http://localhost:6333"),
@@ -545,6 +555,7 @@ def build_ablation_stack(
         qdrant_key,
         bm25_api_key or "",
         sparse_api_key,
+        runtime.dense_remote_options.get("api_key") or "",
     ]
 
 

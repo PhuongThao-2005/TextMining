@@ -282,13 +282,13 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         self.int_to_id: dict[int, str] = int_to_id or {}
         self.id_map = self.int_to_id  # data-model alias
         self._conn_lock = threading.RLock()
-        self.conn = sqlite3.connect(str(self.cache_path), check_same_thread=False)
+        self.conn = sqlite3.connect(self.cache_path.resolve().as_uri() + "?mode=ro", uri=True, check_same_thread=False)
         self.conn.execute("PRAGMA query_only = ON")
         # Notebook export helpers historically used store._conn.
         self._conn = self.conn
 
     @classmethod
-    def load(cls, index_dir: Path) -> "SQLitePayloadFaissVectorStore":
+    def load(cls, index_dir: Path, *, require_existing_cache: bool = False) -> "SQLitePayloadFaissVectorStore":
         """Load FAISS index and ensure a fresh SQLite payload cache under ``index_dir``."""
         index_dir = Path(index_dir)
 
@@ -303,7 +303,13 @@ class SQLitePayloadFaissVectorStore(VectorStore):
             raise FileNotFoundError(f"Payload file not found at {payloads_path}")
 
         faiss = _import_faiss()
-        _ensure_payload_cache(payloads_path, cache_path)
+        if require_existing_cache:
+            # A deployment copy can change mtime without changing the bundle.
+            meta = _read_cache_meta(cache_path) if cache_path.is_file() else None
+            if not meta or meta.get("schema_version") != _PAYLOAD_CACHE_SCHEMA_VERSION or meta.get("payload_size") != str(payloads_path.stat().st_size):
+                raise ValueError("A compatible prebuilt payload cache is required.")
+        else:
+            _ensure_payload_cache(payloads_path, cache_path)
 
         t0 = time.perf_counter()
         read_flags = getattr(faiss, "IO_FLAG_MMAP", 0) | getattr(faiss, "IO_FLAG_READ_ONLY", 0)
@@ -366,6 +372,7 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         score_threshold: float | None = None,
         filters: dict[str, Any] | None = None,
     ) -> list[SearchHit]:
+        self.last_search_latency_ms = {"vector_search": 0.0, "payload_hydration": 0.0}
         if self.index.ntotal == 0:
             return []
 
@@ -390,6 +397,7 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         t_payload = time.perf_counter()
         payloads = self._load_payloads([idx for _, idx in valid_pairs])
         payload_time = time.perf_counter() - t_payload
+        self.last_search_latency_ms = {"vector_search": faiss_time * 1000, "payload_hydration": payload_time * 1000}
 
         hits: list[SearchHit] = []
         for score, idx in valid_pairs:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from time import perf_counter
 
 from knowledge_graph.context_schema import GraphGuidedFilter
 from knowledge_graph.expansion import GraphExpansion
@@ -54,7 +55,9 @@ class VectorRetriever:
         top_n = top_n or self.config.top_n
         score_threshold = self.config.score_threshold if score_threshold is None else score_threshold
         expand_units = self.config.expand_units if expand_units is None else expand_units
+        embedding_started = perf_counter()
         query_vector = self.embedder.encode_queries([clean_text(query)])[0]
+        self.last_embedding_ms = (perf_counter() - embedding_started) * 1000
         filters = self._build_filters(filter_profile, id_str_filter, extra_filters)
         hits = self.store.search(query_vector, limit=top_k, score_threshold=score_threshold, filters=filters)
         total_candidates = len(hits)

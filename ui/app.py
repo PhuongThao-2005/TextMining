@@ -292,6 +292,7 @@ def _render_settings(registry: dict[str, dict[str, Any]], lang: str) -> dict[str
         )
     except Exception as exc:
         effective = selected
+        mode_blocker = mode_blocker or format_safe_error(exc)
         st.sidebar.warning(format_safe_error(exc))
 
     readiness = _cached_readiness(
@@ -491,6 +492,8 @@ def _build_question_request(
 
 def _config_for_retrieval_mode(value: str) -> str:
     del value
+    if os.environ.get("DENSE_BACKEND", "faiss") == "dense_remote":
+        return "Dense-Remote-E2E"
     return DEFAULT_CONFIG_NAME
 
 
@@ -523,6 +526,11 @@ def _bm25_service_configured() -> bool:
 
 
 def _retrieval_mode_blocker(value: str) -> str | None:
+    backend = os.environ.get("DENSE_BACKEND", "faiss")
+    if backend not in {"faiss", "dense_remote"}:
+        return "DENSE_BACKEND phải là faiss hoặc dense_remote."
+    if backend == "dense_remote" and value != "dense_only":
+        return "Dense remote v1 chỉ hỗ trợ Dense Only."
     if value != "dense_sparse":
         return None
     if _bm25_service_configured() or _local_sparse_index_available():

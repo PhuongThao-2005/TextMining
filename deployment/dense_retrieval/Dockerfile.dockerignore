@@ -1,0 +1,10 @@
+**
+!src/
+!src/**
+!services/
+!services/**
+!deployment/
+!deployment/dense_retrieval/
+!deployment/dense_retrieval/requirements.txt
+**/__pycache__/
+**/*.ipynb

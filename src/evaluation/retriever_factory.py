@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from retrieval.dense_client import DenseRemoteRetriever
 
 from retrieval import (
     BM25Client,
@@ -19,7 +22,8 @@ from retrieval import (
 @dataclass(frozen=True)
 class RetrieverRuntimeConfig:
     store: Literal["faiss", "qdrant"] = "faiss"
-    backend: Literal["vector", "bm25"] = "vector"
+    backend: Literal["vector", "bm25", "dense_remote"] = "vector"
+    dense_remote_options: dict = field(default_factory=dict)
     index_dir: str | Path = "data/faiss_index"
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str | None = None
@@ -35,7 +39,11 @@ class RetrieverRuntimeConfig:
     bm25_timeout_seconds: float = 300.0
 
 
-def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever | BM25RemoteRetriever:
+def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever | BM25RemoteRetriever | DenseRemoteRetriever:
+    if runtime.backend == "dense_remote":
+        from retrieval.dense_client import DenseRemoteRetriever
+        return DenseRemoteRetriever(**runtime.dense_remote_options, top_k=runtime.top_k,
+            top_n=runtime.top_n, score_threshold=runtime.score_threshold, expand_units=runtime.expand_units)
     config = VectorIndexConfig(
         collection_name=runtime.collection_name,
         embedding_model=runtime.model,

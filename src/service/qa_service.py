@@ -45,7 +45,7 @@ from scripts.run_ablation_config import (
 TOP_K_MIN = 1
 TOP_K_MAX = 50
 FILTER_PROFILES = ("current_law", "broad", "historical")
-INTERACTIVE_CONFIG_NAMES = frozenset((*LLM_ABLATION_CONFIG_NAMES, *AGENT_ABLATION_CONFIG_NAMES))
+INTERACTIVE_CONFIG_NAMES = frozenset((*LLM_ABLATION_CONFIG_NAMES, *AGENT_ABLATION_CONFIG_NAMES, "Dense-Remote-E2E"))
 
 
 class UIConfigError(ValueError):
@@ -289,6 +289,8 @@ def validate_override_compatibility(config: Mapping[str, Any]) -> None:
     graph_enabled = bool(graph.get("enabled")) if isinstance(graph, Mapping) else False
     fusion_enabled = bool(fusion.get("enabled")) if isinstance(fusion, Mapping) else False
     reranker_enabled = bool(reranker.get("enabled")) if isinstance(reranker, Mapping) else False
+    if isinstance(dense, Mapping) and dense.get("backend") == "dense_remote" and any((sparse_enabled, graph_enabled, fusion_enabled, reranker_enabled)):
+        raise UIConfigError("Dense remote v1 supports Dense Only. Disable sparse, graph and reranker.")
     if any((sparse_enabled, graph_enabled, fusion_enabled, reranker_enabled)):
         if not isinstance(dense, Mapping) or dense.get("backend") not in {"faiss", "hashing", "qdrant"}:
             raise UIConfigError("Sparse/graph/reranker retrieval requires a vector dense retriever.")
@@ -462,6 +464,17 @@ def run_preflight(
     retrieval = resolved.get("retrieval", {})
     dense = retrieval.get("dense", {})
     backend = dense.get("backend") if dense.get("enabled") else None
+    if backend == "dense_remote":
+        from retrieval.dense_client import client_from_config, DenseServiceError
+        try:
+            remote = client_from_config(dense, env, corpus_version=resolved["corpus"]["version"], top_n=int(retrieval["top_k"]))
+            remote.max_retries = 0
+            identity = remote.check_ready()
+            checks.append(PreflightCheck("dense_remote", "ready", "Dense ready: " + json.dumps(identity, sort_keys=True)))
+        except (DenseServiceError, ValueError) as exc:
+            message = str(exc)
+            blockers.append(message)
+            checks.append(PreflightCheck("dense_remote", "blocked", message))
     if backend == "faiss" or (backend == "bm25" and dense.get("payload_store", "faiss") == "faiss"):
         index_dir = _resolve_path(dense.get("index_path", "data/faiss_index"), project_root)
         for filename in ("index.faiss", "payloads.jsonl"):
@@ -669,6 +682,8 @@ def answer_question(
             case_executor=executor,
         )
         prediction = result.predictions[0]
+        if runtime_config["retrieval"]["dense"]["backend"] == "dense_remote":
+            diagnostics["dense_remote"] = dict(active.retriever.last_diagnostics)
         latency = dict(prediction.get("latency_ms") or {})
         latency.setdefault("total", round((time.perf_counter() - started) * 1000.0, 6))
         contexts = tuple(normalize_context_rows(prediction.get("retrieved_context") or []))
