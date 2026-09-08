@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -42,6 +43,7 @@ class LatencyBreakdown:
     fusion_latency_s: float = 0.0
     cross_encoder_latency_s: float = 0.0
     total_latency_s: float = 0.0
+    hybrid_wall_seconds: float = 0.0
 
     def to_dict(self) -> dict[str, float]:
         return {
@@ -50,6 +52,7 @@ class LatencyBreakdown:
             "fusion_latency_s": round(self.fusion_latency_s, 4),
             "cross_encoder_latency_s": round(self.cross_encoder_latency_s, 4),
             "total_latency_s": round(self.total_latency_s, 4),
+            "hybrid_wall_seconds": round(self.hybrid_wall_seconds, 4),
         }
 
 
@@ -82,12 +85,16 @@ class HybridRetriever:
         use_rrf: bool = False,
         use_cross_encoder: bool = False,
         rrf_k: int = 60,
+        dense_weight: float = 1.0,
+        bm25_weight: float = 1.0,
     ) -> None:
         self.dense_retriever = dense_retriever
         self.sparse_retriever = sparse_retriever
         self.use_rrf = use_rrf
         self.use_cross_encoder = use_cross_encoder
         self.rrf_k = rrf_k
+        self.dense_weight = float(dense_weight)
+        self.bm25_weight = float(bm25_weight)
 
         self._cross_encoder = None
         if use_cross_encoder:
@@ -158,9 +165,14 @@ class HybridRetriever:
         query: str,
         *,
         top_k: int,
+        filter_profile: str = "broad",
     ) -> tuple[list[SearchHit], float]:
         """Run Sparse (BM25) search, return ``(hits, latency)``."""
-        return self.sparse_retriever.search_with_latency(query, top_k=top_k)
+        return self.sparse_retriever.search_with_latency(
+            query,
+            top_k=top_k,
+            filter_profile=filter_profile,
+        )
 
     # ------------------------------------------------------------------
     # Fusion methods
@@ -207,7 +219,13 @@ class HybridRetriever:
                 combined[chunk_id] = SearchHit(
                     point_id=hit.point_id,
                     score=norm_score,
-                    payload=hit.payload,
+                    payload=_fuller_payload(existing.payload, hit.payload),
+                )
+            else:
+                combined[chunk_id] = SearchHit(
+                    point_id=existing.point_id,
+                    score=existing.score,
+                    payload=_fuller_payload(existing.payload, hit.payload),
                 )
 
         return sorted(combined.values(), key=lambda h: h.score, reverse=True)
@@ -218,6 +236,8 @@ class HybridRetriever:
         sparse_hits: list[SearchHit],
         *,
         k: int = 60,
+        dense_weight: float = 1.0,
+        bm25_weight: float = 1.0,
     ) -> list[SearchHit]:
         """Reciprocal Rank Fusion (RRF).
 
@@ -230,15 +250,22 @@ class HybridRetriever:
 
         for rank, hit in enumerate(dense_hits, start=1):
             chunk_id = str(hit.payload.get("chunk_id") or hit.point_id)
-            rrf_scores[chunk_id] = rrf_scores.get(chunk_id, 0.0) + 1.0 / (k + rank)
+            rrf_scores[chunk_id] = rrf_scores.get(chunk_id, 0.0) + dense_weight / (k + rank)
             if chunk_id not in best_hit:
                 best_hit[chunk_id] = hit
 
         for rank, hit in enumerate(sparse_hits, start=1):
             chunk_id = str(hit.payload.get("chunk_id") or hit.point_id)
-            rrf_scores[chunk_id] = rrf_scores.get(chunk_id, 0.0) + 1.0 / (k + rank)
+            rrf_scores[chunk_id] = rrf_scores.get(chunk_id, 0.0) + bm25_weight / (k + rank)
             if chunk_id not in best_hit:
                 best_hit[chunk_id] = hit
+            else:
+                existing = best_hit[chunk_id]
+                best_hit[chunk_id] = SearchHit(
+                    point_id=existing.point_id,
+                    score=existing.score,
+                    payload=_fuller_payload(existing.payload, hit.payload),
+                )
 
         # Build result sorted by RRF score
         sorted_ids = sorted(rrf_scores.keys(), key=lambda cid: rrf_scores[cid], reverse=True)
@@ -353,21 +380,33 @@ class HybridRetriever:
         """Run the full hybrid pipeline, returning ``(RetrievalResult, LatencyBreakdown)``."""
         total_t0 = time.perf_counter()
 
-        # Stage 1: Dense search
-        dense_hits, dense_latency = self._dense_search(
-            query,
-            top_k=top_k,
-            filter_profile=filter_profile,
-            score_threshold=score_threshold,
-        )
-
-        # Stage 2: Sparse search
-        sparse_hits, sparse_latency = self._sparse_search(query, top_k=top_k)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            dense_future = executor.submit(
+                self._dense_search,
+                query,
+                top_k=top_k,
+                filter_profile=filter_profile,
+                score_threshold=score_threshold,
+            )
+            sparse_future = executor.submit(
+                self._sparse_search,
+                query,
+                top_k=top_k,
+                filter_profile=filter_profile,
+            )
+            dense_hits, dense_latency = dense_future.result()
+            sparse_hits, sparse_latency = sparse_future.result()
 
         # Stage 3: Fusion
         fusion_t0 = time.perf_counter()
         if self.use_rrf:
-            fused_hits = self._rrf_fusion(dense_hits, sparse_hits, k=self.rrf_k)
+            fused_hits = self._rrf_fusion(
+                dense_hits,
+                sparse_hits,
+                k=self.rrf_k,
+                dense_weight=self.dense_weight,
+                bm25_weight=self.bm25_weight,
+            )
         else:
             fused_hits = self._merge_by_score(dense_hits, sparse_hits)
         fusion_latency = time.perf_counter() - fusion_t0
@@ -410,6 +449,34 @@ class HybridRetriever:
             fusion_latency_s=fusion_latency,
             cross_encoder_latency_s=ce_latency,
             total_latency_s=total_latency,
+            hybrid_wall_seconds=total_latency,
         )
 
         return result, latency
+
+
+def _payload_richness(payload: dict[str, Any]) -> tuple[int, int]:
+    required = (
+        "chunk_text",
+        "citation_anchor",
+        "citation_label",
+        "title",
+        "article_number",
+        "unit_type",
+        "path",
+        "validity_group",
+        "legal_authority_rank",
+        "id_str",
+        "parent_unit_id",
+    )
+    return (sum(1 for key in required if payload.get(key) not in (None, "")), len(payload))
+
+
+def _fuller_payload(left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
+    if _payload_richness(right) > _payload_richness(left):
+        merged = dict(left)
+        merged.update({key: value for key, value in right.items() if value not in (None, "")})
+        return merged
+    merged = dict(right)
+    merged.update({key: value for key, value in left.items() if value not in (None, "")})
+    return merged

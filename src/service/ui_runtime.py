@@ -215,6 +215,7 @@ def scan_production_readiness(
     project_root: Path,
     environ: Mapping[str, str] | None = None,
     package_available: Callable[[str], bool] | None = None,
+    service_checker: Callable[[str, str, str, float, str], tuple[bool, str]] | None = None,
     search_roots: Sequence[Path] = ARTIFACT_SEARCH_ROOTS,
     selected_artifact: Path | None = None,
 ) -> ProductionReadiness:
@@ -251,6 +252,7 @@ def scan_production_readiness(
         config, config_name=config_name, project_root=project_root,
         environ=env,
         package_available=package_available,
+        service_checker=service_checker,
     )
     checks = list(preflight.checks)
     blockers = list(preflight.blockers)

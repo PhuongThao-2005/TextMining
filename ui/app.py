@@ -69,9 +69,10 @@ PRODUCTION_EXAMPLES_VI = (
 DEFAULT_CONFIG_NAME = "Agent-None-PlainRAG"
 REMOTE_DENSE_CONFIG_NAME = "Agent-None-RemoteDense"
 DEFAULT_TOP_K = 5
-DEFAULT_FILTER_PROFILE = "broad"
+DEFAULT_FILTER_PROFILE = "current_law"
 RUNTIME_CHOICES = (PRODUCTION_MODE, DEMO_MODE)
 BASE_RETRIEVAL_MODES = ("dense_only", "dense_sparse")
+FILTER_PROFILE_CHOICES = ("current_law", "broad", "historical")
 MODEL_CHOICES = ("gpt-4o-mini", "gpt-4.1-mini", "gpt-4o")
 PROMPT_STRATEGIES = ("base", "reasoning")
 
@@ -245,7 +246,7 @@ def _render_settings(registry: dict[str, dict[str, Any]], lang: str) -> dict[str
 
         st.markdown(f"### {t(lang, 'retrieval')}")
         base_retrieval_mode = _render_choice_toggle(
-            t(lang, "retrieval_mode"), BASE_RETRIEVAL_MODES, "retrieval_base_mode", "dense_only",
+            t(lang, "retrieval_mode"), BASE_RETRIEVAL_MODES, "retrieval_base_mode", "dense_sparse",
             lambda value: _base_retrieval_label(str(value)),
             columns_per_row=2,
         )
@@ -281,7 +282,17 @@ def _render_settings(registry: dict[str, dict[str, Any]], lang: str) -> dict[str
     selected = registry[config_name]
     retrieval = selected["retrieval"]
     top_k = int(retrieval.get("top_k") or DEFAULT_TOP_K)
-    filter_profile = str(retrieval.get("filter_profile") or DEFAULT_FILTER_PROFILE)
+    configured_filter_profile = str(retrieval.get("filter_profile") or DEFAULT_FILTER_PROFILE)
+    with st.sidebar:
+        st.markdown(f"### {t(lang, 'filter_profile')}")
+        filter_profile = _render_choice_toggle(
+            t(lang, "filter_profile"),
+            FILTER_PROFILE_CHOICES,
+            "filter_profile",
+            configured_filter_profile if configured_filter_profile in FILTER_PROFILE_CHOICES else DEFAULT_FILTER_PROFILE,
+            _filter_profile_label,
+            columns_per_row=3,
+        )
     sparse = base_retrieval_mode == "dense_sparse"
     graph, fusion, reranker = _retrieval_mode_flags(graph_enabled, reranker_enabled)
 
@@ -510,6 +521,14 @@ def _base_retrieval_label(value: str) -> str:
     }.get(value, value)
 
 
+def _filter_profile_label(value: str) -> str:
+    return {
+        "current_law": "Current",
+        "broad": "Broad",
+        "historical": "Historical",
+    }.get(value, value)
+
+
 def _compose_retrieval_mode(base_mode: str, graph_enabled: bool, reranker_enabled: bool) -> str:
     label = _base_retrieval_label(base_mode)
     extras = []
@@ -606,9 +625,12 @@ def _initialize_state() -> None:
     if st.session_state["runtime_mode"] not in RUNTIME_CHOICES:
         st.session_state["runtime_mode"] = PRODUCTION_MODE
     _migrate_retrieval_state()
-    st.session_state.setdefault("retrieval_base_mode", "dense_only")
+    st.session_state.setdefault("retrieval_base_mode", "dense_sparse")
     if st.session_state["retrieval_base_mode"] not in BASE_RETRIEVAL_MODES:
-        st.session_state["retrieval_base_mode"] = "dense_only"
+        st.session_state["retrieval_base_mode"] = "dense_sparse"
+    st.session_state.setdefault("filter_profile", DEFAULT_FILTER_PROFILE)
+    if st.session_state["filter_profile"] not in FILTER_PROFILE_CHOICES:
+        st.session_state["filter_profile"] = DEFAULT_FILTER_PROFILE
     for toggle_key in ("graph_enabled", "reranker_enabled"):
         value = st.session_state.setdefault(toggle_key, "off")
         if value not in {"off", "on"}:

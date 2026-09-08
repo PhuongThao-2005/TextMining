@@ -8,8 +8,10 @@ from typing import Any
 import pytest
 
 from retrieval.schema import RetrievalResult
+from retrieval.hybrid_retriever import HybridRetriever
 from scripts.run_ablation_config import (
     AblationConfigError,
+    build_ablation_stack,
     create_run_id,
     load_ablation_configs,
     resolve_ablation_config,
@@ -129,6 +131,45 @@ def test_incomplete_and_invalid_backend_are_rejected(tmp_path: Path) -> None:
     config["retrieval"]["dense"]["backend"] = "unknown"
     with pytest.raises(AblationConfigError, match="Unsupported dense backend"):
         validate_ablation_config(config, config_name="baseline")
+
+
+def test_remote_dense_sparse_config_is_supported_with_weighted_rrf(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, _, _, config_file = _fixture_files(tmp_path)
+    config = resolve_ablation_config(load_ablation_configs(config_file), "baseline")
+    config["retrieval"]["filter_profile"] = "current_law"
+    config["retrieval"]["dense"] = {
+        "enabled": True,
+        "backend": "dense_remote",
+        "model": "fixture-model",
+        "service_url_env": "DENSE_TEST_URL",
+        "api_key_env": "DENSE_TEST_KEY",
+    }
+    config["retrieval"]["sparse"] = {
+        "enabled": True,
+        "backend": "bm25_remote",
+        "service_url_env": "BM25_TEST_URL",
+        "api_key_env": "BM25_TEST_KEY",
+        "timeout_seconds": 300.0,
+        "rrf_k": 60,
+        "dense_weight": 1.0,
+        "bm25_weight": 0.3,
+    }
+
+    monkeypatch.setenv("DENSE_TEST_URL", "https://dense.example")
+    monkeypatch.setenv("DENSE_TEST_KEY", "dense-key")
+    monkeypatch.setenv("BM25_TEST_URL", "https://bm25.example")
+    monkeypatch.setenv("BM25_TEST_KEY", "bm25-key")
+
+    validate_ablation_config(config, config_name="remote-hybrid")
+    retriever, _, _, _ = build_ablation_stack(config, project_root=tmp_path)
+
+    assert isinstance(retriever, HybridRetriever)
+    assert retriever.rrf_k == 60
+    assert retriever.dense_weight == 1.0
+    assert retriever.bm25_weight == 0.3
 
 
 def test_missing_required_path_is_rejected_before_run_directory(tmp_path: Path) -> None:

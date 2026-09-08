@@ -63,6 +63,8 @@ BM25_INDEX_DIR=/workspace/bm25_service/bm25/shards
 BM25_SERVICE_URL=https://YOUR_BM25_URL
 BM25_API_KEY=replace-with-secret
 BM25_INDEX_VERSION=lexvn-bm25-v1
+BM25_PAYLOAD_CACHE_PATH=/workspace/artifacts/dense/payload_cache.sqlite
+BM25_SEARCH_WORKERS=4
 
 HF_HOME=/workspace/artifacts/cache/huggingface
 SENTENCE_TRANSFORMERS_HOME=/workspace/artifacts/cache/sentence-transformers
@@ -131,6 +133,8 @@ BM25:
 ```powershell
 $env:BM25_INDEX_DIR = "data/sparse_index"
 $env:BM25_API_KEY = "local-secret"
+$env:BM25_PAYLOAD_CACHE_PATH = "data/chunk metadata/payload_cache.sqlite"
+$env:BM25_SEARCH_WORKERS = "4"
 D:\anaconda3\python.exe -m uvicorn services.bm25_service:app --host 127.0.0.1 --port 8001
 ```
 
@@ -158,7 +162,7 @@ BM25 search:
 curl -X POST http://127.0.0.1:8001/bm25 `
   -H "Content-Type: application/json" `
   -H "Authorization: Bearer local-secret" `
-  -d "{\"input\":{\"queries\":[{\"qa_id\":\"q1\",\"question\":\"người lao động nghỉ hằng năm\"}],\"bm25_top_k\":5,\"include_payloads\":true}}"
+  -d "{\"input\":{\"queries\":[{\"qa_id\":\"q1\",\"question\":\"người lao động nghỉ hằng năm\"}],\"bm25_top_k\":5,\"filter_profile\":\"current_law\",\"include_payloads\":true,\"include_diagnostics\":true}}"
 ```
 
 UI against both remote clients:
@@ -171,7 +175,7 @@ $env:BM25_API_KEY = "local-secret"
 D:\anaconda3\python.exe -m streamlit run ui/app.py --server.headless true --server.port 8501
 ```
 
-Select `Agent-None-RemoteDense` in the UI config selector.
+Select `Agent-None-RemoteDense` in the UI config selector. Production defaults to Dense-Sparse retrieval with `filter_profile=current_law`; Dense calls `/readyz`, BM25 calls `/healthz`, and a normal question invokes both remote services concurrently before weighted RRF fusion.
 
 ## Parity Test
 
@@ -205,6 +209,8 @@ docker run --rm --gpus all \
   -e DENSE_EXPECTED_INDEX_VERSION=chunk-metadata-faiss-v1 \
   -e DENSE_DEVICE=cuda \
   -e BM25_INDEX_DIR=/workspace/bm25_service/bm25/shards \
+  -e BM25_PAYLOAD_CACHE_PATH=/workspace/artifacts/dense/payload_cache.sqlite \
+  -e BM25_SEARCH_WORKERS=4 \
   -v "$PWD/artifacts:/workspace/artifacts" \
   -v "/path/to/existing/bm25_service:/workspace/bm25_service:ro" \
   lexvn-retrieval-runpod
@@ -237,6 +243,6 @@ instead, replace the BM25 env and mount with:
 12. Test Dense `/healthz`, `/readyz`, `/version`, and `/search`.
 13. Test BM25 `/healthz` and `/bm25`.
 14. Set UI env vars `DENSE_SERVICE_URL` and `BM25_SERVICE_URL`.
-15. Run an end-to-end UI smoke question.
+15. Run an end-to-end UI smoke question and confirm diagnostics show `filter_profile=current_law`, Dense-Sparse retrieval, and BM25 resident indexes/search workers.
 
 Do not hard-code Pod IDs, proxy URLs, or secrets into the repository.

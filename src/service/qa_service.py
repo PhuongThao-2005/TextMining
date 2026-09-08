@@ -10,6 +10,8 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
+from urllib.error import HTTPError, URLError
+from urllib.request import Request as URLRequest, urlopen
 
 from evaluation.e2e_runner import (
     LATENCY_STAGES,
@@ -411,11 +413,13 @@ def run_preflight(
     config: dict[str, Any], *, config_name: str = "<config>", project_root: Path = PROJECT_ROOT,
     environ: Mapping[str, str] | None = None,
     package_available: Callable[[str], bool] | None = None,
+    service_checker: Callable[[str, str, str, float, str], tuple[bool, str]] | None = None,
 ) -> PreflightResult:
     """Evaluate structural and runtime readiness without loading models or indexes."""
 
     env = os.environ if environ is None else environ
     has_package = package_available or _package_available
+    check_service = service_checker or _check_json_service_status
     checks: list[PreflightCheck] = []
     warnings: list[str] = []
     blockers: list[str] = []
@@ -489,37 +493,61 @@ def run_preflight(
         _check_package("qdrant_client", "qdrant-client", has_package, checks, blockers)
     elif backend == "dense_remote":
         service_url_env = str(dense.get("service_url_env") or "DENSE_SERVICE_URL")
-        if env.get(service_url_env):
+        service_url = _preflight_env_value(env, service_url_env)
+        if service_url:
             checks.append(PreflightCheck("dense_service_url", "ready", f"{service_url_env}: configured."))
         else:
             message = f"{service_url_env}: missing. Configure it after the Dense server is started."
             blockers.append(message)
             checks.append(PreflightCheck("dense_service_url", "blocked", message))
         api_key_env = str(dense.get("api_key_env") or "DENSE_API_KEY")
-        checks.append(
-            PreflightCheck(
-                "dense_api_key",
-                "ready" if env.get(api_key_env) else "not_required",
-                f"{api_key_env}: {'configured' if env.get(api_key_env) else 'optional and missing'}.",
+        api_key = _preflight_env_value(env, api_key_env)
+        if api_key:
+            checks.append(PreflightCheck("dense_api_key", "ready", f"{api_key_env}: configured."))
+        else:
+            message = f"{api_key_env}: missing. Configure the Dense bearer token before probing /readyz."
+            blockers.append(message)
+            checks.append(PreflightCheck("dense_api_key", "blocked", message))
+        if service_url and api_key:
+            ok, message = check_service(
+                service_url,
+                "/readyz",
+                api_key,
+                _preflight_service_timeout_seconds(dense),
+                "ready",
             )
-        )
+            checks.append(PreflightCheck("dense_readyz", "ready" if ok else "blocked", message))
+            if not ok:
+                blockers.append(message)
 
     if backend == "bm25":
         service_url_env = str(dense.get("service_url_env") or "BM25_SERVICE_URL")
-        if env.get(service_url_env):
+        service_url = _preflight_env_value(env, service_url_env)
+        if service_url:
             checks.append(PreflightCheck("bm25_service_url", "ready", f"{service_url_env}: configured."))
         else:
             message = f"{service_url_env}: missing. Configure it after the BM25 server is started."
             blockers.append(message)
             checks.append(PreflightCheck("bm25_service_url", "blocked", message))
         api_key_env = str(dense.get("api_key_env") or "BM25_API_KEY")
-        checks.append(
-            PreflightCheck(
-                "bm25_api_key",
-                "ready" if env.get(api_key_env) else "not_required",
-                f"{api_key_env}: {'configured' if env.get(api_key_env) else 'optional and missing'}.",
+        api_key = _preflight_env_value(env, api_key_env)
+        if api_key:
+            checks.append(PreflightCheck("bm25_api_key", "ready", f"{api_key_env}: configured."))
+        else:
+            message = f"{api_key_env}: missing. Configure the BM25 bearer token before probing /healthz."
+            blockers.append(message)
+            checks.append(PreflightCheck("bm25_api_key", "blocked", message))
+        if service_url and api_key:
+            ok, message = check_service(
+                service_url,
+                "/healthz",
+                api_key,
+                _preflight_service_timeout_seconds(dense),
+                "ok",
             )
-        )
+            checks.append(PreflightCheck("bm25_healthz", "ready" if ok else "blocked", message))
+            if not ok:
+                blockers.append(message)
 
     graph = retrieval.get("graph", {})
     fusion = retrieval.get("fusion", {})
@@ -588,20 +616,32 @@ def run_preflight(
             _check_package("rank_bm25", "rank_bm25", has_package, checks, blockers)
         elif sparse_backend == "bm25_remote":
             service_url_env = str(sparse.get("service_url_env") or "BM25_SERVICE_URL")
-            if env.get(service_url_env):
+            service_url = _preflight_env_value(env, service_url_env)
+            if service_url:
                 checks.append(PreflightCheck("bm25_service_url", "ready", f"{service_url_env}: configured."))
             else:
                 message = f"{service_url_env}: missing. Configure it after the BM25 server is started."
                 blockers.append(message)
                 checks.append(PreflightCheck("bm25_service_url", "blocked", message))
             api_key_env = str(sparse.get("api_key_env") or "BM25_API_KEY")
-            checks.append(
-                PreflightCheck(
-                    "bm25_api_key",
-                    "ready" if env.get(api_key_env) else "not_required",
-                    f"{api_key_env}: {'configured' if env.get(api_key_env) else 'optional and missing'}.",
+            api_key = _preflight_env_value(env, api_key_env)
+            if api_key:
+                checks.append(PreflightCheck("bm25_api_key", "ready", f"{api_key_env}: configured."))
+            else:
+                message = f"{api_key_env}: missing. Configure the BM25 bearer token before probing /healthz."
+                blockers.append(message)
+                checks.append(PreflightCheck("bm25_api_key", "blocked", message))
+            if service_url and api_key:
+                ok, message = check_service(
+                    service_url,
+                    "/healthz",
+                    api_key,
+                    _preflight_service_timeout_seconds(sparse),
+                    "ok",
                 )
-            )
+                checks.append(PreflightCheck("bm25_healthz", "ready" if ok else "blocked", message))
+                if not ok:
+                    blockers.append(message)
         else:
             message = f"Unsupported sparse backend {sparse_backend!r}; expected 'bm25_local' or 'bm25_remote'."
             blockers.append(message)
@@ -892,6 +932,54 @@ def _package_available(module: str) -> bool:
         return importlib.util.find_spec(module) is not None
     except (ImportError, ModuleNotFoundError, ValueError):
         return False
+
+
+def _preflight_env_value(env: Mapping[str, str], name: str) -> str:
+    return str(env.get(name) or "").strip()
+
+
+def _preflight_service_timeout_seconds(config: Mapping[str, Any]) -> float:
+    try:
+        configured = float(config.get("preflight_timeout_seconds", 2.0))
+    except (TypeError, ValueError):
+        configured = 2.0
+    return max(0.2, min(configured, 5.0))
+
+
+def _check_json_service_status(
+    base_url: str,
+    path: str,
+    api_key: str,
+    timeout_seconds: float,
+    expected_status: str,
+) -> tuple[bool, str]:
+    url = f"{base_url.strip().rstrip('/')}{path}"
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+        ),
+    }
+    token = str(api_key or "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    request = URLRequest(url, headers=headers, method="GET")
+    try:
+        with urlopen(request, timeout=timeout_seconds) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        if exc.code in {401, 403}:
+            return False, f"{url}: authentication failed (HTTP {exc.code})."
+        return False, f"{url}: HTTP {exc.code}."
+    except URLError as exc:
+        return False, f"{url}: unavailable ({sanitize_error_text(exc.reason)})."
+    except Exception as exc:
+        return False, f"{url}: readiness probe failed ({sanitize_error_text(exc)})."
+    status = str(payload.get("status") or "")
+    if status != expected_status:
+        return False, f"{url}: expected status={expected_status}, got status={status or 'missing'}."
+    return True, f"{url}: status={status}."
 
 
 def _hf_model_likely_cached(model_name: str) -> bool:

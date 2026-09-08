@@ -7,7 +7,20 @@ from retrieval.schema import VectorRecord
 
 
 class _Client:
-    def search(self, queries, *, top_k: int, include_diagnostics: bool = False):
+    def __init__(self) -> None:
+        self.filter_profiles: list[str] = []
+
+    def search(
+        self,
+        queries,
+        *,
+        top_k: int,
+        filter_profile: str = "broad",
+        include_diagnostics: bool = False,
+        include_payloads: bool = False,
+    ):
+        del include_diagnostics, include_payloads
+        self.filter_profiles.append(filter_profile)
         return {
             "results": [
                 BM25Result(
@@ -29,17 +42,31 @@ def test_remote_bm25_hydrates_and_preserves_bm25_ranking() -> None:
             VectorRecord("chunk-2", [], {"chunk_id": "chunk-2", "chunk_text": "second", "validity_group": "active"}),
         ]
     )
-    retriever = BM25RemoteRetriever(client=_Client(), payload_store=store, top_k=2, top_n=2)
+    client = _Client()
+    retriever = BM25RemoteRetriever(client=client, payload_store=store, top_k=2, top_n=2)
 
     result = retriever.retrieve("query", filter_profile="broad")
 
     assert [chunk.chunk_id for chunk in result.chunks] == ["chunk-2", "chunk-1"]
     assert [chunk.vector_score for chunk in result.chunks] == [5.0, 3.0]
+    assert client.filter_profiles == ["broad"]
 
 
 class _PayloadClient:
-    def search(self, queries, *, top_k: int, include_payloads: bool = False, include_diagnostics: bool = False):
+    def __init__(self) -> None:
+        self.filter_profiles: list[str] = []
+
+    def search(
+        self,
+        queries,
+        *,
+        top_k: int,
+        filter_profile: str = "broad",
+        include_payloads: bool = False,
+        include_diagnostics: bool = False,
+    ):
         del queries, top_k, include_diagnostics
+        self.filter_profiles.append(filter_profile)
         assert include_payloads is True
         return {
             "results": [
@@ -64,9 +91,11 @@ class _PayloadClient:
 
 
 def test_remote_bm25_can_use_payloads_without_local_payload_store() -> None:
-    retriever = BM25RemoteRetriever(client=_PayloadClient(), payload_store=None, top_k=2, top_n=2)
+    client = _PayloadClient()
+    retriever = BM25RemoteRetriever(client=client, payload_store=None, top_k=2, top_n=2)
 
-    result = retriever.retrieve("query", filter_profile="broad")
+    result = retriever.retrieve("query", filter_profile="current_law")
 
     assert [chunk.chunk_id for chunk in result.chunks] == ["chunk-1"]
     assert result.chunks[0].chunk_text == "first"
+    assert client.filter_profiles == ["current_law"]

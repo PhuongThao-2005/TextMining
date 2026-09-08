@@ -6,12 +6,14 @@ from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
+from urllib.error import HTTPError
 
 import pytest
 
 from agent.simple_planner import SimplePlanner
 from agent.tools import RetrievalTool
 from retrieval.schema import RetrievalResult
+import service.qa_service as qa_service
 from service.qa_service import (
     QAResources,
     TOP_K_MAX,
@@ -21,6 +23,7 @@ from service.qa_service import (
     answer_question,
     apply_safe_overrides,
     format_safe_error,
+    _check_json_service_status,
     list_interactive_configs,
     load_ui_config_registry,
     normalize_context_rows,
@@ -54,10 +57,12 @@ class _Retriever:
         self.failure = failure
         self.delay = delay
         self.calls = 0
+        self.filter_profiles: list[str] = []
 
     def retrieve(self, question: str, *, filter_profile: str, top_n: int) -> RetrievalResult:
-        del question, filter_profile, top_n
+        del question, top_n
         self.calls += 1
+        self.filter_profiles.append(filter_profile)
         if self.delay:
             time.sleep(self.delay)
         if self.failure:
@@ -178,15 +183,174 @@ def test_preflight_remote_dense_checks_service_env_not_local_faiss(tmp_path: Pat
     missing = run_preflight(config, config_name="remote", project_root=tmp_path, environ={})
     assert not missing.runnable
     assert "DENSE_TEST_URL" in " ".join(missing.blockers)
-    ready = run_preflight(
+    missing_key = run_preflight(
         config,
         config_name="remote",
         project_root=tmp_path,
         environ={"DENSE_TEST_URL": "http://127.0.0.1:8000"},
+        service_checker=lambda *args: pytest.fail("service probe must wait for bearer token"),
+    )
+    assert not missing_key.runnable
+    assert "DENSE_TEST_KEY" in " ".join(missing_key.blockers)
+    ready = run_preflight(
+        config,
+        config_name="remote",
+        project_root=tmp_path,
+        environ={
+            "DENSE_TEST_URL": "http://127.0.0.1:8000",
+            "DENSE_TEST_KEY": "dense-secret",
+        },
         package_available=lambda name: True,
+        service_checker=lambda *args: (True, "ok"),
     )
     assert ready.runnable
     assert any(check.name == "dense_service_url" for check in ready.checks)
+
+
+def test_preflight_remote_dense_sparse_checks_both_services(tmp_path: Path) -> None:
+    config = _base_config(tmp_path, backend="dense_remote")
+    config["retrieval"]["filter_profile"] = "current_law"
+    config["retrieval"]["dense"].update({
+        "service_url_env": "DENSE_TEST_URL",
+        "api_key_env": "DENSE_TEST_KEY",
+    })
+    config["retrieval"]["sparse"] = {
+        "enabled": True,
+        "backend": "bm25_remote",
+        "service_url_env": "BM25_TEST_URL",
+        "api_key_env": "BM25_TEST_KEY",
+        "timeout_seconds": 300.0,
+        "rrf_k": 60,
+        "dense_weight": 1.0,
+        "bm25_weight": 0.3,
+    }
+    calls: list[tuple[str, str, str, float, str]] = []
+
+    def checker(base_url: str, path: str, api_key: str, timeout: float, expected_status: str):
+        calls.append((base_url, path, api_key, timeout, expected_status))
+        return True, f"{base_url}{path}: status={expected_status}."
+
+    result = run_preflight(
+        config,
+        config_name="remote-hybrid",
+        project_root=tmp_path,
+        environ={
+            "DENSE_TEST_URL": "https://dense.example",
+            "DENSE_TEST_KEY": "dense-secret",
+            "BM25_TEST_URL": "https://bm25.example",
+            "BM25_TEST_KEY": "bm25-secret",
+        },
+        package_available=lambda name: True,
+        service_checker=checker,
+    )
+
+    assert result.runnable
+    assert result.resolved_config["retrieval"]["filter_profile"] == "current_law"
+    assert calls == [
+        ("https://dense.example", "/readyz", "dense-secret", 2.0, "ready"),
+        ("https://bm25.example", "/healthz", "bm25-secret", 2.0, "ok"),
+    ]
+    assert {"dense_readyz", "bm25_healthz"} <= {check.name for check in result.checks}
+
+
+def test_preflight_http_helper_sends_bearer_token_and_accepts_ready_status(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, Any] = {}
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return b'{"status":"ready"}'
+
+    def fake_urlopen(request, timeout: float):
+        captured["url"] = request.full_url
+        captured["authorization"] = request.get_header("Authorization")
+        captured["user_agent"] = request.get_header("User-agent")
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr(qa_service, "urlopen", fake_urlopen)
+
+    ok, message = _check_json_service_status(
+        "https://dense.example/",
+        "/readyz",
+        " dense-token ",
+        1.25,
+        "ready",
+    )
+
+    assert ok
+    assert message == "https://dense.example/readyz: status=ready."
+    assert captured["url"] == "https://dense.example/readyz"
+    assert captured["authorization"] == "Bearer dense-token"
+    assert "Mozilla" in captured["user_agent"]
+    assert captured["timeout"] == 1.25
+
+
+def test_preflight_http_helper_accepts_bm25_ok_status(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, Any] = {}
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self) -> bytes:
+            return b'{"status":"ok"}'
+
+    def fake_urlopen(request, timeout: float):
+        captured["url"] = request.full_url
+        captured["authorization"] = request.get_header("Authorization")
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr(qa_service, "urlopen", fake_urlopen)
+
+    ok, message = _check_json_service_status(
+        "https://bm25.example",
+        "/healthz",
+        "bm25-token",
+        2.0,
+        "ok",
+    )
+
+    assert ok
+    assert message == "https://bm25.example/healthz: status=ok."
+    assert captured == {
+        "url": "https://bm25.example/healthz",
+        "authorization": "Bearer bm25-token",
+        "timeout": 2.0,
+    }
+
+
+@pytest.mark.parametrize("status_code", [401, 403])
+def test_preflight_http_helper_reports_authentication_failure_without_secret(
+    monkeypatch: pytest.MonkeyPatch,
+    status_code: int,
+) -> None:
+    def fake_urlopen(request, timeout: float):
+        del request, timeout
+        raise HTTPError("https://dense.example/readyz", status_code, "Forbidden", None, None)
+
+    monkeypatch.setattr(qa_service, "urlopen", fake_urlopen)
+
+    ok, message = _check_json_service_status(
+        "https://dense.example",
+        "/readyz",
+        "dense-secret",
+        1.0,
+        "ready",
+    )
+
+    assert not ok
+    assert message == f"https://dense.example/readyz: authentication failed (HTTP {status_code})."
+    assert "dense-secret" not in message
 
 
 def test_preflight_deferred_and_graph_rrf_stack_states(tmp_path: Path) -> None:
@@ -331,6 +495,28 @@ def test_graph_and_reranker_enable_the_complete_stack(tmp_path: Path) -> None:
     assert retrieval["graph"]["path"] == "data/graph/knowledge_graph.gpickle"
 
 
+def test_dense_sparse_override_preserves_current_law_filter_profile(tmp_path: Path) -> None:
+    config = _base_config(tmp_path, backend="dense_remote")
+    config["retrieval"]["filter_profile"] = "current_law"
+    config["retrieval"]["sparse"] = {
+        "enabled": False,
+        "backend": "bm25_remote",
+        "service_url_env": "BM25_SERVICE_URL",
+        "api_key_env": "BM25_API_KEY",
+        "rrf_k": 60,
+        "dense_weight": 1.0,
+        "bm25_weight": 0.3,
+    }
+
+    effective = apply_safe_overrides(config, QuestionRequest("q", "fixture", sparse_enabled_override=True))
+
+    assert effective["retrieval"]["filter_profile"] == "current_law"
+    assert effective["retrieval"]["sparse"]["enabled"] is True
+    assert effective["retrieval"]["sparse"]["backend"] == "bm25_remote"
+    assert effective["retrieval"]["sparse"]["dense_weight"] == 1.0
+    assert effective["retrieval"]["sparse"]["bm25_weight"] == 0.3
+
+
 def test_plain_service_success_preserves_context_rank_score_latency_and_strips_reasoning(tmp_path: Path) -> None:
     config = _base_config(tmp_path)
     response = answer_question(
@@ -347,6 +533,23 @@ def test_plain_service_success_preserves_context_rank_score_latency_and_strips_r
     assert response.citation_references[0].marker == "[1]"
     assert response.citation_metrics["citation_validity_rate"] == 1.0
     assert response.suggested_followups
+
+
+def test_answer_question_propagates_current_law_filter_profile(tmp_path: Path) -> None:
+    config = _base_config(tmp_path)
+    config["retrieval"]["filter_profile"] = "current_law"
+    retriever = _Retriever()
+
+    response = answer_question(
+        QuestionRequest("q", "fixture"),
+        registry={"fixture": config},
+        resources=_resources(retriever),
+        project_root=tmp_path,
+    )
+
+    assert response.status == "completed"
+    assert retriever.filter_profiles == ["current_law"]
+    assert response.diagnostics["filter_profile"] == "current_law"
 
 
 def test_service_exposes_authoritative_invalid_citation_warning(tmp_path: Path) -> None:

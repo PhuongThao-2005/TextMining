@@ -24,7 +24,7 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
-from .stores import SearchHit
+from .stores import SearchHit, payload_matches
 
 logger = logging.getLogger(__name__)
 
@@ -238,7 +238,7 @@ class BM25SparseRetriever:
     # Search
     # ------------------------------------------------------------------
 
-    def search(self, query: str, *, top_k: int = 20) -> list[SearchHit]:
+    def search(self, query: str, *, top_k: int = 20, filter_profile: str = "broad") -> list[SearchHit]:
         """Search the BM25 index and return hits in the shared ``SearchHit`` format.
 
         Returns at most ``top_k`` results sorted by BM25 score descending.
@@ -255,20 +255,29 @@ class BM25SparseRetriever:
             score = float(scores[idx])
             if score <= 0:
                 continue
+            payload = self._payloads[idx]
+            if not payload_matches(payload, _filters_for_profile(filter_profile)):
+                continue
             hits.append(
                 SearchHit(
                     point_id=self._chunk_ids[idx],
                     score=score,
-                    payload=self._payloads[idx],
+                    payload=payload,
                 )
             )
 
         return hits
 
-    def search_with_latency(self, query: str, *, top_k: int = 20) -> tuple[list[SearchHit], float]:
+    def search_with_latency(
+        self,
+        query: str,
+        *,
+        top_k: int = 20,
+        filter_profile: str = "broad",
+    ) -> tuple[list[SearchHit], float]:
         """Search and return ``(hits, latency_seconds)``."""
         t0 = time.perf_counter()
-        hits = self.search(query, top_k=top_k)
+        hits = self.search(query, top_k=top_k, filter_profile=filter_profile)
         latency = time.perf_counter() - t0
         return hits, latency
 
@@ -279,3 +288,11 @@ class BM25SparseRetriever:
     @property
     def total_documents(self) -> int:
         return len(self._chunk_ids)
+
+
+def _filters_for_profile(filter_profile: str) -> dict[str, Any]:
+    if filter_profile == "current_law":
+        return {"validity_group": {"in": ["active", "partial", "future"]}}
+    if filter_profile == "historical":
+        return {"validity_group": {"in": ["expired", "active", "partial"]}}
+    return {}

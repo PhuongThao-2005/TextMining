@@ -10,7 +10,7 @@ import pytest
 
 import evaluation.retriever_factory as retriever_factory
 from evaluation.retriever_factory import RetrieverRuntimeConfig, build_vector_retriever
-from retrieval import BM25RemoteRetriever, VectorRetriever
+from retrieval import BM25RemoteRetriever, DenseRemoteRetriever, VectorRetriever
 from retrieval.sqlite_faiss_store import SQLitePayloadFaissVectorStore
 from retrieval.stores import InMemoryVectorStore, QdrantVectorStore
 
@@ -154,6 +154,23 @@ def test_bm25_backend_builds_remote_retriever_with_qdrant_payload_store(
     assert isinstance(retriever, BM25RemoteRetriever)
     assert isinstance(retriever.payload_store, _FakeQdrantStore)
     assert retriever.client.base_url == "https://bm25.example.test"
+
+
+def test_dense_remote_backend_builds_remote_retriever_without_local_faiss() -> None:
+    runtime = RetrieverRuntimeConfig(
+        backend="dense_remote",
+        dense_service_url="https://dense.example.test",
+        dense_api_key="dense-key",
+        dense_expected_model="fixture-model",
+        dense_expected_index_version="fixture-index",
+    )
+
+    retriever = build_vector_retriever(runtime)
+
+    assert isinstance(retriever, DenseRemoteRetriever)
+    assert retriever.client.base_url == "https://dense.example.test"
+    assert retriever.client.expected_model == "fixture-model"
+    assert retriever.client.expected_index_version == "fixture-index"
 
 
 def test_unknown_store_value_raises_value_error(fake_sentence_transformer_embedder: None) -> None:

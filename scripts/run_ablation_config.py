@@ -234,6 +234,8 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
             raise AblationConfigError(
                 f"{config_name}.retrieval.sparse.backend must be 'bm25_local' or 'bm25_remote'."
             )
+        _validate_sparse_weight(sparse, "dense_weight", config_name)
+        _validate_sparse_weight(sparse, "bm25_weight", config_name)
     if any((graph_enabled, fusion_enabled, reranker_enabled)):
         if not dense["enabled"]:
             raise AblationConfigError(f"{config_name} graph/reranker retrieval requires dense.enabled=true.")
@@ -528,6 +530,8 @@ def build_ablation_stack(
             use_rrf=True,
             use_cross_encoder=rerank_inside_hybrid,
             rrf_k=int(sparse_config.get("rrf_k", 60)),
+            dense_weight=float(sparse_config.get("dense_weight", 1.0)),
+            bm25_weight=float(sparse_config.get("bm25_weight", 1.0)),
         )
     if any((graph_enabled, fusion_enabled, reranker_enabled)):
         if fusion_enabled and not graph_enabled:
@@ -1083,6 +1087,16 @@ def _validate_number(
         raise AblationConfigError(
             f"{config_name}.generation.{key} must be at most {maximum}."
         )
+
+
+def _validate_sparse_weight(parent: dict[str, Any], key: str, config_name: str) -> None:
+    if key not in parent:
+        return
+    value = parent[key]
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise AblationConfigError(f"{config_name}.retrieval.sparse.{key} must be numeric.")
+    if value < 0:
+        raise AblationConfigError(f"{config_name}.retrieval.sparse.{key} must be at least 0.0.")
 
 
 def _validate_integer(

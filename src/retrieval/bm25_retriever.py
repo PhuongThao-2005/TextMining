@@ -56,6 +56,7 @@ class BM25RemoteRetriever:
             search_kwargs["include_payloads"] = True
         response = self.client.search(
             [{"qa_id": "q0", "question": query}],
+            filter_profile=filter_profile,
             **search_kwargs,
         )
         bm25_result = response["results"][0]
@@ -86,9 +87,15 @@ class BM25RemoteRetriever:
         chunks.sort(key=lambda chunk: chunk.vector_score, reverse=True)
         return RetrievalResult(chunks[:top_n], len(chunks), filter_profile, empty_filter_warning=False)
 
-    def search_with_latency(self, query: str, *, top_k: int = 20) -> tuple[list[SearchHit], float]:
+    def search_with_latency(
+        self,
+        query: str,
+        *,
+        top_k: int = 20,
+        filter_profile: str = "broad",
+    ) -> tuple[list[SearchHit], float]:
         started = time.perf_counter()
-        result = self.retrieve(query, filter_profile="broad", top_k=top_k, top_n=top_k)
+        result = self.retrieve(query, filter_profile=filter_profile, top_k=top_k, top_n=top_k)
         latency = time.perf_counter() - started
         hits = [
             SearchHit(

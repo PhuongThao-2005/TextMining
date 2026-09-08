@@ -61,6 +61,7 @@ class BM25Client:
         queries: list[dict[str, str]],
         *,
         top_k: int = 10,
+        filter_profile: str = "broad",
         include_diagnostics: bool = False,
         include_payloads: bool = False,
     ) -> dict[str, Any]:
@@ -73,6 +74,7 @@ class BM25Client:
             "input": {
                 "queries": queries,
                 "bm25_top_k": top_k,
+                "filter_profile": filter_profile,
                 "include_diagnostics": include_diagnostics,
                 "include_payloads": include_payloads,
             }
@@ -89,8 +91,19 @@ class BM25Client:
             "results": [self._parse_result(result) for result in data["results"]],
         }
 
-    def search_single(self, qa_id: str, question: str, *, top_k: int = 10) -> BM25Result:
-        response = self.search([{"qa_id": qa_id, "question": question}], top_k=top_k)
+    def search_single(
+        self,
+        qa_id: str,
+        question: str,
+        *,
+        top_k: int = 10,
+        filter_profile: str = "broad",
+    ) -> BM25Result:
+        response = self.search(
+            [{"qa_id": qa_id, "question": question}],
+            top_k=top_k,
+            filter_profile=filter_profile,
+        )
         return response["results"][0]
 
     def _request(self, method: str, path: str, payload: dict[str, Any] | None) -> dict[str, Any]:

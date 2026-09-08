@@ -923,20 +923,28 @@ div[data-testid="stVerticalBlock"]:has(.ga-answer-marker) [data-testid="stMarkdo
   background:var(--legal-accent-soft); color:var(--legal-ink);
 }
 [data-testid="stDialog"] [role="dialog"] {
-  width:100%; max-width:none; max-height:88vh; overflow:hidden;
+  width:min(920px, calc(100vw - 64px)) !important;
+  max-width:min(920px, calc(100vw - 64px)) !important;
+  max-height:88vh; overflow:hidden;
+  margin:auto !important;
   border:0; border-radius:0; background:transparent;
   box-shadow:none;
 }
 [data-testid="stDialog"] {
+  display:flex !important; align-items:center !important; justify-content:center !important;
   background:color-mix(in srgb, var(--page-bg) 60%, transparent) !important;
   padding:32px !important;
 }
 [data-testid="stDialog"] > div {
-  width:min(860px, calc(100vw - 64px)) !important; max-width:860px !important; max-height:88vh;
+  width:100% !important; max-width:920px !important; max-height:88vh;
+  margin:auto !important; overflow:hidden;
   border:1px solid var(--legal-line); border-radius:16px; background:var(--legal-panel); color:var(--legal-ink);
   box-shadow:0 24px 64px rgba(34,29,22,.26);
 }
-[data-testid="stDialog"] [role="dialog"] > div { max-height:88vh; overflow-y:auto; overflow-x:hidden; }
+[data-testid="stDialog"] [role="dialog"] > div {
+  max-height:88vh; overflow-y:auto; overflow-x:hidden;
+  max-width:100% !important; box-sizing:border-box;
+}
 [data-testid="stDialog"] button[aria-label="Close"] {
   background:transparent !important; border:1px solid transparent !important; color:var(--legal-muted) !important;
   box-shadow:none !important;
@@ -961,16 +969,28 @@ div[data-testid="stVerticalBlock"]:has(.ga-answer-marker) [data-testid="stMarkdo
 }
 [data-testid="stDialog"] [role="dialog"] > div::-webkit-scrollbar-thumb:hover,
 [data-testid="stDialog"] .ga-source-text::-webkit-scrollbar-thumb:hover { background:var(--legal-accent); }
-.ga-dialog-title h2 { margin:8px 0 6px; color:var(--legal-ink); font:600 30px/1.12 var(--legal-serif); }
-.ga-dialog-title p { margin:0; color:var(--legal-muted); font:11px var(--legal-mono); }
+.ga-dialog-title,
+.ga-dialog-title *,
+.ga-dialog-meta,
+.ga-dialog-meta * {
+  max-width:100%; min-width:0; overflow-wrap:anywhere; word-break:normal;
+}
+.ga-dialog-title h2 {
+  margin:8px 0 6px; color:var(--legal-ink);
+  font:600 28px/1.18 var(--legal-serif);
+  letter-spacing:0;
+}
+.ga-dialog-title p { margin:0; color:var(--legal-muted); font:11px/1.55 var(--legal-mono); }
 .ga-dialog-meta {
   display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:14px -24px 24px; padding:14px 24px;
   border-top:1px solid var(--legal-line); border-bottom:1px solid var(--legal-line);
 }
-.ga-dialog-meta span { background:var(--legal-wash); color:var(--legal-muted); border-radius:5px; padding:5px 7px; font:10px var(--legal-mono); }
+.ga-dialog-meta span { background:var(--legal-wash); color:var(--legal-muted); border-radius:5px; padding:5px 7px; font:10px/1.45 var(--legal-mono); }
 [data-testid="stDialog"] .ga-source-text {
-  max-height:52vh; overflow:auto; padding:26px 36px;
-  border:0; background:transparent; font-size:18px; line-height:1.75;
+  width:100%; max-width:100%; box-sizing:border-box;
+  max-height:52vh; overflow:auto; padding:20px 28px;
+  border:0; background:transparent; font-size:16px; line-height:1.72;
+  overflow-wrap:anywhere; word-break:normal;
 }
 
 /* Supporting components */
@@ -1043,7 +1063,15 @@ div[data-testid="stVerticalBlock"]:has(.ga-answer-marker) [data-testid="stMarkdo
   div[data-testid="stHorizontalBlock"] { flex-wrap:wrap; gap:12px; }
   div[data-testid="column"] { min-width:100% !important; width:100% !important; }
   [data-testid="stTabs"] [role="tablist"] { overflow-x:auto; scrollbar-width:thin; }
-  [data-testid="stDialog"] [role="dialog"] { width:calc(100vw - 18px); max-width:calc(100vw - 18px); }
+  [data-testid="stDialog"] { padding:9px !important; }
+  [data-testid="stDialog"] [role="dialog"],
+  [data-testid="stDialog"] > div {
+    width:calc(100vw - 18px) !important;
+    max-width:calc(100vw - 18px) !important;
+  }
+  .ga-dialog-title h2 { font-size:22px; line-height:1.22; }
+  .ga-dialog-meta { margin-inline:-16px; padding-inline:16px; }
+  [data-testid="stDialog"] .ga-source-text { padding:16px 14px; font-size:15px; line-height:1.68; }
 }
 
 @media (prefers-reduced-motion:reduce) {
