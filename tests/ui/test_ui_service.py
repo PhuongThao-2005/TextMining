@@ -167,6 +167,28 @@ def test_preflight_missing_faiss_artifacts_and_dependency(tmp_path: Path) -> Non
     assert "faiss-cpu" in text and "sentence-transformers" in text
 
 
+def test_preflight_remote_dense_checks_service_env_not_local_faiss(tmp_path: Path) -> None:
+    config = _base_config(tmp_path, backend="dense_remote")
+    config["retrieval"]["dense"].update({
+        "service_url_env": "DENSE_TEST_URL",
+        "api_key_env": "DENSE_TEST_KEY",
+        "expected_model": "fixture-model",
+        "expected_index_version": "fixture-index",
+    })
+    missing = run_preflight(config, config_name="remote", project_root=tmp_path, environ={})
+    assert not missing.runnable
+    assert "DENSE_TEST_URL" in " ".join(missing.blockers)
+    ready = run_preflight(
+        config,
+        config_name="remote",
+        project_root=tmp_path,
+        environ={"DENSE_TEST_URL": "http://127.0.0.1:8000"},
+        package_available=lambda name: True,
+    )
+    assert ready.runnable
+    assert any(check.name == "dense_service_url" for check in ready.checks)
+
+
 def test_preflight_deferred_and_graph_rrf_stack_states(tmp_path: Path) -> None:
     deferred = _base_config(tmp_path)
     deferred["agent"] = {"enabled": False, "mode": "multi_tool", "implementation_status": "deferred", "reason": "needs tools"}

@@ -32,6 +32,7 @@ class RetrievalResult:
     total_candidates: int
     filter_profile_used: str
     empty_filter_warning: bool = False
+    latency_ms: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

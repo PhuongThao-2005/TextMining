@@ -17,7 +17,7 @@ class BM25RemoteRetriever:
         self,
         *,
         client: BM25Client,
-        payload_store: VectorStore,
+        payload_store: VectorStore | None,
         top_k: int = 30,
         top_n: int = 10,
     ) -> None:
@@ -51,16 +51,26 @@ class BM25RemoteRetriever:
         top_k = top_k or self.top_k
         top_n = top_n or self.top_n
         filters = self._build_filters(filter_profile, id_str_filter, extra_filters)
+        search_kwargs: dict[str, Any] = {"top_k": max(top_k, top_n)}
+        if self.payload_store is None:
+            search_kwargs["include_payloads"] = True
         response = self.client.search(
             [{"qa_id": "q0", "question": query}],
-            top_k=max(top_k, top_n),
+            **search_kwargs,
         )
         bm25_result = response["results"][0]
         hits_by_id = {hit.chunk_id: hit for hit in bm25_result.bm25_hits}
         if not hits_by_id:
             return RetrievalResult([], 0, filter_profile, empty_filter_warning=False)
 
-        search_hits = self.payload_store.scroll({"chunk_id": {"in": list(hits_by_id)}}, limit=len(hits_by_id))
+        if self.payload_store is None:
+            search_hits = [
+                SearchHit(point_id=hit.chunk_id, score=hit.bm25_score, payload=hit.payload)
+                for hit in hits_by_id.values()
+                if hit.payload
+            ]
+        else:
+            search_hits = self.payload_store.scroll({"chunk_id": {"in": list(hits_by_id)}}, limit=len(hits_by_id))
 
         chunks: list[RetrievedChunk] = []
         for hit in search_hits:

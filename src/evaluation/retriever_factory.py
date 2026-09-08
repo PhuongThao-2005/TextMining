@@ -7,6 +7,8 @@ from typing import Literal
 from retrieval import (
     BM25Client,
     BM25RemoteRetriever,
+    DenseClient,
+    DenseRemoteRetriever,
     HashingEmbedder,
     QdrantVectorStore,
     SentenceTransformerEmbedder,
@@ -19,7 +21,7 @@ from retrieval import (
 @dataclass(frozen=True)
 class RetrieverRuntimeConfig:
     store: Literal["faiss", "qdrant"] = "faiss"
-    backend: Literal["vector", "bm25"] = "vector"
+    backend: Literal["vector", "bm25", "dense_remote"] = "vector"
     index_dir: str | Path = "data/faiss_index"
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str | None = None
@@ -33,9 +35,14 @@ class RetrieverRuntimeConfig:
     bm25_service_url: str | None = None
     bm25_api_key: str | None = None
     bm25_timeout_seconds: float = 300.0
+    dense_service_url: str | None = None
+    dense_api_key: str | None = None
+    dense_timeout_seconds: float = 30.0
+    dense_expected_model: str | None = None
+    dense_expected_index_version: str | None = None
 
 
-def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever | BM25RemoteRetriever:
+def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever | BM25RemoteRetriever | DenseRemoteRetriever:
     config = VectorIndexConfig(
         collection_name=runtime.collection_name,
         embedding_model=runtime.model,
@@ -44,6 +51,21 @@ def build_vector_retriever(runtime: RetrieverRuntimeConfig) -> VectorRetriever |
         score_threshold=0.0 if runtime.score_threshold is None else runtime.score_threshold,
         expand_units=runtime.expand_units,
     )
+    if runtime.backend == "dense_remote":
+        return DenseRemoteRetriever(
+            client=DenseClient(
+                base_url=runtime.dense_service_url,
+                api_key=runtime.dense_api_key,
+                timeout_seconds=runtime.dense_timeout_seconds,
+                expected_model=runtime.dense_expected_model or runtime.model,
+                expected_index_version=runtime.dense_expected_index_version,
+            ),
+            top_k=runtime.top_k,
+            top_n=runtime.top_n,
+            score_threshold=runtime.score_threshold,
+            expand_units=runtime.expand_units,
+        )
+
     if runtime.dev_hashing:
         # Smoke-test path: in-memory store, no real index required (FR-011/FR-012 n/a here).
         from retrieval import InMemoryVectorStore

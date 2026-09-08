@@ -16,7 +16,7 @@
 #   output: {root}
 #
 # Supported now:
-#   dense.backend: faiss | qdrant | hashing | bm25
+#   dense.backend: faiss | qdrant | hashing | bm25 | dense_remote
 #   generation.provider: reference | gemini | openai_compatible
 #   judge.provider: none | gemini
 #
@@ -75,6 +75,61 @@ configs:
     metadata:
       purpose: remote BM25 end-to-end evaluation using local FAISS payload hydration
       experiment_family: retrieval
+
+  Agent-None-RemoteDense:
+    benchmark:
+      path: data/benchmark/qa_final.jsonl
+      version: qa-final-v1
+    corpus:
+      path: data/pre-processed/documents.jsonl
+      version: pre-processed-v1
+    retrieval:
+      top_k: 5
+      filter_profile: broad
+      dense:
+        enabled: true
+        backend: dense_remote
+        service_url_env: DENSE_SERVICE_URL
+        api_key_env: DENSE_API_KEY
+        timeout_seconds: 30
+        model: intfloat/multilingual-e5-large
+        expected_model: intfloat/multilingual-e5-large
+        index_version: chunk-metadata-faiss-v1
+        expected_index_version: chunk-metadata-faiss-v1
+        score_threshold: 0.3
+        expand_units: false
+      sparse:
+        enabled: false
+        backend: bm25_remote
+        service_url_env: BM25_SERVICE_URL
+        api_key_env: BM25_API_KEY
+        timeout_seconds: 300.0
+        rrf_k: 60
+      graph: {enabled: false}
+      fusion: {enabled: false}
+      reranker: {enabled: false}
+    generation:
+      provider: openai_compatible
+      model: env:LLM_BASE_MODEL
+      prompt_strategy: base
+      prompt_template_version: legal-grounded-answer-v2-citations
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 1024
+      timeout_seconds: 60.0
+      max_retries: 2
+      api_key_env: LLM_API_KEY
+      base_url_env: LLM_BASE_URL
+    judge: {provider: none}
+    agent:
+      enabled: false
+      mode: none
+      implementation_status: implemented
+    output: {root: evaluation_runs/ablation}
+    seed: 42
+    metadata:
+      purpose: interactive production config using remote Dense service
+      experiment_family: remote-dense
 
   Example-Reference-Hashing:
     benchmark:

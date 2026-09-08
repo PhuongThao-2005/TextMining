@@ -45,7 +45,11 @@ from scripts.run_ablation_config import (
 TOP_K_MIN = 1
 TOP_K_MAX = 50
 FILTER_PROFILES = ("current_law", "broad", "historical")
-INTERACTIVE_CONFIG_NAMES = frozenset((*LLM_ABLATION_CONFIG_NAMES, *AGENT_ABLATION_CONFIG_NAMES))
+INTERACTIVE_CONFIG_NAMES = frozenset((
+    *LLM_ABLATION_CONFIG_NAMES,
+    *AGENT_ABLATION_CONFIG_NAMES,
+    "Agent-None-RemoteDense",
+))
 
 
 class UIConfigError(ValueError):
@@ -290,8 +294,14 @@ def validate_override_compatibility(config: Mapping[str, Any]) -> None:
     fusion_enabled = bool(fusion.get("enabled")) if isinstance(fusion, Mapping) else False
     reranker_enabled = bool(reranker.get("enabled")) if isinstance(reranker, Mapping) else False
     if any((sparse_enabled, graph_enabled, fusion_enabled, reranker_enabled)):
-        if not isinstance(dense, Mapping) or dense.get("backend") not in {"faiss", "hashing", "qdrant"}:
+        if not isinstance(dense, Mapping) or dense.get("backend") not in {"faiss", "hashing", "qdrant", "dense_remote"}:
             raise UIConfigError("Sparse/graph/reranker retrieval requires a vector dense retriever.")
+        if graph_enabled and dense.get("backend") == "dense_remote":
+            raise UIConfigError("Graph retrieval with dense_remote requires a remote graph/payload hydration adapter.")
+        if sparse_enabled and dense.get("backend") == "dense_remote":
+            sparse_backend = str(sparse.get("backend") or "bm25_local") if isinstance(sparse, Mapping) else "bm25_local"
+            if sparse_backend != "bm25_remote":
+                raise UIConfigError("Dense-Sparse with dense_remote requires remote BM25.")
         if fusion_enabled and not graph_enabled:
             raise UIConfigError("RRF fusion requires graph retrieval.")
 
@@ -477,6 +487,22 @@ def run_preflight(
             _check_package("sentence_transformers", "sentence-transformers", has_package, checks, blockers)
     elif backend == "qdrant":
         _check_package("qdrant_client", "qdrant-client", has_package, checks, blockers)
+    elif backend == "dense_remote":
+        service_url_env = str(dense.get("service_url_env") or "DENSE_SERVICE_URL")
+        if env.get(service_url_env):
+            checks.append(PreflightCheck("dense_service_url", "ready", f"{service_url_env}: configured."))
+        else:
+            message = f"{service_url_env}: missing. Configure it after the Dense server is started."
+            blockers.append(message)
+            checks.append(PreflightCheck("dense_service_url", "blocked", message))
+        api_key_env = str(dense.get("api_key_env") or "DENSE_API_KEY")
+        checks.append(
+            PreflightCheck(
+                "dense_api_key",
+                "ready" if env.get(api_key_env) else "not_required",
+                f"{api_key_env}: {'configured' if env.get(api_key_env) else 'optional and missing'}.",
+            )
+        )
 
     if backend == "bm25":
         service_url_env = str(dense.get("service_url_env") or "BM25_SERVICE_URL")
@@ -502,10 +528,14 @@ def run_preflight(
     graph_enabled = bool(graph.get("enabled")) if isinstance(graph, Mapping) else False
     fusion_enabled = bool(fusion.get("enabled")) if isinstance(fusion, Mapping) else False
     reranker_enabled = bool(reranker.get("enabled")) if isinstance(reranker, Mapping) else False
-    if any((graph_enabled, fusion_enabled, reranker_enabled)) and backend not in {"faiss", "hashing", "qdrant"}:
+    if any((graph_enabled, fusion_enabled, reranker_enabled)) and backend not in {"faiss", "hashing", "qdrant", "dense_remote"}:
         message = "Graph/reranker retrieval requires a vector dense retriever."
         blockers.append(message)
         checks.append(PreflightCheck("graph_stack", "blocked", message))
+    if graph_enabled and backend == "dense_remote":
+        message = "Graph retrieval with dense_remote requires a remote graph/payload hydration adapter."
+        blockers.append(message)
+        checks.append(PreflightCheck("graph", "blocked", message))
     if fusion_enabled and not graph_enabled:
         message = "RRF fusion requires graph retrieval."
         blockers.append(message)
@@ -536,6 +566,10 @@ def run_preflight(
             checks.append(PreflightCheck("reranker_model_cache", "ready", "Reranker model cache/network setting is usable."))
     if isinstance(sparse, Mapping) and sparse.get("enabled"):
         sparse_backend = str(sparse.get("backend") or "bm25_local")
+        if backend == "dense_remote" and sparse_backend != "bm25_remote":
+            message = "Dense-Sparse with dense_remote requires BM25 remote so BM25 hits include payloads."
+            blockers.append(message)
+            checks.append(PreflightCheck("sparse", "blocked", message))
         if sparse_backend == "bm25_local":
             sparse_dir = _resolve_path(sparse.get("index_path") or "data/sparse_index", project_root)
             missing_sparse = [

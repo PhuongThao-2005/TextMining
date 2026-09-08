@@ -103,9 +103,19 @@ def source_segments_html(render: SourceTextRender) -> str:
     """Render only escaped text inside application-owned presentation wrappers."""
     parts = []
     for segment in render.segments:
-        escaped = safe_html_text(format_retrieved_text(segment.text))
+        escaped = safe_html_text(_format_segment_preserving_boundary_space(segment.text))
         parts.append(f'<span class="ga-evidence-highlight">{escaped}</span>' if segment.highlighted else escaped)
     return '<div class="ga-source-text">' + "".join(parts) + "</div>"
+
+
+def _format_segment_preserving_boundary_space(value: str) -> str:
+    leading = re.match(r"^\s*", value).group(0)
+    trailing = re.search(r"\s*$", value).group(0)
+    core_end = len(value) - len(trailing) if trailing else len(value)
+    core = value[len(leading):core_end]
+    if not core:
+        return value
+    return leading + format_retrieved_text(core) + trailing
 
 
 def display_value(value: Any) -> str:

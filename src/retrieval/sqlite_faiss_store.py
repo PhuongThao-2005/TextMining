@@ -366,8 +366,24 @@ class SQLitePayloadFaissVectorStore(VectorStore):
         score_threshold: float | None = None,
         filters: dict[str, Any] | None = None,
     ) -> list[SearchHit]:
+        hits, _ = self.search_with_latency(
+            vector,
+            limit=limit,
+            score_threshold=score_threshold,
+            filters=filters,
+        )
+        return hits
+
+    def search_with_latency(
+        self,
+        vector: list[float],
+        *,
+        limit: int,
+        score_threshold: float | None = None,
+        filters: dict[str, Any] | None = None,
+    ) -> tuple[list[SearchHit], dict[str, float]]:
         if self.index.ntotal == 0:
-            return []
+            return [], {"vector_search": 0.0, "payload_hydration": 0.0}
 
         t_faiss = time.perf_counter()
         query = np.array([vector], dtype=np.float32)
@@ -406,7 +422,7 @@ class SQLitePayloadFaissVectorStore(VectorStore):
             f"FAISS search: {faiss_time:.3f}s | payload batch load: {payload_time:.3f}s | "
             f"inspected: {len(valid_pairs)}"
         )
-        return hits
+        return hits, {"vector_search": faiss_time, "payload_hydration": payload_time}
 
     def scroll(self, filters: dict[str, Any], limit: int) -> list[SearchHit]:
         """Return payloads matching ``filters`` without vector similarity.

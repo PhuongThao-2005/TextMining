@@ -9,13 +9,22 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
+DEFAULT_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+)
+
+
 @dataclass(frozen=True)
 class BM25Hit:
     chunk_id: str
     bm25_score: float
     rank: int
     shard_id: int
-    local_index: int = 0
+    local_index: int | None = None
+    payload: dict[str, Any] = field(default_factory=dict)
+    shard_name: str | None = None
+    shard_rank: int | None = None
 
 
 @dataclass(frozen=True)
@@ -53,6 +62,7 @@ class BM25Client:
         *,
         top_k: int = 10,
         include_diagnostics: bool = False,
+        include_payloads: bool = False,
     ) -> dict[str, Any]:
         if not queries:
             raise ValueError("queries must be a non-empty list")
@@ -64,6 +74,7 @@ class BM25Client:
                 "queries": queries,
                 "bm25_top_k": top_k,
                 "include_diagnostics": include_diagnostics,
+                "include_payloads": include_payloads,
             }
         }
         data = self._request("POST", "/bm25", payload)
@@ -84,7 +95,7 @@ class BM25Client:
 
     def _request(self, method: str, path: str, payload: dict[str, Any] | None) -> dict[str, Any]:
         body = None if payload is None else json.dumps(payload).encode("utf-8")
-        headers = {"Accept": "application/json"}
+        headers = {"Accept": "application/json", "User-Agent": DEFAULT_USER_AGENT}
         if body is not None:
             headers["Content-Type"] = "application/json"
         if self.api_key:
@@ -117,7 +128,10 @@ class BM25Client:
                 bm25_score=float(hit["bm25_score"]),
                 rank=int(hit["rank"]),
                 shard_id=int(hit["shard_id"]),
-                local_index=int(hit.get("local_index", 0)),
+                local_index=_optional_int(hit.get("local_index")),
+                payload=dict(hit.get("payload") or {}),
+                shard_name=str(hit["shard_name"]) if hit.get("shard_name") not in (None, "") else None,
+                shard_rank=_optional_int(hit.get("shard_rank")),
             )
             for hit in result.get("bm25_hits", [])
         ]
@@ -126,3 +140,12 @@ class BM25Client:
 
 def create_client_from_env() -> BM25Client:
     return BM25Client()
+
+
+def _optional_int(value: Any) -> int | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None

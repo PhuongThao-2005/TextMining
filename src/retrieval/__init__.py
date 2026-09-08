@@ -1,6 +1,7 @@
 """Vector embedding and retrieval module for the G-LRAG v2 dataset."""
 
 from .config import VectorIndexConfig, VectorPaths
+from .dense_client import DenseClient, DenseRemoteLatencyBreakdown, DenseRemoteRetriever
 from .embeddings import HashingEmbedder, SentenceTransformerEmbedder
 from .bm25_client import BM25Client, BM25Hit, BM25Result, create_client_from_env
 from .bm25_retriever import BM25RemoteRetriever
@@ -17,6 +18,9 @@ __all__ = [
     "BM25Hit",
     "BM25RemoteRetriever",
     "BM25Result",
+    "DenseClient",
+    "DenseRemoteLatencyBreakdown",
+    "DenseRemoteRetriever",
     "GraphRRFGlobalReranker",
     "GraphRRFLatencyBreakdown",
     "InMemoryVectorStore",

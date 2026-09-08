@@ -32,7 +32,7 @@ if (-not $env:TORCH_HOME) { $env:TORCH_HOME = Join-Path $CacheRoot "torch" }
 
 $ProjectPython = Join-Path (Get-Location) ".venv\Scripts\python.exe"
 $CondaPython = "D:\anaconda3\python.exe"
-if (Test-Path $ProjectPython) {
+if ((Test-Path $ProjectPython) -and (& $ProjectPython -c "import sys; print(sys.executable)" 2>$null)) {
     $PythonExe = $ProjectPython
 } elseif (Test-Path $CondaPython) {
     $PythonExe = $CondaPython

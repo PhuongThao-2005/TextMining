@@ -45,6 +45,7 @@ from retrieval import (  # noqa: E402
     BM25Client,
     BM25RemoteRetriever,
     BM25SparseRetriever,
+    DenseRemoteRetriever,
     GraphRRFGlobalReranker,
     HybridRetriever,
     VectorRetriever,
@@ -66,7 +67,7 @@ from generation.reasoning_client import (  # noqa: E402
 
 DEFAULT_CONFIG_FILE = PROJECT_ROOT / "configs" / "ablation_configs.yaml"
 DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "evaluation_runs" / "ablation"
-SUPPORTED_DENSE_BACKENDS = {"faiss", "qdrant", "hashing", "bm25"}
+SUPPORTED_DENSE_BACKENDS = {"faiss", "qdrant", "hashing", "bm25", "dense_remote"}
 SUPPORTED_GENERATORS = {"reference", "gemini", "openai_compatible"}
 SUPPORTED_JUDGES = {"none", "gemini"}
 RUN_STATUSES = {"completed", "failed", "skipped", "deferred", "needs-rerun"}
@@ -191,6 +192,8 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
             _require_non_empty_string(dense, "index_path", f"{config_name}.retrieval.dense")
         if backend == "qdrant":
             _require_non_empty_string(dense, "collection", f"{config_name}.retrieval.dense")
+        if backend == "dense_remote":
+            _require_non_empty_string(dense, "service_url_env", f"{config_name}.retrieval.dense")
         if backend == "bm25":
             _require_non_empty_string(dense, "service_url_env", f"{config_name}.retrieval.dense")
             payload_store = dense.get("payload_store", "faiss")
@@ -216,6 +219,10 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
         if not dense["enabled"] or dense.get("backend") == "bm25":
             raise AblationConfigError(f"{config_name} Dense-Sparse requires a vector Dense backend.")
         sparse_backend = sparse.get("backend", "bm25_local")
+        if dense.get("backend") == "dense_remote" and sparse_backend != "bm25_remote":
+            raise AblationConfigError(
+                f"{config_name} Dense-Sparse with dense_remote requires sparse.backend='bm25_remote'."
+            )
         if sparse_backend == "bm25_local":
             _require_non_empty_string(sparse, "index_path", f"{config_name}.retrieval.sparse")
             rrf_k = sparse.get("rrf_k", 60)
@@ -235,6 +242,10 @@ def validate_ablation_config(config: dict[str, Any], *, config_name: str = "<con
         if (graph_enabled or reranker_enabled) and dense.get("backend") == "bm25":
             raise AblationConfigError(
                 f"{config_name} graph/reranker retrieval requires a vector Dense backend, not BM25."
+            )
+        if graph_enabled and dense.get("backend") == "dense_remote":
+            raise AblationConfigError(
+                f"{config_name} graph retrieval with dense_remote needs a remote graph/payload hydration adapter."
             )
         if graph_enabled:
             graph = retrieval["graph"]
@@ -450,10 +461,11 @@ def build_ablation_stack(
         raise UnsupportedComponentError("The current runner requires retrieval.dense.enabled=true.")
     backend = dense["backend"]
     payload_store = str(dense.get("payload_store") or "faiss") if backend == "bm25" else None
-    runtime_store = payload_store or ("faiss" if backend in {"faiss", "hashing"} else "qdrant")
+    runtime_store = payload_store or ("faiss" if backend in {"faiss", "hashing", "dense_remote"} else "qdrant")
     bm25_api_key = _env_value(dense.get("api_key_env") or "BM25_API_KEY") if backend == "bm25" else None
+    dense_api_key = _env_value(dense.get("api_key_env") or "DENSE_API_KEY") if backend == "dense_remote" else None
     runtime = RetrieverRuntimeConfig(
-        backend="bm25" if backend == "bm25" else "vector",
+        backend="bm25" if backend == "bm25" else ("dense_remote" if backend == "dense_remote" else "vector"),
         store=runtime_store,
         index_dir=_resolved_path(dense.get("index_path", "data/faiss_index"), project_root),
         qdrant_url=str(dense.get("url") or "http://localhost:6333"),
@@ -468,6 +480,11 @@ def build_ablation_stack(
         bm25_service_url=_env_value(dense.get("service_url_env") or "BM25_SERVICE_URL"),
         bm25_api_key=bm25_api_key,
         bm25_timeout_seconds=float(dense.get("timeout_seconds", 300.0)),
+        dense_service_url=_env_value(dense.get("service_url_env") or "DENSE_SERVICE_URL"),
+        dense_api_key=dense_api_key,
+        dense_timeout_seconds=float(dense.get("timeout_seconds", 30.0)),
+        dense_expected_model=str(dense.get("expected_model") or dense.get("model") or "intfloat/multilingual-e5-large"),
+        dense_expected_index_version=str(dense.get("expected_index_version") or dense.get("index_version") or ""),
     )
     retriever = build_vector_retriever(runtime)
     graph_enabled = bool(retrieval.get("graph", {}).get("enabled"))
@@ -477,9 +494,11 @@ def build_ablation_stack(
     sparse_enabled = bool(sparse_config.get("enabled")) if isinstance(sparse_config, dict) else False
     sparse_api_key = ""
     if sparse_enabled:
-        if not isinstance(retriever, VectorRetriever):
+        if not isinstance(retriever, (VectorRetriever, DenseRemoteRetriever)):
             raise UnsupportedComponentError("Dense-Sparse requires a vector-backed Dense retriever.")
         sparse_backend = str(sparse_config.get("backend") or "bm25_local")
+        if isinstance(retriever, DenseRemoteRetriever) and sparse_backend != "bm25_remote":
+            raise UnsupportedComponentError("Dense-Sparse with dense_remote requires a remote BM25 sparse service.")
         if sparse_backend == "bm25_local":
             sparse_retriever = BM25SparseRetriever.load(
                 _resolved_path(sparse_config.get("index_path") or "data/sparse_index", project_root)
@@ -492,7 +511,7 @@ def build_ablation_stack(
                     api_key=sparse_api_key,
                     timeout_seconds=float(sparse_config.get("timeout_seconds", 300.0)),
                 ),
-                payload_store=retriever.store,
+                payload_store=getattr(retriever, "store", None),
                 top_k=runtime.top_k,
                 top_n=runtime.top_k,
             )
@@ -545,6 +564,7 @@ def build_ablation_stack(
         qdrant_key,
         bm25_api_key or "",
         sparse_api_key,
+        dense_api_key or "",
     ]
 
 

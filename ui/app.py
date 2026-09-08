@@ -67,6 +67,7 @@ PRODUCTION_EXAMPLES_VI = (
     ("Nguồn pháp lý", "Văn bản nào quy định về trợ cấp thôi việc?"),
 )
 DEFAULT_CONFIG_NAME = "Agent-None-PlainRAG"
+REMOTE_DENSE_CONFIG_NAME = "Agent-None-RemoteDense"
 DEFAULT_TOP_K = 5
 DEFAULT_FILTER_PROFILE = "broad"
 RUNTIME_CHOICES = (PRODUCTION_MODE, DEMO_MODE)
@@ -490,7 +491,8 @@ def _build_question_request(
 
 
 def _config_for_retrieval_mode(value: str) -> str:
-    del value
+    if value in {"dense_only", "dense_sparse"} and os.environ.get("DENSE_SERVICE_URL", "").strip():
+        return REMOTE_DENSE_CONFIG_NAME
     return DEFAULT_CONFIG_NAME
 
 

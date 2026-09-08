@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+from dataclasses import dataclass
 from typing import Any
 
 from knowledge_graph.context_schema import GraphGuidedFilter
@@ -10,6 +12,24 @@ from .embeddings import Embedder
 from .io_utils import clean_text
 from .schema import RetrievalResult, RetrievedChunk, VALID_FILTER_PROFILES
 from .stores import SearchHit, VectorStore
+
+
+@dataclass(frozen=True)
+class DenseLatencyBreakdown:
+    embedding_latency_s: float = 0.0
+    vector_search_latency_s: float = 0.0
+    payload_hydration_latency_s: float = 0.0
+    dense_latency_s: float = 0.0
+    total_latency_s: float = 0.0
+
+    def to_dict(self) -> dict[str, float]:
+        return {
+            "embedding_latency_s": round(self.embedding_latency_s, 4),
+            "vector_search_latency_s": round(self.vector_search_latency_s, 4),
+            "payload_hydration_latency_s": round(self.payload_hydration_latency_s, 4),
+            "dense_latency_s": round(self.dense_latency_s, 4),
+            "total_latency_s": round(self.total_latency_s, 4),
+        }
 
 
 class VectorRetriever:
@@ -40,23 +60,76 @@ class VectorRetriever:
         expand_units: bool | None = None,
         extra_filters: dict[str, Any] | None = None,
     ) -> RetrievalResult:
+        result, _ = self.retrieve_with_latency(
+            query,
+            filter_profile=filter_profile,
+            id_str_filter=id_str_filter,
+            graph_guided_filter=graph_guided_filter,
+            top_k=top_k,
+            top_n=top_n,
+            score_threshold=score_threshold,
+            expand_units=expand_units,
+            extra_filters=extra_filters,
+        )
+        return result
+
+    def retrieve_with_latency(
+        self,
+        query: str,
+        filter_profile: str = "current_law",
+        id_str_filter: list[str] | None = None,
+        graph_guided_filter: GraphGuidedFilter | None = None,
+        top_k: int | None = None,
+        top_n: int | None = None,
+        score_threshold: float | None = None,
+        expand_units: bool | None = None,
+        extra_filters: dict[str, Any] | None = None,
+    ) -> tuple[RetrievalResult, DenseLatencyBreakdown]:
+        total_started = time.perf_counter()
         if filter_profile not in VALID_FILTER_PROFILES:
             raise ValueError(f"Unknown filter_profile={filter_profile!r}")
         if graph_guided_filter is not None:
             id_str_filter = list(graph_guided_filter.id_strs)
             filter_profile = "graph_guided"
             if graph_guided_filter.empty_filter_warning:
-                return RetrievalResult([], 0, filter_profile, empty_filter_warning=True)
+                return (
+                    RetrievalResult([], 0, filter_profile, empty_filter_warning=True),
+                    DenseLatencyBreakdown(total_latency_s=time.perf_counter() - total_started),
+                )
         if filter_profile == "graph_guided" and not id_str_filter:
-            return RetrievalResult([], 0, filter_profile, empty_filter_warning=True)
+            return (
+                RetrievalResult([], 0, filter_profile, empty_filter_warning=True),
+                DenseLatencyBreakdown(total_latency_s=time.perf_counter() - total_started),
+            )
 
         top_k = top_k or self.config.top_k
         top_n = top_n or self.config.top_n
         score_threshold = self.config.score_threshold if score_threshold is None else score_threshold
         expand_units = self.config.expand_units if expand_units is None else expand_units
+
+        embedding_started = time.perf_counter()
         query_vector = self.embedder.encode_queries([clean_text(query)])[0]
+        embedding_latency = time.perf_counter() - embedding_started
         filters = self._build_filters(filter_profile, id_str_filter, extra_filters)
-        hits = self.store.search(query_vector, limit=top_k, score_threshold=score_threshold, filters=filters)
+        search_started = time.perf_counter()
+        store_breakdown: dict[str, float] = {}
+        if hasattr(self.store, "search_with_latency"):
+            hits, store_breakdown = self.store.search_with_latency(
+                query_vector,
+                limit=top_k,
+                score_threshold=score_threshold,
+                filters=filters,
+            )
+        else:
+            hits = self.store.search(
+                query_vector,
+                limit=top_k,
+                score_threshold=score_threshold,
+                filters=filters,
+            )
+            store_breakdown = {"vector_search": time.perf_counter() - search_started, "payload_hydration": 0.0}
+        vector_latency = float(store_breakdown.get("vector_search") or 0.0)
+        payload_latency = float(store_breakdown.get("payload_hydration") or 0.0)
         total_candidates = len(hits)
 
         if expand_units and hits:
@@ -67,7 +140,29 @@ class VectorRetriever:
             key=lambda chunk: chunk.rerank_score,
             reverse=True,
         )
-        return RetrievalResult(ranked[:top_n], total_candidates, filter_profile, empty_filter_warning=False)
+        total_latency = time.perf_counter() - total_started
+        latency_ms = {
+            "embedding": embedding_latency * 1000.0,
+            "vector_search": vector_latency * 1000.0,
+            "payload_hydration": payload_latency * 1000.0,
+            "total": total_latency * 1000.0,
+        }
+        return (
+            RetrievalResult(
+                ranked[:top_n],
+                total_candidates,
+                filter_profile,
+                empty_filter_warning=False,
+                latency_ms=latency_ms,
+            ),
+            DenseLatencyBreakdown(
+                embedding_latency_s=embedding_latency,
+                vector_search_latency_s=vector_latency,
+                payload_hydration_latency_s=payload_latency,
+                dense_latency_s=total_latency,
+                total_latency_s=total_latency,
+            ),
+        )
 
     def _build_filters(
         self,
