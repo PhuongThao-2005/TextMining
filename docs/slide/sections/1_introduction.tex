@@ -1,0 +1,66 @@
+% ==============================================================
+%  Section 1: Introduction
+% ==============================================================
+\section{Introduction}
+
+\begin{frame}{Why Vietnamese Legal QA Is Difficult}
+\small
+\begin{columns}[T]
+  \column{0.50\textwidth}
+    \textbf{Legal requirements}
+    \begin{itemize}
+      \item Answers must be grounded in authoritative statutes.
+      \item Citations must identify the correct article, clause, and item.
+      \item Current validity and amendment history must be respected.
+      \item Many questions require evidence across documents.
+    \end{itemize}
+  \column{0.47\textwidth}
+    \textbf{Why standard RAG is insufficient}
+    \begin{itemize}
+      \item Dense search may miss exact statutory terminology.
+      \item Fixed chunks break document hierarchy.
+      \item Semantic similarity ignores legal precedence.
+      \item LLMs may hallucinate or cite expired provisions.
+    \end{itemize}
+\end{columns}
+\vspace{0.2cm}
+\begin{alertblock}{Research problem}
+How can semantic matching, exact lexical search, statutory structure, temporal validity, and reranking be combined in one reliable legal RAG pipeline?
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{L\_RAG: Objectives}
+\small
+\begin{enumerate}
+  \item Build an end-to-end hybrid pipeline combining dense E5 retrieval, BM25, and Reciprocal Rank Fusion.
+  \item Construct an in-memory legal knowledge graph for hierarchy, reading order, validity, authority, and context expansion.
+  \item Integrate multilingual rerankers: mMiniLMv2, BGE-Reranker-v2-m3, Jina-Reranker-v2, and Qwen3-Reranker-0.6B.
+  \item Generate answers from selected evidence using \texttt{gpt-4o-mini}, with strict citation and abstention rules.
+  \item Construct a standardized benchmark of 500 Vietnamese legal QA pairs.
+\end{enumerate}
+\vspace{0.2cm}
+\begin{block}{Target output}
+A natural-language answer supported by traceable legal chunks, provision-level citations, authority metadata, and validity context.
+\end{block}
+\end{frame}
+
+\begin{frame}{Main Contributions}
+\small
+\begin{columns}[T]
+  \column{0.32\textwidth}
+    \begin{block}{Complete pipeline}
+    Modular ingestion, structuring, indexing, hybrid retrieval, graph traversal, reranking, and generation.
+    \end{block}
+  \column{0.32\textwidth}
+    \begin{block}{Dynamic legal graph}
+    Query-time validity overlays and precedence sorting without rebuilding the vector index.
+    \end{block}
+  \column{0.32\textwidth}
+    \begin{block}{Benchmarking stack}
+    A 500-query benchmark and support for four multilingual reranking backends with GPU-safe sequential loading.
+    \end{block}
+\end{columns}
+\vspace{0.35cm}
+\centering
+\hi{Core contribution: evidence that is semantically relevant, structurally complete, temporally valid, and traceable.}
+\end{frame}

@@ -1,0 +1,184 @@
+\documentclass[aspectratio=169]{beamer}
+\hypersetup{pdfpagemode=FullScreen}
+\setbeamertemplate{navigation symbols}{}
+%--------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{soul}
+\usepackage{silence}
+\WarningFilter{biblatex}{'babel/polyglossia' detected but 'csquotes' missing.}
+\usepackage{tikz}
+\usetikzlibrary{arrows, arrows.meta, positioning, shapes, shapes.geometric, shadows, calc}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+% --- Theme colors ---
+\definecolor{UniBlue}{HTML}{111C88}
+\definecolor{GrayText}{HTML}{666666}
+\definecolor{AlertRed}{HTML}{C00000}
+\definecolor{your_color}{HTML}{111c88}
+\definecolor{myGreen}{rgb}{0.0, 0.5, 0.0}
+\definecolor{myRed}{rgb}{0.8, 0.2, 0.2}
+\colorlet{myred}{myRed}
+\definecolor{AgenticBlue}{HTML}{1A73E8}
+\definecolor{HeuristicGreen}{HTML}{0D904F}
+\definecolor{FusedOrange}{HTML}{E8710A}
+
+% --- Helper macros ---
+\newcommand{\hi}[1]{\textcolor{UniBlue}{\textbf{#1}}}
+\newcommand{\warn}[1]{\textcolor{AlertRed}{\textbf{#1}}}
+\newcommand{\agentbadge}{\textcolor{AgenticBlue}{\textbf{Agentic}}}
+\newcommand{\heuristicbadge}{\textcolor{HeuristicGreen}{\textbf{Heuristic}}}
+\newcommand{\fusedbadge}{\textcolor{FusedOrange}{\textbf{Fused}}}
+
+% --- Defensive patch ---
+\makeatletter
+\providecommand\CT@arc@save{}
+\providecommand\CT@drsc@save{}
+\providecommand\CT@row@color@save{}
+\providecommand\CT@cell@color@save{}
+\makeatother
+
+
+% --- Beamer theme ---
+\mode<presentation> {
+    \usetheme{Madrid}
+    \usecolortheme{whale}
+    \setbeamertemplate{navigation symbols}{}
+}
+
+\setbeamercovered{transparent}
+\setbeamertemplate{theorems}[numbered]
+\setbeamerfont{title}{size=\large}
+\setbeamerfont{date}{size=\tiny}
+
+\setbeamertemplate{itemize items}{\textendash}
+\setbeamerfont{bibliography entry author}{family=\rmfamily,shape=\upshape}
+\setbeamerfont{bibliography entry title}{family=\rmfamily,shape=\upshape}
+\setbeamerfont{bibliography entry location}{family=\rmfamily,shape=\upshape}
+\setbeamerfont{bibliography entry note}{family=\rmfamily,shape=\upshape}
+\setbeamertemplate{itemize subitem}[circle]
+\setbeamertemplate{itemize subsubitem}[square]
+\setbeamertemplate{caption}[numbered]
+
+\useoutertheme[subsection=false]{miniframes}
+\setbeamercolor{structure}{fg=your_color}
+
+\makeatletter
+\setbeamertemplate{title page}{
+    \begin{centering}
+        {\usebeamerfont{institute}\usebeamercolor[fg]{institute}\insertinstitute\par}
+        \begin{beamercolorbox}[sep=0.8em,rounded=true,shadow=true,center,wd=\textwidth]{title}
+            \usebeamerfont{title}\color{white}\inserttitle
+        \end{beamercolorbox}
+        \vskip 0.8em
+        {\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor\par}
+        \vskip 0.4em
+        {\usebeamerfont{date}\usebeamercolor[fg]{date}\insertdate\par}
+    \end{centering}
+}
+\setbeamertemplate{frametitle continuation}{}
+\makeatother
+
+%----------- METADATA -----------
+\title[Text Mining]{L\_RAG: Knowledge-Graph-Augmented\\Vietnamese Legal RAG}
+
+\author[Group 5]{\texorpdfstring{
+    \begin{tabular}{rll}
+        \textbf{Students:}
+                            & Vu Khac Binh   & 23127029 \\
+                           & Van Thi Diem My   & 23127091 \\
+                           & Tran Tuan Kiet & 23127215 \\
+                           & Nguyen Le Thien Ly   & 23127223 \\
+                           & Nguyen Phuong Thao  & 23127306 \\
+                           [4pt]
+        \textbf{Supervisor:} & \multicolumn{2}{l}{Dr. Le Thanh Tung}
+    \end{tabular}
+}{Group 5}}
+
+\institute[]{
+    \IfFileExists{imgs/logo.png}{%
+        \includegraphics[width=0.22\textwidth]{imgs/logo.png} \\[0.1cm]%
+    }{%
+        \vspace{0.2cm}%
+    }
+    Vietnam National University Ho Chi Minh City \\
+    University of Science --- Faculty of Information Technology \\[0.1cm]
+    % {\small\textit{CSC15012 --- Applications of NLP in Industry}}
+}
+
+\date{Final Project Presentation}
+
+%--------------------------
+%   DOCUMENT START
+%--------------------------
+
+\begin{document}
+
+%--- Title Page ---
+\begin{frame}
+    \titlepage
+    \setbeamertemplate{footline}[page number]
+\end{frame}
+
+%--- TOC ---
+\begin{frame}{Outline}
+    \tableofcontents
+\end{frame}
+
+% \AtBeginSection[]{
+% \begin{frame}{Outline}
+%     \tableofcontents[currentsection]
+% \end{frame}
+% }
+
+%--- Main Content ---
+\input{sections/1_introduction.tex}
+\input{sections/2_related_work.tex}
+\input{sections/3_system_architecture.tex}
+\input{sections/4_dataset_and_benchmark.tex}
+
+\begin{frame}{Sources}
+\small
+\begin{itemize}
+    \item \texttt{docs/report/main.tex}: final report entry point and system summary.
+    \item \texttt{docs/report/sections/}: introduction, related work, system overview, dataset and benchmark.
+    \item \texttt{docs/report/FINAL\_REPORT.md}: final knowledge-graph integration status and validation.
+    \item L\_RAG system, dataset, graph, retrieval, and benchmark specifications.
+\end{itemize}
+\end{frame}
+
+%--- Closing Slides ---
+\begingroup{
+    \setbeamercolor{background canvas}{bg=your_color}
+    \setbeamertemplate{footline}{}
+    \begin{frame}[c]
+        \vfill
+        \begin{center}
+            \Large\textcolor{white}{Questions \& Discussion}
+        \end{center}
+        \vfill
+    \end{frame}
+}
+\endgroup
+
+\begingroup{
+\setbeamercolor{background canvas}{bg=white}
+    \begin{frame}[c]
+        \vfill
+        \begin{center}
+            \Huge\textcolor{your_color}{\textbf{Thank you!}}
+        \end{center}
+        \vfill
+    \end{frame}
+}
+\endgroup
+
+\end{document}

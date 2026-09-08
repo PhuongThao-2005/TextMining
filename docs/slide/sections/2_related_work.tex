@@ -1,0 +1,81 @@
+% ==============================================================
+%  Section 2: Related Work
+% ==============================================================
+\section{Related Work}
+
+\begin{frame}{Retrieval-Augmented Generation}
+\small
+\begin{columns}[T]
+  \column{0.48\textwidth}
+    \begin{block}{Standard RAG}
+      \begin{enumerate}
+        \item Encode the user query.
+        \item Retrieve semantically similar chunks.
+        \item Add retrieved evidence to the LLM prompt.
+        \item Generate a grounded answer.
+      \end{enumerate}
+    \end{block}
+  \column{0.48\textwidth}
+    \begin{alertblock}{Domain limitation}
+      \begin{itemize}
+        \item Semantic ambiguity lowers precision.
+        \item Fixed-size chunks lose long-range structure.
+        \item Self-reflection methods do not directly model legal authority or validity.
+      \end{itemize}
+    \end{alertblock}
+\end{columns}
+\vspace{0.25cm}
+\centering
+Standard RAG reduces unsupported generation, but legal QA needs explicit statutory structure.
+\end{frame}
+
+\begin{frame}{Legal Information Retrieval}
+\small
+\begin{columns}[T]
+  \column{0.47\textwidth}
+    \textbf{Properties of legal text}
+    \begin{itemize}
+      \item Deep hierarchy: code, chapter, article, clause, item.
+      \item High sensitivity to exceptions and exact wording.
+      \item Formal precedence among legal instruments.
+      \item Dynamic amendments, replacements, and repeals.
+    \end{itemize}
+  \column{0.50\textwidth}
+    \textbf{Implication for retrieval}
+    \begin{itemize}
+      \item A topically similar chunk may be legally inapplicable.
+      \item Local evidence may require parent or sibling context.
+      \item Validity depends on both time and document relationships.
+      \item Neural embeddings alone cannot encode every explicit dependency.
+    \end{itemize}
+\end{columns}
+\vspace{0.2cm}
+\begin{block}{Design requirement}
+The retriever must combine text relevance with authority, validity, hierarchy, and provenance.
+\end{block}
+\end{frame}
+
+\begin{frame}{Hybrid Retrieval, Reranking, and GraphRAG}
+\scriptsize
+\begin{columns}[T]
+  \column{0.32\textwidth}
+    \begin{block}{Dense + sparse}
+    E5 captures paraphrases; BM25 captures exact article numbers, legal codes, and domain terms.
+    \end{block}
+  \column{0.32\textwidth}
+    \begin{block}{Rank fusion}
+    RRF combines heterogeneous ranked lists without requiring directly comparable scores:
+    \[
+      \mathrm{RRF}(d)=\sum_m \frac{1}{60+r_m(d)}
+    \]
+    \end{block}
+  \column{0.32\textwidth}
+    \begin{block}{Graph + reranking}
+    Graph traversal restores related legal context; cross-encoders jointly score each query--chunk pair.
+    \end{block}
+\end{columns}
+\vspace{0.3cm}
+\begin{alertblock}{L\_RAG synthesis}
+Use dense and sparse retrieval for coverage, graph operations for legal coherence, and cross-encoders for final precision.
+\end{alertblock}
+\end{frame}
