@@ -34,7 +34,7 @@ To overcome the vocabulary mismatch problem of dense embeddings and the semantic
 
 Combining retrieved lists from heterogeneous engines requires robust rank fusion. Reciprocal Rank Fusion (RRF) \cite{cormack2009reciprocal} merges ranked outputs based on positional reciprocal scores:
 \begin{equation}
-    \text{RRF\_Score}(d \in D) = \sum_{m \in M} \frac{1}{k + r_m(d)}
+    \mathrm{RRF}(d) = \sum_{m \in M} \frac{1}{k + r_m(d)}
 \end{equation}
 where $M$ is the set of retrieval systems, $r_m(d)$ is the rank of document $d$ in system $m$, and $k$ is a smoothing constant (typically $k=60$).
 

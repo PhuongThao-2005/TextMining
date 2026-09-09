@@ -1,0 +1,71 @@
+benchmark:
+  path: /kaggle/input/datasets/phuongthao205/qa-legalrag/Benchmark/qa_final.jsonl
+  version: qa-final-v1
+corpus:
+  path: /kaggle/input/datasets/nguyenlethienlyy/text-mining-data-preprocessed/documents.jsonl
+  version: v2
+retrieval:
+  top_k: 10
+  filter_profile: broad
+  dense:
+    enabled: true
+    backend: faiss
+    index_path: /kaggle/working/runtime_indexes/ablation1_e2e/Embed-ChunkOnly-Dense
+    index_version: chunk-only-faiss-v1
+    model: intfloat/multilingual-e5-large
+    score_threshold: null
+    expand_units: false
+    embedded_text: chunk_text_only
+    index_file: /kaggle/working/runtime_indexes/ablation1_e2e/Embed-ChunkOnly-Dense/index.faiss
+    payloads_path: /kaggle/working/runtime_indexes/ablation1_e2e/Embed-ChunkOnly-Dense/payloads.jsonl
+    raw_faiss_context: true
+  sparse:
+    enabled: false
+  graph:
+    enabled: false
+  fusion:
+    enabled: false
+  reranker:
+    enabled: false
+generation:
+  provider: openai_compatible
+  model: gpt-4o-mini
+  prompt_strategy: base
+  prompt_template_version: legal-grounded-answer-v2-citations
+  temperature: 0.0
+  top_p: 1.0
+  max_output_tokens: 1024
+  timeout_seconds: 60.0
+  max_retries: 2
+  api_key_env: LLM_API_KEY
+  base_url_env: LLM_BASE_URL
+  model_env: LLM_BASE_MODEL
+judge:
+  provider: none
+agent:
+  enabled: false
+  mode: none
+  implementation_status: implemented
+output:
+  root: /kaggle/working/evaluation_runs/ablation1_e2e
+seed: 42
+metadata:
+  purpose: controlled E2E embedding-text ablation
+  experiment_family: embedding
+  ablation_family: embedding
+  embedded_text: chunk_text_only
+  runtime_path_overrides:
+    benchmark: /kaggle/input/datasets/phuongthao205/qa-legalrag/Benchmark/qa_final.jsonl
+    corpus: /kaggle/input/datasets/nguyenlethienlyy/text-mining-data-preprocessed/documents.jsonl
+    faiss_index: /kaggle/input/datasets/kittrntunk/faisse-only-chunk/faiss_index/index.faiss
+    faiss_payloads: /kaggle/input/datasets/kittrntunk/faisse-only-chunk/faiss_index/payloads.jsonl
+    runs_root: /kaggle/working/evaluation_runs/ablation1_e2e
+  ablation1_variant: e2e-top10
+  kaggle_input_identities:
+    benchmark: /kaggle/input/datasets/phuongthao205/qa-legalrag/Benchmark/qa_final.jsonl
+    corpus: /kaggle/input/datasets/nguyenlethienlyy/text-mining-data-preprocessed/documents.jsonl
+    faiss_index: /kaggle/input/datasets/kittrntunk/faisse-only-chunk/faiss_index/index.faiss
+    faiss_payloads: /kaggle/input/datasets/kittrntunk/faisse-only-chunk/faiss_index/payloads.jsonl
+  e2e_retriever_mode: raw_faiss
+runtime:
+  selected_device: cuda

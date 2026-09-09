@@ -1,0 +1,518 @@
+{
+  "source_runs": {
+    "chunk_only": "/Users/mac/Dev/HCMUS/Text_mining/L_RAG/ablation_work/chunkOnly_vs_chunkMetadata/20260803T065204666772Z_embed-chunkonly-dense_14eff24f",
+    "chunk_metadata": "/Users/mac/Dev/HCMUS/Text_mining/L_RAG/ablation_work/chunkOnly_vs_chunkMetadata/20260803T072719927028Z_embed-chunkmeta-dense_669b3b1b"
+  },
+  "prediction_pairing": {
+    "same_qa_ids": true,
+    "total_qa_ids": 500,
+    "answerable_qa_ids": 400
+  },
+  "retrieval": {
+    "denominator": 400,
+    "metrics": {
+      "5": {
+        "hit": {
+          "chunk_only": 0.44,
+          "chunk_metadata": 0.4025,
+          "delta": -0.0375,
+          "bootstrap_95_ci": [
+            -0.0875,
+            0.0125
+          ]
+        },
+        "recall": {
+          "chunk_only": 0.3902916666666667,
+          "chunk_metadata": 0.3677916666666667,
+          "delta": -0.0225,
+          "bootstrap_95_ci": [
+            -0.06916666666666665,
+            0.024666666666666667
+          ]
+        },
+        "mrr": {
+          "chunk_only": 0.27362499999999995,
+          "chunk_metadata": 0.20883333333333332,
+          "delta": -0.06479166666666666,
+          "bootstrap_95_ci": [
+            -0.09758333333333333,
+            -0.0315
+          ]
+        },
+        "document_success": {
+          "chunk_only": 0.59,
+          "chunk_metadata": 0.6175,
+          "delta": 0.0275,
+          "bootstrap_95_ci": [
+            -0.015,
+            0.07
+          ]
+        },
+        "provision_success": {
+          "chunk_only": 0.4425,
+          "chunk_metadata": 0.4025,
+          "delta": -0.04,
+          "bootstrap_95_ci": [
+            -0.09,
+            0.0125
+          ]
+        }
+      },
+      "10": {
+        "hit": {
+          "chunk_only": 0.535,
+          "chunk_metadata": 0.5325,
+          "delta": -0.0025,
+          "bootstrap_95_ci": [
+            -0.05,
+            0.045
+          ]
+        },
+        "recall": {
+          "chunk_only": 0.4846666666666667,
+          "chunk_metadata": 0.4854583333333333,
+          "delta": 0.0007916666666666661,
+          "bootstrap_95_ci": [
+            -0.043419791666666666,
+            0.04433437499999999
+          ]
+        },
+        "mrr": {
+          "chunk_only": 0.2861259920634921,
+          "chunk_metadata": 0.2266795634920635,
+          "delta": -0.05944642857142858,
+          "bootstrap_95_ci": [
+            -0.09056356646825398,
+            -0.027331150793650796
+          ]
+        },
+        "document_success": {
+          "chunk_only": 0.6575,
+          "chunk_metadata": 0.7025,
+          "delta": 0.045,
+          "bootstrap_95_ci": [
+            0.005,
+            0.0875
+          ]
+        },
+        "provision_success": {
+          "chunk_only": 0.5375,
+          "chunk_metadata": 0.535,
+          "delta": -0.0025,
+          "bootstrap_95_ci": [
+            -0.05,
+            0.045
+          ]
+        }
+      }
+    },
+    "success_curves": {
+      "1": {
+        "chunk": {
+          "hit": 0.165,
+          "provision_success": 0.165,
+          "document_success": 0.37
+        },
+        "meta": {
+          "hit": 0.1025,
+          "provision_success": 0.1025,
+          "document_success": 0.425
+        }
+      },
+      "2": {
+        "chunk": {
+          "hit": 0.315,
+          "provision_success": 0.315,
+          "document_success": 0.475
+        },
+        "meta": {
+          "hit": 0.2175,
+          "provision_success": 0.2175,
+          "document_success": 0.5125
+        }
+      },
+      "3": {
+        "chunk": {
+          "hit": 0.36,
+          "provision_success": 0.36,
+          "document_success": 0.5375
+        },
+        "meta": {
+          "hit": 0.28,
+          "provision_success": 0.28,
+          "document_success": 0.5675
+        }
+      },
+      "4": {
+        "chunk": {
+          "hit": 0.4125,
+          "provision_success": 0.4125,
+          "document_success": 0.5625
+        },
+        "meta": {
+          "hit": 0.35,
+          "provision_success": 0.35,
+          "document_success": 0.6025
+        }
+      },
+      "5": {
+        "chunk": {
+          "hit": 0.44,
+          "provision_success": 0.4425,
+          "document_success": 0.59
+        },
+        "meta": {
+          "hit": 0.4025,
+          "provision_success": 0.4025,
+          "document_success": 0.6175
+        }
+      },
+      "6": {
+        "chunk": {
+          "hit": 0.4675,
+          "provision_success": 0.47,
+          "document_success": 0.6125
+        },
+        "meta": {
+          "hit": 0.44,
+          "provision_success": 0.4425,
+          "document_success": 0.635
+        }
+      },
+      "7": {
+        "chunk": {
+          "hit": 0.48,
+          "provision_success": 0.4825,
+          "document_success": 0.6225
+        },
+        "meta": {
+          "hit": 0.48,
+          "provision_success": 0.4825,
+          "document_success": 0.6625
+        }
+      },
+      "8": {
+        "chunk": {
+          "hit": 0.4975,
+          "provision_success": 0.5,
+          "document_success": 0.6325
+        },
+        "meta": {
+          "hit": 0.4975,
+          "provision_success": 0.5,
+          "document_success": 0.6775
+        }
+      },
+      "9": {
+        "chunk": {
+          "hit": 0.515,
+          "provision_success": 0.5175,
+          "document_success": 0.64
+        },
+        "meta": {
+          "hit": 0.515,
+          "provision_success": 0.5175,
+          "document_success": 0.6975
+        }
+      },
+      "10": {
+        "chunk": {
+          "hit": 0.535,
+          "provision_success": 0.5375,
+          "document_success": 0.6575
+        },
+        "meta": {
+          "hit": 0.5325,
+          "provision_success": 0.535,
+          "document_success": 0.7025
+        }
+      }
+    },
+    "win_tie_loss": {
+      "hit@5": {
+        "metadata_win": 48,
+        "tie": 289,
+        "chunk_only_win": 63
+      },
+      "document_success@5": {
+        "metadata_win": 43,
+        "tie": 325,
+        "chunk_only_win": 32
+      },
+      "hit@10": {
+        "metadata_win": 47,
+        "tie": 305,
+        "chunk_only_win": 48
+      },
+      "document_success@10": {
+        "metadata_win": 46,
+        "tie": 326,
+        "chunk_only_win": 28
+      }
+    },
+    "mean_first_correct_rank": {
+      "chunk": {
+        "chunk": {
+          "mean": 3.1728971962616823,
+          "successes": 214
+        },
+        "meta": {
+          "mean": 3.8309859154929575,
+          "successes": 213
+        }
+      },
+      "provision": {
+        "chunk": {
+          "mean": 3.181395348837209,
+          "successes": 215
+        },
+        "meta": {
+          "mean": 3.8411214953271027,
+          "successes": 214
+        }
+      },
+      "document": {
+        "chunk": {
+          "mean": 2.3307984790874525,
+          "successes": 263
+        },
+        "meta": {
+          "mean": 2.316725978647687,
+          "successes": 281
+        }
+      }
+    }
+  },
+  "downstream": {
+    "token_f1": {
+      "label": "Token F1",
+      "chunk_only": 0.24905820886736899,
+      "chunk_metadata": 0.2501807972350333,
+      "delta": 0.0011225883676642956
+    },
+    "rouge_l": {
+      "label": "ROUGE-L",
+      "chunk_only": 0.21952153047594572,
+      "chunk_metadata": 0.21885716768662647,
+      "delta": -0.0006643627893192505
+    },
+    "unanswerable_accuracy": {
+      "label": "Unanswerable accuracy",
+      "chunk_only": 0.828,
+      "chunk_metadata": 0.844,
+      "delta": 0.016000000000000014
+    },
+    "citation_validity_rate": {
+      "label": "Citation validity",
+      "chunk_only": 1.0,
+      "chunk_metadata": 1.0,
+      "delta": 0.0
+    },
+    "average_structural_citation_coverage": {
+      "label": "Citation coverage",
+      "chunk_only": 0.9028301886792454,
+      "chunk_metadata": 0.9060482500849473,
+      "delta": 0.003218061405701911
+    },
+    "mean_total_latency_ms": {
+      "label": "Mean total latency (ms)",
+      "chunk_only": 3883.529715884,
+      "chunk_metadata": 3841.7997482540004,
+      "delta": -41.729967629999464
+    },
+    "p95_total_latency_ms": {
+      "label": "P95 total latency (ms)",
+      "chunk_only": 5756.641305,
+      "chunk_metadata": 5887.307642,
+      "delta": 130.66633699999966
+    }
+  },
+  "examples": [
+    {
+      "pattern": "Metadata win (Document Success@5)",
+      "qa_id": "vlrag-098c0cf63e",
+      "question": "Doanh nghiệp của tôi muốn tham gia thực hiện các dự án khoa học công nghệ cấp bộ lĩnh vực thủy sản đã được phê duyệt, tôi cần liên hệ đơn vị nào để biết trình tự thực hiện?",
+      "gold": {
+        "document_ids": [
+          "87817"
+        ],
+        "provision_ids": [
+          "87817::article::2"
+        ],
+        "chunk_ids": [
+          "87817::article::2::chunk::1"
+        ]
+      },
+      "chunk_only_top_3": [
+        {
+          "rank": 1,
+          "document_id": "124608",
+          "provision_id": "124608::article::3",
+          "chunk_id": "124608::article::3::chunk::1",
+          "title": "Thông tư ban hành Quy chuẩn kỹ thuật Quốc gia về yêu cầu kỹ thuật đối với cơ sở sản xuất giống và nuôi cá rô phi"
+        },
+        {
+          "rank": 2,
+          "document_id": "21933",
+          "provision_id": "21933::article::13::idx::37",
+          "chunk_id": "21933::article::13::idx::37::chunk::1",
+          "title": "Ban hành Quy chế Quản lý môi trường cơ sở chế biến thủy sản."
+        },
+        {
+          "rank": 3,
+          "document_id": "21933",
+          "provision_id": "21933::article::13",
+          "chunk_id": "21933::article::13::chunk::1",
+          "title": "Ban hành Quy chế Quản lý môi trường cơ sở chế biến thủy sản."
+        }
+      ],
+      "metadata_top_3": [
+        {
+          "rank": 1,
+          "document_id": "13904",
+          "provision_id": "13904::article::1::idx::4",
+          "chunk_id": "13904::article::1::idx::4::chunk::6",
+          "title": "Về việc phê duyệt \"Đề án phát triển và ứng dụng công nghệ sinh học trong lĩnh vực thuỷ sản đến năm 2020\""
+        },
+        {
+          "rank": 2,
+          "document_id": "13904",
+          "provision_id": "13904::article::1",
+          "chunk_id": "13904::article::1::chunk::6",
+          "title": "Về việc phê duyệt \"Đề án phát triển và ứng dụng công nghệ sinh học trong lĩnh vực thuỷ sản đến năm 2020\""
+        },
+        {
+          "rank": 3,
+          "document_id": "13904",
+          "provision_id": "13904::article::3::idx::6",
+          "chunk_id": "13904::article::3::idx::6::chunk::1",
+          "title": "Về việc phê duyệt \"Đề án phát triển và ứng dụng công nghệ sinh học trong lĩnh vực thuỷ sản đến năm 2020\""
+        }
+      ]
+    },
+    {
+      "pattern": "Chunk-only win (Document Success@5)",
+      "qa_id": "vlrag-036bdd452b",
+      "question": "Chúng tôi muốn biết ngành nào chịu trách nhiệm chính trong việc ngăn chặn tình trạng trẻ em bị lạm dụng sức lao động?",
+      "gold": {
+        "document_ids": [
+          "105899"
+        ],
+        "provision_ids": [
+          "105899::item::3"
+        ],
+        "chunk_ids": [
+          "105899::item::3::chunk::1"
+        ]
+      },
+      "chunk_only_top_3": [
+        {
+          "rank": 1,
+          "document_id": "29616",
+          "provision_id": "29616::item::5::idx::14",
+          "chunk_id": "29616::item::5::idx::14::chunk::1",
+          "title": "Về việc triển khai \"Tháng hành động vì trẻ em\" năm 2004"
+        },
+        {
+          "rank": 2,
+          "document_id": "29616",
+          "provision_id": "29616::item::5",
+          "chunk_id": "29616::item::5::chunk::1",
+          "title": "Về việc triển khai \"Tháng hành động vì trẻ em\" năm 2004"
+        },
+        {
+          "rank": 3,
+          "document_id": "7990",
+          "provision_id": "7990::document::0",
+          "chunk_id": "7990::document::0::chunk::1",
+          "title": "Về việc tăng cường công tác bảo vệ trẻ em, ngăn ngừa và giải quyết tình trạng trẻ em lang thanh, trẻ em bị lạm dụng sức lao động"
+        }
+      ],
+      "metadata_top_3": [
+        {
+          "rank": 1,
+          "document_id": "7990",
+          "provision_id": "7990::document::0",
+          "chunk_id": "7990::document::0::chunk::5",
+          "title": "Về việc tăng cường công tác bảo vệ trẻ em, ngăn ngừa và giải quyết tình trạng trẻ em lang thanh, trẻ em bị lạm dụng sức lao động"
+        },
+        {
+          "rank": 2,
+          "document_id": "7990",
+          "provision_id": "7990::document::0",
+          "chunk_id": "7990::document::0::chunk::4",
+          "title": "Về việc tăng cường công tác bảo vệ trẻ em, ngăn ngừa và giải quyết tình trạng trẻ em lang thanh, trẻ em bị lạm dụng sức lao động"
+        },
+        {
+          "rank": 3,
+          "document_id": "7990",
+          "provision_id": "7990::document::0",
+          "chunk_id": "7990::document::0::chunk::1",
+          "title": "Về việc tăng cường công tác bảo vệ trẻ em, ngăn ngừa và giải quyết tình trạng trẻ em lang thanh, trẻ em bị lạm dụng sức lao động"
+        }
+      ]
+    },
+    {
+      "pattern": "Shared failure (Document Success@10)",
+      "qa_id": "vlrag-0563e20013",
+      "question": "Sắp tới tôi muốn đăng ký thành lập một cơ sở tư vấn hỗ trợ nạn nhân bạo lực gia đình tại địa phương, tôi nên liên hệ với đơn vị nào để được hướng dẫn về thủ tục?",
+      "gold": {
+        "document_ids": [
+          "71679"
+        ],
+        "provision_ids": [
+          "71679::item::2"
+        ],
+        "chunk_ids": [
+          "71679::item::2::chunk::1"
+        ]
+      },
+      "chunk_only_top_3": [
+        {
+          "rank": 1,
+          "document_id": "12532",
+          "provision_id": "12532::article::17::idx::39",
+          "chunk_id": "12532::article::17::idx::39::chunk::1",
+          "title": "Quy định chi tiết và hướng dẫn thi hành một số điều của Luật Phòng, chống bạo lực gia đình"
+        },
+        {
+          "rank": 2,
+          "document_id": "12532",
+          "provision_id": "12532::article::17",
+          "chunk_id": "12532::article::17::chunk::1",
+          "title": "Quy định chi tiết và hướng dẫn thi hành một số điều của Luật Phòng, chống bạo lực gia đình"
+        },
+        {
+          "rank": 3,
+          "document_id": "12532",
+          "provision_id": "12532::article::14::idx::36",
+          "chunk_id": "12532::article::14::idx::36::chunk::1",
+          "title": "Quy định chi tiết và hướng dẫn thi hành một số điều của Luật Phòng, chống bạo lực gia đình"
+        }
+      ],
+      "metadata_top_3": [
+        {
+          "rank": 1,
+          "document_id": "12532",
+          "provision_id": "12532::article::17::idx::39",
+          "chunk_id": "12532::article::17::idx::39::chunk::1",
+          "title": "Quy định chi tiết và hướng dẫn thi hành một số điều của Luật Phòng, chống bạo lực gia đình"
+        },
+        {
+          "rank": 2,
+          "document_id": "12532",
+          "provision_id": "12532::article::17",
+          "chunk_id": "12532::article::17::chunk::1",
+          "title": "Quy định chi tiết và hướng dẫn thi hành một số điều của Luật Phòng, chống bạo lực gia đình"
+        },
+        {
+          "rank": 3,
+          "document_id": "12532",
+          "provision_id": "12532::article::14::idx::36",
+          "chunk_id": "12532::article::14::idx::36::chunk::1",
+          "title": "Quy định chi tiết và hướng dẫn thi hành một số điều của Luật Phòng, chống bạo lực gia đình"
+        }
+      ]
+    }
+  ]
+}

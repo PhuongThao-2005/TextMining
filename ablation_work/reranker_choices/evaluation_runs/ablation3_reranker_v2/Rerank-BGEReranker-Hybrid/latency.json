@@ -1,0 +1,19 @@
+{
+  "total_run_time_s": 3008.27,
+  "avg": {
+    "dense_latency_s": 0.052,
+    "sparse_latency_s": 0.0,
+    "fusion_latency_s": 0.0,
+    "cross_encoder_latency_s": 2.9025,
+    "generation_latency_s": 3.1048,
+    "total_latency_s": 6.0074
+  },
+  "median": {
+    "dense_latency_s": 0.0501,
+    "sparse_latency_s": 0.0,
+    "fusion_latency_s": 0.0,
+    "cross_encoder_latency_s": 2.8723,
+    "generation_latency_s": 2.9415,
+    "total_latency_s": 5.8477
+  }
+}

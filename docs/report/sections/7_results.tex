@@ -1,0 +1,224 @@
+% ============================================================================
+% Section 7: Results and Analysis
+% ============================================================================
+\section{Results}
+\label{sec:results}
+
+The completed results are summarized in Tables~\ref{tab:embedding-results}
+through~\ref{tab:jina-slices}. Retrieval metrics use answerable questions and
+are paired within each experiment family. We use percentage points (pp) for
+deltas so that the magnitude of an effect is not confused with a relative
+percentage change.
+
+\subsection{Embedding Representation}
+\label{sec:embedding-results}
+
+Table~\ref{tab:embedding-results} shows that adding metadata to the embedded
+text changes the level at which retrieval succeeds. At top 10, exact chunk
+Recall is unchanged to one decimal place, while document success increases by
+4.5 pp. The paired MRR decrease is statistically distinguishable from zero,
+so metadata should not be described as an unqualified improvement: it favors
+document identification but does not improve the rank of the first exact gold
+chunk.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Embedding-text ablation on 400 paired answerable questions. Values
+are percentages; ``document success'' means that a retrieved chunk from the
+gold document is present in the indicated context. Deltas are chunk+metadata
+minus chunk-only.}
+\label{tab:embedding-results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrrrr}
+\toprule
+\textbf{Variant} & \textbf{Hit@5} & \textbf{Recall@5} & \textbf{MRR@5} &
+\textbf{Doc.@5} & \textbf{Hit@10} & \textbf{Recall@10} &
+\textbf{MRR@10} & \textbf{Doc.@10} \\
+\midrule
+Chunk-only & 44.0 & 39.0 & 27.4 & 59.0 & 53.5 & 48.5 & 28.6 & 65.8 \\
+Chunk+metadata & 40.2 & 36.8 & 20.9 & 61.8 & 53.2 & 48.5 & 22.7 & 70.2 \\
+Delta & $-3.8$ & $-2.2$ & $-6.5$ & $+2.8$ & $-0.2$ & $+0.1$ & $-5.9$ & $+4.5$ \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\subsection{Dense, Hybrid, and Graph Retrieval}
+\label{sec:retrieval-results}
+
+The DenseOnly configuration is the strongest exact-chunk retriever in the
+second family. HybridOnly is lower on Recall@10 and nDCG@10, and its paired
+Recall loss has a 95\% interval entirely below zero. Graph expansion lowers
+Recall@10 for both seed retrievers: by 12.40 pp for DenseOnly and 11.81 pp for
+HybridOnly. The graph-only evidence counts show why: graph expansion adds a
+gold chunk for one DenseOnly query and six HybridOnly queries, but removes at
+least one previously retrieved gold chunk for 61 and 59 queries, respectively.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Dense/hybrid retrieval and graph results. Retrieval values use 400
+answerable questions. ``ID precision'' divides the number of gold chunks by
+the actual number of returned chunks; p50/p95 latency is in seconds over all
+500 questions.}
+\label{tab:retrieval-graph-results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrrr}
+\toprule
+\textbf{Method} & \textbf{Recall@10} & \textbf{MRR@10} & \textbf{nDCG@10} &
+\textbf{ID precision} & \textbf{Avg. chunks} & \textbf{Retrieval p50/p95} &
+\textbf{Total p50/p95} \\
+\midrule
+DenseOnly & 0.4855 & 0.2267 & 0.2813 & 0.0580 & 10.000 & 0.797/0.856 & 5.483/9.946 \\
+HybridOnly & 0.4257 & 0.2252 & 0.2638 & 0.0493 & 10.000 & 27.855/27.924 & 31.538/33.623 \\
+DenseGraph & 0.3615 & 0.2045 & 0.2374 & 0.0800 & 5.605 & 0.798/0.860 & 4.998/9.750 \\
+HybridGraph & 0.3076 & 0.2012 & 0.2228 & 0.0641 & 6.305 & 27.858/27.929 & 31.180/33.312 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+The denser graph contexts improve ID precision (0.0580 to 0.0800 for Dense
+and 0.0493 to 0.0641 for Hybrid), but this should be read together with the
+large context-recall loss. Graph expansion also increases recorded
+unanswerable accuracy from 0.38 to 0.41 for Dense and from 0.38 to 0.47 for
+Hybrid, while paired Token F1 changes are small and their confidence intervals
+include zero. The graph implementation therefore produces a precision--coverage
+trade-off rather than a demonstrated overall gain.
+
+\subsection{Reranker Comparison}
+\label{sec:reranker-results}
+
+Table~\ref{tab:reranker-results} reports the six configurations evaluated on
+the fixed \texttt{C30} candidate pool. Jina obtains the strongest retrieval
+scores, while BGE has the highest overlap scores. Qwen3 is competitive in
+quality but incurs a much larger reranker-stage cost. The recorded
+unanswerable-accuracy column is retained from the source metrics; semantic
+legal-answer evaluation is not available.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Multi-reranker ablation over a shared 30-candidate pool and final
+top-10 context. Retrieval and overlap values are means over 400 answerable
+questions; recorded unanswerable accuracy and p50 latency use the complete
+500-case runs.}
+\label{tab:reranker-results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+\textbf{Model} & \textbf{Recall@10} & \textbf{Hit@10} & \textbf{MRR@10} &
+\textbf{nDCG@10} & \textbf{Token F1} & \textbf{ROUGE-L} &
+\textbf{Rec. unans. acc.} & \textbf{Rerank p50} & \textbf{Total p50} \\
+\midrule
+None & 0.4842 & 0.5375 & 0.2167 & 0.2714 & 0.2801 & 0.2453 & 0.856 & 0.000 & 2.925 \\
+RRF-only & 0.4382 & 0.4800 & 0.2335 & 0.2728 & 0.2750 & 0.2416 & 0.874 & 0.000 & 2.972 \\
+mMiniLM & 0.4973 & 0.5425 & 0.3047 & 0.3425 & 0.2901 & 0.2568 & 0.872 & 0.385 & 3.343 \\
+Qwen3 & 0.5218 & 0.5725 & 0.3418 & 0.3688 & 0.2912 & 0.2583 & 0.876 & 9.695 & 13.007 \\
+BGE & 0.5188 & 0.5675 & 0.3247 & 0.3593 & \textbf{0.2955} & \textbf{0.2603} & 0.868 & 2.872 & 5.848 \\
+Jina & \textbf{0.5305} & \textbf{0.5850} & \textbf{0.3670} & \textbf{0.3914} & 0.2913 & 0.2558 & \textbf{0.884} & 1.278 & \textbf{4.158} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Paired effects of each reranker relative to RRF-only. Deltas are in
+percentage points; intervals are 95\% percentile bootstrap CIs from 10,000
+question-level resamples over the 400 answerable cases. A negative
+false-refusal delta indicates fewer refusals on answerable questions.}
+\label{tab:reranker-paired}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Reranker} & \textbf{$\Delta$ Recall@10} & \textbf{$\Delta$ MRR@10} &
+\textbf{$\Delta$ nDCG@10} & \textbf{$\Delta$ false refusal} \\
+\midrule
+mMiniLM & $+5.91$ [$+1.85,+9.96$] & $+7.12$ [$+3.55,+10.68$] &
+$+6.96$ [$+3.77,+10.26$] & $+0.25$ [$-3.00,+3.50$] \\
+Qwen3 & $+8.37$ [$+4.57,+12.25$] & $+10.84$ [$+7.24,+14.36$] &
+$+9.60$ [$+6.52,+12.73$] & $-0.25$ [$-3.25,+2.75$] \\
+BGE & $+8.07$ [$+4.29,+11.80$] & $+9.12$ [$+5.50,+12.70$] &
+$+8.65$ [$+5.47,+11.84$] & $+0.75$ [$-2.25,+3.75$] \\
+Jina & $+9.23$ [$+5.51,+12.98$] & $+13.35$ [$+9.51,+17.24$] &
+$+11.85$ [$+8.46,+15.27$] & $-1.25$ [$-4.00,+1.25$] \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+All rerankers have positive paired retrieval intervals for the three primary
+ranking measures. In contrast, every false-refusal interval includes zero.
+Jina also retains 0.8850 of the gold chunks available in \texttt{C30}, versus
+0.7129 for RRF-only, confirming that its gain comes from better promotion of
+available evidence rather than a larger candidate pool. The full safety and
+win/tie/loss analysis is stored with the derived artifacts.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{../../ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v2/charts.png}
+\caption{Reranker curves, answer-overlap diagnostics, latency breakdown, and
+headline metrics from the six-config run. These plots are descriptive; the
+paired confidence intervals in Table~\ref{tab:reranker-paired} are the primary
+uncertainty analysis.}
+\label{fig:reranker-curves}
+\end{figure*}
+
+\subsection{Category and Answer-Type Analysis}
+\label{sec:breakdown-analysis}
+
+The largest Jina gains occur for legal-validity and citation questions, while
+the smaller extractive slice is inconclusive. Table~\ref{tab:jina-slices}
+reports the requested Jina-versus-RRF comparison; all slices are answerable
+cases, and intervals use 2,000 paired bootstrap resamples. The multi-hop slice
+has only 20 questions and is exploratory. The hard difficulty and
+cross-document slices are also too small to support a main conclusion.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Jina versus RRF-only on selected category and answer-type slices.
+Deltas are percentage points with 95\% paired-bootstrap CIs.}
+\label{tab:jina-slices}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrlll}
+\toprule
+\textbf{Dimension} & \textbf{Slice} & \textbf{$n$} &
+\textbf{$\Delta$ Recall@10} & \textbf{$\Delta$ MRR@10} &
+\textbf{$\Delta$ nDCG@10} \\
+\midrule
+Category & citation & 106 & $+11.89$ [$+2.82,+21.70$] & $+16.22$ [$+7.86,+24.51$] & $+15.82$ [$+7.51,+23.82$] \\
+Category & legal validity & 91 & $+14.47$ [$+6.96,+21.43$] & $+18.90$ [$+10.28,+27.26$] & $+15.22$ [$+9.13,+21.50$] \\
+Category & single hop & 172 & $+5.04$ [$-0.00,+10.37$] & $+9.63$ [$+4.34,+14.69$] & $+8.41$ [$+3.81,+13.05$] \\
+Category & multi hop & 20 & $+7.50$ [$-0.83,+17.50$] & $+10.12$ [$-3.42,+24.33$] & $+7.95$ [$-0.77,+17.98$] \\
+Answer type & extractive & 78 & $+0.13$ [$-8.85,+9.74$] & $+8.53$ [$-0.90,+17.39$] & $+7.14$ [$-1.33,+16.23$] \\
+Answer type & abstractive & 199 & $+13.65$ [$+8.50,+18.80$] & $+14.74$ [$+9.61,+20.14$] & $+13.81$ [$+9.56,+18.71$] \\
+Answer type & boolean & 123 & $+7.86$ [$+1.63,+14.50$] & $+14.18$ [$+7.64,+21.13$] & $+11.68$ [$+6.27,+17.95$] \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\subsection{Generation and Efficiency}
+\label{sec:generation-quality}
+
+The deterministic answer metrics do not establish legal correctness. In the
+embedding family, metadata changes Token F1 by +0.1 pp and ROUGE-L by $-0.1$
+pp. In the dense/hybrid/graph family, graph expansion changes Token F1 by
+approximately +0.4 pp for Dense and +0.2 pp for Hybrid, with bootstrap
+intervals crossing zero. In the reranker family, BGE has the strongest
+observed overlap scores, but Jina has the best retrieval scores and a lower
+total p50 than BGE (4.158 s vs. 5.848 s). The results support a conditional
+engineering choice, not a claim that one reranker produces more legally
+correct answers.
+
+Efficiency differences are substantial. Hybrid retrieval raises total median
+latency from 5.483 s to 31.538 s and reports a one-time BM25 precomputation
+cost of about 13,495 s. Among rerankers, mMiniLM is fastest (0.385 s
+reranker-stage p50), Jina is intermediate (1.278 s), BGE is slower (2.872 s),
+and Qwen3 is much slower (9.695 s). The reranker artifacts do not record p95,
+peak GPU memory, or full-online sparse latency, so those deployment quantities
+remain open.

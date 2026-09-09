@@ -1,0 +1,53 @@
+{
+  "unit": "milliseconds",
+  "stages": {
+    "dense_retrieval": {
+      "count": 500,
+      "mean": 752.560884836,
+      "median": 747.1024325,
+      "min": 717.454059,
+      "max": 1445.978078,
+      "p95": 784.023044
+    },
+    "sparse_retrieval": null,
+    "graph_traversal": null,
+    "fusion": null,
+    "reranker": null,
+    "generation": {
+      "count": 500,
+      "mean": 3129.572616888,
+      "median": 2732.6622945,
+      "min": 1194.321148,
+      "max": 22775.862289,
+      "p95": 5003.683485
+    },
+    "planner_decision": null,
+    "tool_retrieval": null,
+    "agent_total": null,
+    "judge": null,
+    "serialization": {
+      "count": 500,
+      "mean": 0.040162998,
+      "median": 0.042327000000000004,
+      "min": 0.021347,
+      "max": 0.277618,
+      "p95": 0.060193
+    },
+    "total": {
+      "count": 500,
+      "mean": 3883.529715884,
+      "median": 3479.651507,
+      "min": 1940.297674,
+      "max": 23544.010312,
+      "p95": 5756.641305
+    }
+  },
+  "denominator": "Each stage uses cases with a recorded value for that stage; total includes successful, failed, and skipped cases.",
+  "counts": {
+    "total_input": 500,
+    "successful": 500,
+    "failed": 0,
+    "skipped": 0,
+    "evaluated": 500
+  }
+}

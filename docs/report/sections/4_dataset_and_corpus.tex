@@ -13,8 +13,9 @@ The legal dataset comprises a massive collection of Vietnamese legal instruments
 
 Table~\ref{tab:corpus-stats} summarizes the core scale and statistics of the processed corpus.
 
-\begin{table}[H]
+\begin{table*}[t]
 \centering
+\small
 \caption{Overall Statistics of the Vietnamese Legal Corpus.}
 \label{tab:corpus-stats}
 \begin{tabular}{llr}
@@ -28,17 +29,23 @@ Table~\ref{tab:corpus-stats} summarizes the core scale and statistics of the pro
 \textbf{External Stubs} & Referenced external entities & 19,763 \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
 Each passage chunk is enriched with metadata prior to indexing:
 \begin{equation}
-    \text{Chunk\_Meta} = \{ \text{chunk\_id}, \text{doc\_id}, \text{provision\_id}, \text{title}, \text{issuing\_authority}, \text{effective\_date} \}
+    \begin{aligned}
+        \text{Chunk\_Meta} = \{&\text{chunk\_id}, \\
+        &\text{doc\_id}, \text{provision\_id}, \\
+        &\text{title}, \text{issuing\_authority}, \\
+        &\text{effective\_date}\}
+    \end{aligned}
 \end{equation}
 
 \subsection{Knowledge Graph Structure (G-LRAG Schema)}
 \label{sec:kg-schema}
 
-The G-LRAG Knowledge Graph models statutory entities as nodes and structural/legal dependencies as typed directed edges.
+The G-LRAG Knowledge Graph models statutory entities as nodes and structural
+and legal dependencies as typed directed edges.
 
 \subsubsection{Node Schema}
 \begin{itemize}
@@ -97,6 +104,10 @@ The benchmark balances real-world legal scenarios across multiple dimensions:
 
 Each answerable query is annotated by legal domain experts with gold-standard metadata:
 \begin{equation}
-    Q_i = \{ \text{qa\_id}, \text{question}, \text{category}, \text{difficulty}, \text{answer\_type}, \text{ref\_answer}, \text{ground\_truth\_chunk\_ids} \}
+    \begin{aligned}
+        Q_i = \{&\text{qa\_id}, \text{question}, \\
+        &\text{category}, \text{difficulty}, \text{answer\_type}, \\
+        &\text{ref\_answer}, \text{ground\_truth\_chunk\_ids}\}.
+    \end{aligned}
 \end{equation}
 The \texttt{ground\_truth\_chunk\_ids} set forms the exact retrieval baseline against which Recall@$k$, Hit@$k$, MRR@$k$, and nDCG@$k$ are evaluated.

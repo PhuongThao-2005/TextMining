@@ -11,8 +11,9 @@ This section details the end-to-end architecture of \textbf{L\_RAG}, a Knowledge
 
 The L\_RAG pipeline unifies structured graph processing, hybrid vector-sparse search, cross-encoder candidate reranking, and citation-grounded LLM synthesis. Figure~\ref{fig:architecture} illustrates the system dataflow across four distinct operational phases: (1) Corpus Ingestion \& Graph/Vector Indexing, (2) Multi-Modal Hybrid Retrieval, (3) Knowledge Graph Overlay \& Context Expansion, (4) Sequential Candidate Reranking, and (5) LLM Prompting \& Generation.
 
-\begin{figure}[H]
+\begin{figure*}[t]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[node distance=1.5cm, auto,
     block/.style={rectangle, draw=blue!80, fill=blue!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners},
     kgblock/.style={rectangle, draw=green!60!black, fill=green!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners},
@@ -37,9 +38,10 @@ The L\_RAG pipeline unifies structured graph processing, hybrid vector-sparse se
     \path [line] (reranker) -- (llm);
     \path [line] (llm) -- (output);
 \end{tikzpicture}
+}%
 \caption{End-to-end operational workflow of the L\_RAG system.}
 \label{fig:architecture}
-\end{figure}
+\end{figure*}
 
 \subsection{Retrieval Components}
 \label{sec:retrieval-components}
@@ -49,7 +51,10 @@ The retrieval module combines three complementary retrieval approaches:
 \subsubsection{Dense Vector Search}
 Dense retrieval is powered by \texttt{intfloat/multilingual-e5-large}, a 560M parameter transformer embedding model. To solve the structural blindness of standalone chunks, each text chunk is preprocessed into a \textbf{Metadata-Enriched Representation}:
 \begin{equation}
-    \text{Text}_{\text{embedded}} = \text{Doc\_Title} \parallel \text{Provision\_Header} \parallel \text{Chunk\_Content}
+    \begin{aligned}
+        \text{Text}_{\text{embedded}} ={}& \text{Doc\_Title} \parallel \text{Provision\_Header} \\
+        &{}\parallel \text{Chunk\_Content}
+    \end{aligned}
 \end{equation}
 Chunks are stored in an optimized FAISS vector database using \texttt{IndexFlatIP} with L2-normalized embeddings for fast cosine similarity search.
 
@@ -63,7 +68,10 @@ The Knowledge Graph module acts as a query coordinator that generates dynamic do
     \item \textbf{Dynamic Overlay Folding:} Validity timelines are joined at query time relative to an \texttt{as\_of\_date} parameter, ensuring superseded provisions are excluded.
     \item \textbf{Precedence Sorting:} Conflicts between legal authority ranks are resolved using statutory hierarchy rules:
     \begin{equation}
-        \text{Hiến pháp} \succ \text{Bộ luật / Luật} \succ \text{Nghị định} \succ \text{Thông tư}
+        \begin{aligned}
+            \text{Hiến pháp} &\succ \text{Bộ luật / Luật} \\
+            &\succ \text{Nghị định} \succ \text{Thông tư}
+        \end{aligned}
     \end{equation}
     \item \textbf{Reading-Order Traversal:} Structural edge pointers (\texttt{CHUNK\_NEXT}, \texttt{PROVISION\_NEXT}) slide context windows horizontally across sibling chunks within the same parent provision.
 \end{itemize}
@@ -78,15 +86,18 @@ Initial retrieval selects $K=30$ candidate chunks per query. To maximize precisi
 
 L\_RAG supports four distinct reranking backends loaded sequentially onto GPU:
 \begin{enumerate}
-    \item \textbf{\texttt{mMiniLMv2}:} \texttt{cross-encoder/mmarco-mMiniLMv2-L12-H384-v1} (Lightweight baseline, 117M params).
-    \item \textbf{\texttt{BGE-Reranker-v2-m3}:} \texttt{BAAI/bge-reranker-v2-m3} (Multilingual 567M params with sigmoid activation).
-    \item \textbf{\texttt{Jina-Reranker-v2}:} \texttt{jinaai/jina-reranker-v2-base-multilingual} (278M params, featuring dynamic position embedding patches).
-    \item \textbf{\texttt{Qwen3-Reranker}:} \texttt{Qwen/Qwen3-Reranker-0.6B} (CausalLM-based 0.6B parameter model evaluated in FP16 precision).
+    \item \textbf{\texttt{mMiniLMv2}:} \url{cross-encoder/mmarco-mMiniLMv2-L12-H384-v1} (Lightweight baseline, 117M params).
+    \item \textbf{\texttt{BGE-Reranker-v2-m3}:} \url{BAAI/bge-reranker-v2-m3} (Multilingual 567M params with sigmoid activation).
+    \item \textbf{\texttt{Jina-Reranker-v2}:} \url{jinaai/jina-reranker-v2-base-multilingual} (278M params, featuring dynamic position embedding patches).
+    \item \textbf{\texttt{Qwen3-Reranker}:} \url{Qwen/Qwen3-Reranker-0.6B} (CausalLM-based 0.6B parameter model evaluated in FP16 precision).
 \end{enumerate}
 
 To prevent GPU Out-Of-Memory (OOM) failures during multi-model evaluation, the loader executes a strict \textbf{Sequential Load-Run-Unload Cycle}:
 \begin{equation}
-    \text{Load}(M_i) \longrightarrow \text{Execute}(M_i) \longrightarrow \text{Delete}(M_i) \longrightarrow \text{torch.cuda.empty\_cache}()
+    \begin{aligned}
+        \text{Load}(M_i) &\longrightarrow \text{Execute}(M_i) \\
+        &\longrightarrow \text{Delete}(M_i) \longrightarrow \texttt{empty\_cache}()
+    \end{aligned}
 \end{equation}
 
 \subsection{Generation Component}

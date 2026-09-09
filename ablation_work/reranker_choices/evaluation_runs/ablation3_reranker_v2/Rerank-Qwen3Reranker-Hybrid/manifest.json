@@ -1,0 +1,13 @@
+{
+  "config": "Rerank-Qwen3Reranker-Hybrid",
+  "timestamp": "2026-09-08T20:36:08.624369+00:00",
+  "eval_count": 500,
+  "embedding_model": "intfloat/multilingual-e5-large",
+  "reranker_model": "Qwen/Qwen3-Reranker-0.6B",
+  "generator_model": "gpt-4o-mini",
+  "top_k": 30,
+  "top_n": 10,
+  "rrf_k": 60,
+  "ce_candidate_mult": 3,
+  "device": "cuda"
+}

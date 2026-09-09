@@ -107,6 +107,36 @@ def jaccard_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> fl
     return len(retrieved & relevant_ids) / len(union)
 
 
+def avg_matched_rank(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
+    """Rank of the highest-ranked supporting chunk (lower is better).
+
+    Returns k + 1 when no relevant chunk appears within the top k.
+    """
+    for index, chunk_id in enumerate(retrieved_ids[:k], start=1):
+        if chunk_id in relevant_ids:
+            return float(index)
+    return float(k + 1)
+
+
+def failure_rate_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: int) -> float:
+    """Proportion of queries for which no relevant chunk is in the top k (lower is better).
+
+    Returns 1.0 when no relevant chunk appears, 0.0 otherwise.
+    """
+    return 1.0 - hit_at_k(retrieved_ids, relevant_ids, k)
+
+
+def title_at_k(retrieved_document_ids: list[str], ground_truth_document_ids: set[str], k: int) -> float:
+    """Whether at least one top-k chunk comes from a ground-truth document (higher is better).
+
+    Mirrors the paper's Title@K: document-level disambiguation, where a chunk
+    is a hit if it belongs to the correct document (e.g., company + year).
+    """
+    if not ground_truth_document_ids:
+        return 0.0
+    return 1.0 if set(retrieved_document_ids[:k]) & ground_truth_document_ids else 0.0
+
+
 def aggregate(rows: list[dict[str, Any]], metric_keys: list[str]) -> dict[str, Any]:
     out: dict[str, Any] = {"count": len(rows)}
     for key in metric_keys:

@@ -1,0 +1,76 @@
+% ============================================================================
+% Section 8: Discussion
+% ============================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Interpretation of Findings}
+\label{sec:interpretation}
+
+The ablations separate three effects that are often conflated in a legal RAG
+pipeline. First, metadata-enriched embeddings improve document-level
+identification without improving exact provision ranking. The representation
+therefore helps the system locate the right instrument, but the additional
+header tokens can compete with the passage text when the evaluation target is
+a specific gold chunk.
+
+Second, the current hybrid implementation does not improve exact-chunk
+retrieval over the dense baseline. BM25 and RRF may still supply context that
+is marginally useful to generation, but the paired retrieval loss and large
+latency increase make hybrid retrieval a poor default under the present
+settings. This result should not be generalized to all fusion methods: it
+identifies a limitation of this index, tokenization, fusion constant, and
+candidate budget.
+
+Third, graph expansion improves identity precision by returning fewer, denser
+contexts, but it removes more already-retrieved gold evidence than it adds.
+The likely mechanism is a fixed context budget combined with one-hop
+expansion, which replaces seed passages with structurally adjacent passages.
+Graph context can still be valuable for validity and citation reasoning, but
+that hypothesis requires semantic legal-answer annotations and a graph policy
+that preserves high-confidence seed evidence.
+
+Finally, reranking is the clearest positive result. With the candidate pool
+held fixed, every tested cross-encoder improves the three primary ranking
+metrics over RRF-only, and Jina has the largest paired gains. This is evidence
+for better ordering and candidate retention, not evidence that the generator's
+legal claims are correct. The quality--latency frontier favors Jina for the
+current benchmark, BGE when lexical answer overlap is prioritized, and mMiniLM
+when latency is the primary constraint.
+
+\subsection{Design Implications}
+\label{sec:design-implications}
+
+For a retrieval-focused deployment, we recommend dense retrieval with a
+reranker, using Jina as the current default candidate and mMiniLM as the
+latency-oriented fallback. BGE is a reasonable alternative when its observed
+Token F1 and ROUGE-L advantage is preferred. Hybrid retrieval should be
+revisited after measuring online BM25 cost and tuning fusion; the current
+results do not justify paying its reported latency by default. Graph
+augmentation should be gated by a validity- or relationship-aware query mode
+until seed-preserving expansion and semantic evaluation are completed.
+
+These recommendations are conditional. A production legal system should
+select evidence using validity metadata, expose citations, abstain when
+evidence is insufficient, and require human verification. No automatic metric
+reported here can certify the legal effect of an answer.
+
+\subsection{Threats to Validity}
+\label{sec:threats}
+
+The benchmark has 500 questions and a small number of multi-hop, hard, and
+cross-document cases. Ground-truth chunk sets may not capture every passage
+that a legal expert would consider sufficient, and document-level success is
+not equivalent to provision-level correctness. All runs use one embedding
+model, one generator, one prompt, and one corpus/index version within each
+family. The source artifacts also differ in candidate budget across families,
+which prevents a pooled comparison of absolute scores.
+
+The reranker safety analysis uses a deterministic refusal-marker classifier,
+not human assessment. Its cached BM25 stage means recorded reranker latency is
+not full-online hybrid latency, and p95 latency, peak GPU memory, and controlled
+throughput are unavailable. Finally, the graph corpus contains unresolved
+relationship-direction and validity-annotation questions; these may affect
+the behavior of graph-augmented runs. We therefore present the results as
+benchmark-bounded engineering evidence rather than as a claim of legal
+reliability.

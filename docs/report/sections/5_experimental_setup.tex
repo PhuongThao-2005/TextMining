@@ -1,0 +1,128 @@
+% ============================================================================
+% Section 5: Experimental Setup
+% ============================================================================
+\section{Experimental Setup}
+\label{sec:experimental-setup}
+
+We evaluate L\_RAG with controlled, paired ablations over the same Vietnamese
+legal QA benchmark. The benchmark contains 500 questions: 400 answerable and
+100 unanswerable. Runs within an ablation family use the same benchmark,
+question identifiers, generator settings, and corpus/index version; only the
+component named by the family is changed. This design is important because the
+three completed families use different candidate budgets, as summarized in
+Table~\ref{tab:configurations}.
+
+\subsection{Research Questions}
+\label{sec:research-questions}
+
+We organize the experiments around five questions:
+\begin{enumerate}
+    \item Does adding document and provision metadata to the embedding text
+    improve exact evidence retrieval or document-level coverage?
+    \item Does hybrid dense--sparse retrieval improve coverage or ranking over
+    dense retrieval alone?
+    \item Does the current G-LRAG graph overlay improve evidence coverage and
+    downstream behavior for the tested legal QA benchmark?
+    \item Which reranker best trades ranking quality against inference cost
+    when the candidate pool is held fixed?
+    \item Which generator reasoning strategy should be used? This final
+    question is planned and is not included in the completed results.
+\end{enumerate}
+
+\subsection{Metrics}
+\label{sec:metrics}
+
+For answerable questions, retrieval is evaluated against the annotated gold
+chunk IDs using Recall@$k$, Hit@$k$, MRR@$k$, nDCG@$k$, and Precision@$k$.
+For graph runs we additionally report document-identity precision, because a
+graph variant can return fewer chunks and therefore make a fixed-denominator
+precision score misleading. The reranker analysis reports candidate
+Recall@30 and candidate Hit@30 to distinguish the evidence ceiling from the
+ability of a reranker to promote evidence already present in the candidate
+pool.
+
+For generated answers, we report exact match, token-level F1, and ROUGE-L on
+answerable questions, together with unanswerable accuracy. These automatic
+overlap and abstention measures are diagnostics rather than legal judgments:
+the available artifacts contain no human labels for legal correctness,
+completeness, claim faithfulness, or citation-to-chunk alignment. Those
+metrics are consequently not inferred from lexical overlap.
+
+Efficiency is reported as mean and median per-query latency, with p95 values
+where the source run recorded them. The reranker runs used cached BM25
+candidates and therefore report zero sparse-stage time; those values are not
+treated as full-online hybrid latency.
+
+\subsection{Evaluation Protocol}
+\label{sec:protocol}
+
+All completed runs use \texttt{intfloat/multilingual-e5-large} for dense
+retrieval and \texttt{gpt-4o-mini} for generation with temperature 0.0 and a
+maximum of 1,024 output tokens. The embedding-text ablation uses raw FAISS
+top-10 retrieval with no sparse, graph, fusion, or reranking module. The
+dense/hybrid/graph ablation retrieves 50 seeds and supplies at most 10 final
+chunks; graph variants expand five seeds by one hop with a maximum graph
+context of 10. The reranker ablation reconstructs a shared RRF candidate pool
+of 30 chunks (\texttt{C30}) and compares the top 10 final chunks
+(\texttt{T10}). Its fusion constant is \texttt{rrf\_k=60}.
+
+Comparisons are paired by \texttt{qa\_id}. Overall retrieval deltas use the
+400 answerable questions. We report percentile bootstrap 95\% confidence
+intervals for the mean per-question delta, using 10,000 resamples for the
+main comparisons and 2,000 resamples for the smaller reranker slices. A
+confidence interval containing zero is described as inconclusive rather than
+as evidence of an effect. The reranker candidate reconstruction agrees with
+the recorded RRF-only top-10 prefix for all 500 questions.
+
+\subsection{Ablation Configurations}
+\label{sec:configurations}
+
+Table~\ref{tab:configurations} lists the frozen configurations used in the
+completed analyses. Names are aligned with the run manifests and the derived
+reports under \texttt{ablation\_work/}.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Completed ablation configurations. A dash means that the component
+was disabled. Candidate budgets are shown because they differ by ablation
+family.}
+\label{tab:configurations}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lllllll}
+\toprule
+\textbf{Family} & \textbf{Configuration} & \textbf{Dense text} &
+\textbf{Sparse} & \textbf{Graph} & \textbf{Reranking} &
+\textbf{Candidate/final} \\
+\midrule
+Embedding & Chunk-only & chunk text & -- & -- & -- & 10/10 \\
+Embedding & Chunk+metadata & header + chunk & -- & -- & -- & 10/10 \\
+Retrieval/graph & DenseOnly & header + chunk & -- & -- & -- & 50/10 \\
+Retrieval/graph & HybridOnly & header + chunk & BM25 & -- & -- & 50/10 \\
+Retrieval/graph & DenseGraph & header + chunk & -- & G-LRAG & -- & 50/10 \\
+Retrieval/graph & HybridGraph & header + chunk & BM25 & G-LRAG & -- & 50/10 \\
+Reranker & None & shared RRF pool & BM25 & -- & none & 30/10 \\
+Reranker & RRF-only & shared RRF pool & BM25 & -- & RRF & 30/10 \\
+Reranker & mMiniLM & shared RRF pool & BM25 & -- & mMiniLM CE & 30/10 \\
+Reranker & Qwen3 & shared RRF pool & BM25 & -- & Qwen3 & 30/10 \\
+Reranker & BGE & shared RRF pool & BM25 & -- & BGE-v2-m3 & 30/10 \\
+Reranker & Jina & shared RRF pool & BM25 & -- & Jina-v2 & 30/10 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\subsection{Reproducibility and Artifact Ledger}
+\label{sec:reproducibility}
+
+Each run is accompanied by a manifest, per-question outputs, metric summary,
+and latency file. The derived analyses are versioned alongside the source
+outputs: the embedding comparison is in
+\url{ablation_study/chunkOnly_vs_chunkMetadata/results/}, the
+dense/hybrid/graph comparison is in
+\url{ablation_study/dense_vs_Hybrid_vs_Graph/results/}, and the
+multi-reranker analysis is in
+\url{ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v2/}.
+The script that reconstructs the reranker candidate pool and produces its
+paired analysis is
+\url{ablation_work/reranker_choices/analyze_reranker_metrics.py}.

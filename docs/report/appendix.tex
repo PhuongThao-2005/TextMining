@@ -1,0 +1,80 @@
+% ============================================================================
+% Appendices
+% ============================================================================
+\appendix
+
+\section{Dataset and Graph Schema}
+\label{app:schema}
+
+The corpus represents legal instruments as documents, hierarchical provisions,
+and indexed chunks. A document stores its identifier, title, issuing
+authority, effective-date and validity metadata; a provision stores its
+article/clause hierarchy; and a chunk stores passage text, parent identifiers,
+and reading order. The graph uses containment edges
+\texttt{DOCUMENT\_HAS\_PROVISION} and \texttt{PROVISION\_HAS\_CHUNK},
+reading-order edges \texttt{CHUNK\_NEXT} and \texttt{PROVISION\_NEXT}, and
+document-level legal relationships such as amendment, replacement, repeal,
+and citation. The completed evaluation uses the chunk identifiers in the QA
+gold sets as the retrieval relevance units.
+
+The processed corpus summary contains 151,624 documents, 1,386,267
+provisions, 1,513,376 chunks, 883,256 document relationships, and 19,763
+external stubs. The relationship and validity fields require direction
+validation before they are used to make high-stakes legal filtering decisions.
+
+\section{Additional Results}
+\label{app:additional-results}
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Effect of graph expansion on top-10 gold evidence. ``Graph-only'' is
+gold evidence introduced by the graph context; ``graph-missed'' is gold
+evidence present before expansion but absent afterward. Counts are over 400
+answerable questions.}
+\label{tab:graph-effect}
+\begin{tabular}{lrrrll}
+\toprule
+\textbf{Base} & \textbf{$\Delta$ Recall@10} & \textbf{$\Delta$ MRR@10} &
+\textbf{$\Delta$ nDCG@10} & \textbf{Graph-only} & \textbf{Graph-missed} \\
+\midrule
+DenseOnly $\rightarrow$ DenseGraph & $-0.1240$ & $-0.0222$ & $-0.0439$ &
+1 query (0.25\%) & 61 queries (15.25\%) \\
+HybridOnly $\rightarrow$ HybridGraph & $-0.1181$ & $-0.0240$ & $-0.0411$ &
+6 queries (1.50\%) & 59 queries (14.75\%) \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+For the reranker family, candidate Recall@30 and candidate Hit@30 are 0.5995
+and 0.6450 for every configuration. Gold retention@10 is 0.7129 for RRF-only,
+0.8256 for mMiniLM, 0.8702 for Qwen3, 0.8630 for BGE, and 0.8850 for Jina.
+The source-derived Markdown report additionally records paired win/tie/loss
+counts, all requested slices, lexical safety diagnostics, and the status of
+the blinded annotation template. These values are retained in the
+machine-readable JSON rather than duplicated as a long appendix table.
+
+\section{Run Manifests and Artifacts}
+\label{app:manifests}
+
+All paths below are relative to the repository root. The lean commit retains
+manifests, aggregate metrics, reports, and latency summaries. Raw per-question
+outputs, retrieval caches, and the pending annotation template remain local
+evaluation artifacts and are intentionally not versioned here.
+
+\begin{itemize}
+    \item Embedding text: \url{ablation_work/chunkOnly_vs_chunkMetadata/}
+    \item Dense/hybrid/graph: \url{ablation_work/denseOnly_vs_denseGraph/}
+    and \url{ablation_work/hybridOnly_vs_hybridGraph/}
+    \item Reranker source and derived analysis:
+    \url{ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v2/}
+    \item Reranker analysis script:
+    \url{ablation_work/reranker_choices/analyze_reranker_metrics.py}
+    \item Human-evaluation scaffold: generated locally for the pending
+    semantic-evaluation phase and omitted from the lean commit.
+\end{itemize}
+
+The formal report's Markdown counterparts are organized under
+\url{ablation_study/}. The derived reports intentionally distinguish
+completed deterministic analyses from unavailable semantic legal-judge
+metrics and unmeasured full-online deployment statistics.

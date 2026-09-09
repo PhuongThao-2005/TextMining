@@ -1,0 +1,76 @@
+% ============================================================================
+% Section 6: Ablation Study
+% ============================================================================
+\section{Ablation Study}
+\label{sec:ablation-study}
+
+We report three completed ablation families. The first isolates the text fed
+to the dense encoder, the second compares dense, hybrid, and graph-augmented
+retrieval, and the third compares six ranking controls over a shared hybrid
+candidate pool. Because candidate construction differs between families, all
+claims are made within a family; the results are not treated as one pooled
+factorial experiment.
+
+\subsection{Embedding Text: Chunk-Only versus Chunk+Metadata}
+\label{sec:ablation-chunk-meta}
+
+This comparison uses the same dense encoder, generator, benchmark, seed, and
+raw FAISS evaluation path. Only the indexed text changes from the chunk body
+to a header-plus-chunk representation. On 400 paired answerable questions,
+metadata leaves exact chunk Recall@10 effectively unchanged (48.5\% versus
+48.5\%) but increases document-level success from 65.8\% to 70.2\%. The
+paired document-success gain is +4.5 percentage points (95\% CI
+[+0.5,+8.8]), whereas the MRR@10 change is $-5.9$ points (95\% CI
+[$-9.1,-2.7$]). Metadata therefore improves identification of the correct
+document while making the first exact gold chunk appear later. This
+document--provision divergence motivates reporting both views of retrieval;
+the full comparison is in Table~\ref{tab:embedding-results}.
+
+\subsection{Retrieval Mode and Graph Expansion}
+\label{sec:ablation-retrieval-mode}
+
+The second family evaluates DenseOnly, HybridOnly, DenseGraph, and
+HybridGraph. Hybrid retrieval adds BM25 and RRF to the same dense index;
+graph variants expand five seed chunks by one hop and retain at most 10
+chunks. Without graph expansion, DenseOnly outperforms HybridOnly on
+Recall@10 (48.55\% vs. 42.57\%) and nDCG@10 (0.2813 vs. 0.2638). The paired
+Recall@10 difference is $-5.98$ points (95\% CI [$-9.71,-2.21$]).
+
+Graph expansion currently displaces more evidence than it adds. Relative to
+DenseOnly, DenseGraph changes Recall@10 by $-12.40$ points and loses at least
+one previously retrieved gold chunk for 61 questions while adding a graph-only
+gold chunk for only one question. The corresponding HybridOnly to HybridGraph
+change is $-11.81$ points, with 59 questions losing a gold chunk and six
+gaining one. Graph contexts are denser because they contain fewer chunks on
+average (5.605 for DenseGraph and 6.305 for HybridGraph), but their context
+recall is lower. The tested graph overlay is thus not yet evidence of a
+retrieval-quality improvement.
+
+\subsection{Reranker Choice at a Fixed Candidate Pool}
+\label{sec:ablation-reranking}
+
+The third family compares no reranking, RRF-only, mMiniLM, Qwen3, BGE, and
+Jina over a reconstructed shared RRF pool of 30 candidates and a final top 10.
+All six runs cover the same 500 questions without retrieval or generation
+errors, and the reconstruction matches the recorded RRF-only top-10 prefix
+for 500/500 questions. Candidate Recall@30 is 0.5995 and Candidate Hit@30 is
+0.6450 for every configuration, so the comparison measures ranking and
+retention within a fixed evidence ceiling.
+
+Jina is the strongest retrieval configuration: relative to RRF-only, it
+improves Recall@10 by +9.23 points, MRR@10 by +13.35 points, and nDCG@10 by
++11.85 points; all three 95\% paired-bootstrap intervals exclude zero. Qwen3
+and BGE also have positive intervals, while mMiniLM supplies a smaller but
+statistically positive gain at the lowest reranker cost. BGE has the highest
+token F1 and ROUGE-L, whereas Jina has the highest observed unanswerable
+accuracy. These answer metrics are lexical/abstention diagnostics, not legal
+correctness judgments. Table~\ref{tab:reranker-results} reports the aggregate
+comparison and Table~\ref{tab:reranker-paired} reports paired effects.
+
+\subsection{Generator Reasoning (Planned)}
+\label{sec:ablation-reasoning}
+
+An ablation of base prompting, explicit reasoning, and larger generators has
+not been run. It remains future work because changing the generator would
+confound the completed retrieval comparisons and because semantic legal
+correctness labels are not yet available.
