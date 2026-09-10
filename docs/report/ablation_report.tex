@@ -52,7 +52,10 @@ chunk ranking; the tested hybrid and graph variants reduce retrieval coverage;
 and cross-encoder reranking consistently improves ranking at a measurable
 latency cost. Jina gives the strongest fixed-candidate retrieval result,
 whereas BGE gives the highest lexical answer-overlap scores and mMiniLM is the
-fastest reranker. Human-validated legal correctness and citation faithfulness
+fastest reranker. In a completed generator-reasoning comparison, GPT-4o-mini
+chain-of-thought prompting lowers lexical overlap under fixed retrieved context
+while improving only template-based answerability diagnostics and adding
+latency. Human-validated legal correctness and citation faithfulness
 are not available, so the conclusions are bounded to deterministic retrieval,
 overlap, abstention, and recorded latency diagnostics.
 \end{abstract}

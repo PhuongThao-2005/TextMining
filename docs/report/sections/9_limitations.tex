@@ -10,7 +10,12 @@ has a substantial memory footprint at the scale of the current corpus.
 Retrieval and generation quality are bounded by the benchmark's coverage and
 ground-truth annotations, and a fluent answer is not evidence of legal
 correctness. The system is therefore a research prototype and must not be
-used as a substitute for qualified legal review.
+used as a substitute for qualified legal review. The reasoning analysis is
+also limited to saved output records: it has no semantic claim labels, raw
+chain-of-thought, reasoning-token accounting, or cost data. The DeepSeek CoT
+cell is incomplete, and the current directory named \texttt{qwen3-8b-CoT} has a
+DeepSeek manifest, so a Qwen3-8B CoT comparison is unavailable until the
+artifacts are corrected.
 
 \section*{Ethical Considerations}
 \label{sec:ethics}

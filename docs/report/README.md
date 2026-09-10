@@ -6,10 +6,11 @@ ACL style, two-column body, no title page or table of contents, numbered
 main sections, unnumbered limitations/ethics/acknowledgments, BibTeX
 references, and lettered appendices.
 
-The manuscript is populated with the three completed deterministic ablations
-(embedding text, dense/hybrid plus graph retrieval, and multi-reranker choice).
-The generator-reasoning ablation and human-validated legal-answer metrics are
-clearly marked as future work or unavailable rather than presented as results.
+The manuscript is populated with four completed deterministic ablations
+(embedding text, dense/hybrid plus graph retrieval, multi-reranker choice, and
+the generator-reasoning prompt comparison). Human-validated legal-answer
+metrics remain unavailable and are clearly separated from the deterministic
+results.
 
 The ablation branch keeps compact manifests, aggregate metrics, derived
 reports, analysis code, and the compiled manuscript. Raw per-query outputs,
@@ -42,7 +43,7 @@ anonymous, line-numbered ACL review layout.
 | `sections/3_system_overview.tex` | L_RAG architecture and components |
 | `sections/4_dataset_and_corpus.tex` | Legal corpus, graph schema, QA benchmark |
 | `sections/5_experimental_setup.tex` | Questions, metrics, protocol, configurations |
-| `sections/6_ablation_study.tex` | Controlled comparisons and planned runs |
+| `sections/6_ablation_study.tex` | Controlled comparisons and completed runs |
 | `sections/7_results.tex` | Results ledger and breakdowns |
 | `sections/8_discussion.tex` | Interpretation and threats to validity |
 | `sections/9_limitations.tex` | Limitations and ethical considerations |

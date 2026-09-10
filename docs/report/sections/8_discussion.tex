@@ -7,7 +7,7 @@
 \subsection{Interpretation of Findings}
 \label{sec:interpretation}
 
-The ablations separate three effects that are often conflated in a legal RAG
+The ablations separate four effects that are often conflated in a legal RAG
 pipeline. First, metadata-enriched embeddings improve document-level
 identification without improving exact provision ranking. The representation
 therefore helps the system locate the right instrument, but the additional
@@ -38,6 +38,19 @@ legal claims are correct. The quality--latency frontier favors Jina for the
 current benchmark, BGE when lexical answer overlap is prioritized, and mMiniLM
 when latency is the primary constraint.
 
+The generator-reasoning comparison gives a different kind of result. With the
+retrieved context fixed, GPT-4o-mini CoT lowers Token F1 and ROUGE-L relative
+to Base prompting, with paired intervals excluding zero, while exact match is
+nearly unchanged. CoT reduces template-detected false refusals and increases
+citation-marker presence, but it also increases generation and total latency
+and slightly lowers structural citation coverage. Thus explicit reasoning is
+not a demonstrated quality improvement for this prompt, model, and benchmark;
+its observed benefit is limited to output-format diagnostics that lack semantic
+legal validation. The GLM pair is complete but descriptive, the DeepSeek CoT
+cell remains incomplete, and the current Qwen CoT directory is manifest-labeled
+as a second DeepSeek run; these conditions should be corrected or completed
+before making cross-model conclusions.
+
 \subsection{Design Implications}
 \label{sec:design-implications}
 
@@ -62,12 +75,17 @@ The benchmark has 500 questions and a small number of multi-hop, hard, and
 cross-document cases. Ground-truth chunk sets may not capture every passage
 that a legal expert would consider sufficient, and document-level success is
 not equivalent to provision-level correctness. All runs use one embedding
-model, one generator, one prompt, and one corpus/index version within each
-family. The source artifacts also differ in candidate budget across families,
-which prevents a pooled comparison of absolute scores.
+model and one corpus/index version within each family; generator settings are
+fixed within each compared cell, while the reasoning family intentionally
+varies the prompt mode. The source artifacts also differ in candidate budget
+across families, which prevents a pooled comparison of absolute scores.
 
-The reranker safety analysis uses a deterministic refusal-marker classifier,
-not human assessment. Its cached BM25 stage means recorded reranker latency is
+The reranker and generator-reasoning safety analyses use deterministic
+refusal-marker/template classifiers, not human assessment. The reasoning
+artifacts also contain no raw CoT, reasoning-token counts, cost, or semantic
+claim annotations. The DeepSeek CoT cell is incomplete, and the expected Qwen
+CoT artifact is currently a second manifest-labeled DeepSeek run; the complete
+GLM pair remains descriptive. The cached BM25 stage means recorded reranker latency is
 not full-online hybrid latency, and p95 latency, peak GPU memory, and controlled
 throughput are unavailable. Finally, the graph corpus contains unresolved
 relationship-direction and validity-annotation questions; these may affect
