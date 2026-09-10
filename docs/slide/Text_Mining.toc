@@ -1,0 +1,7 @@
+\babel@toc {english}{}\relax 
+\beamer@sectionintoc {1}{Introduction}{3}{0}{1}
+\beamer@sectionintoc {2}{Related Work}{6}{0}{2}
+\beamer@sectionintoc {3}{System Overview}{9}{0}{3}
+\beamer@sectionintoc {4}{Dataset and Benchmark}{16}{0}{4}
+\beamer@sectionintoc {5}{Ablation Studies \& Results}{22}{0}{5}
+\beamer@sectionintoc {6}{Discussion and Conclusion}{31}{0}{6}

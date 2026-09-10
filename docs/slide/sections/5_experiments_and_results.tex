@@ -4,7 +4,7 @@
 \section{Ablation Studies \& Results}
 
 \begin{frame}{Controlled Experimental Protocol}
-\small
+\scriptsize
 \begin{columns}[T]
   \column{0.48\textwidth}
     \textbf{Shared settings}
@@ -12,7 +12,9 @@
       \item Frozen benchmark: 500 QA pairs.
       \item Retrieval metrics: 400 answerable cases.
       \item Dense encoder: \texttt{multilingual-e5-large}.
-      \item Generator: \texttt{gpt-4o-mini}, $T=0$, 1,024 tokens.
+      \item Non-reasoning runs: \texttt{gpt-4o-mini}.
+      \item Reasoning primary pair: fixed context, Base vs. CoT.
+      \item Temperature 0; maximum 1,024 tokens.
       \item Comparisons paired by \texttt{qa\_id}.
     \end{itemize}
   \column{0.49\textwidth}
@@ -30,7 +32,7 @@ Candidate budgets differ across experiment families, so scores are compared \tex
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{Three Completed Ablation Families}
+\begin{frame}{Four Completed Ablation Families}
 \scriptsize
 \centering
 \resizebox{0.98\linewidth}{!}{%
@@ -41,6 +43,7 @@ Candidate budgets differ across experiment families, so scores are compared \tex
 Embedding text & Chunk-only; chunk + metadata & 10/10 & Indexed text \\
 Retrieval/graph & DenseOnly; HybridOnly; DenseGraph; HybridGraph & 50/10 & BM25 + graph \\
 Reranking & None; RRF; mMiniLM; Qwen3; BGE; Jina & 30/10 & Final ranker \\
+LLM reasoning & GPT-4o-mini Base; GPT-4o-mini CoT & fixed/10 & Prompt mode \\
 \bottomrule
 \end{tabular}}
 \vspace{0.35cm}
@@ -48,7 +51,7 @@ Reranking & None; RRF; mMiniLM; Qwen3; BGE; Jina & 30/10 & Final ranker \\
 All rerankers receive the same reconstructed RRF pool of 30 chunks. Candidate Recall@30 is 0.5995 and Hit@30 is 0.6450 for every configuration.
 \end{block}
 \vspace{0.15cm}
-The planned generator-reasoning ablation is not included because semantic legal-correctness labels are not yet available.
+The primary GPT-4o-mini reasoning runs cover 500/500 questions and use identical saved contexts, isolating prompt mode within the limits of automatic metrics.
 \end{frame}
 
 \begin{frame}{Ablation 1: Does Metadata Improve Embeddings?}
@@ -166,6 +169,64 @@ BGE & 0.5188 & 0.5675 & 0.3247 & 0.3593 & \textbf{0.2955} & \textbf{0.2603} & 2.
 \vspace{0.25cm}
 \begin{alertblock}{Evidence ceiling}
 Jina retains 88.50\% of gold chunks available in the shared candidate pool, compared with 71.29\% for RRF-only. The gain is better promotion, not a larger pool.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Ablation 4: GPT-4o-mini Base vs. CoT}
+\scriptsize
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Metric} & \textbf{Base} & \textbf{CoT} & \textbf{$\Delta$ CoT--Base} & \textbf{95\% paired CI} \\
+\midrule
+Exact Match & 14.00\% & 13.75\% & $-0.25$ pp & $[-1.50,+1.00]$ \\
+Token F1 & 24.72\% & 23.15\% & $-1.57$ pp & $[-2.24,-0.92]$ \\
+ROUGE-L & 21.60\% & 19.90\% & $-1.71$ pp & $[-2.34,-1.10]$ \\
+\bottomrule
+\end{tabular}
+\vspace{0.3cm}
+\begin{columns}[T]
+  \column{0.48\textwidth}
+    \begin{block}{Quality outcome}
+    Token F1 and ROUGE-L decrease with confidence intervals below zero. Exact Match is effectively unchanged.
+    \end{block}
+  \column{0.48\textwidth}
+    \begin{alertblock}{Latency outcome}
+    Generation p50 rises 2.92 $\rightarrow$ 3.68 s; total p50 rises 13.99 $\rightarrow$ 14.74 s.
+    \end{alertblock}
+\end{columns}
+\vspace{0.1cm}
+Token-F1 win/tie/loss for CoT: 79/164/157. Explicit reasoning is not a demonstrated quality improvement here.
+\end{frame}
+
+\begin{frame}{What CoT Changes Beyond Lexical Overlap}
+\scriptsize
+\begin{columns}[T]
+  \column{0.49\textwidth}
+    \textbf{Output-behavior diagnostics}
+    \begin{itemize}
+      \item Decision accuracy: 82.60\% $\rightarrow$ 84.00\%.
+      \item False refusal: 21.25\% $\rightarrow$ 19.50\%.
+      \item Unanswerable recognition: 98.00\% for both.
+      \item Citation presence: 78.25\% $\rightarrow$ 81.00\%.
+      \item Mean unique sources: 1.46 $\rightarrow$ 1.68.
+      \item Structural citation coverage: 89.42\% $\rightarrow$ 87.91\%.
+    \end{itemize}
+  \column{0.48\textwidth}
+    \textbf{Token F1 by evidence availability}
+    \begin{itemize}
+      \item Full support ($n=138$): $-1.98$ pp.
+      \item Partial support ($n=29$): $-1.86$ pp.
+      \item No gold support ($n=233$): $-1.30$ pp.
+    \end{itemize}
+    \vspace{0.15cm}
+    \begin{block}{Cross-model inventory}
+    DeepSeek, GLM, and Qwen Base/CoT pairs are complete but descriptive because context or run provenance is not fully aligned.
+    \end{block}
+\end{columns}
+\vspace{0.15cm}
+\begin{alertblock}{Interpretation boundary}
+Decision and citation-marker diagnostics do not measure semantic refusal quality, claim faithfulness, or legal correctness.
 \end{alertblock}
 \end{frame}
 

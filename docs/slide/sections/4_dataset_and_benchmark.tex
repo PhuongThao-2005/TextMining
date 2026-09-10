@@ -78,41 +78,36 @@ Quarantined records and unverified edge directions are excluded from trusted tra
 \end{frame}
 
 \begin{frame}{500-Query Legal QA Benchmark}
-\small
+\scriptsize
 \begin{columns}[T]
   \column{0.48\textwidth}
     \begin{block}{Answerability}
-      \begin{itemize}
-        \item 400 answerable questions
-        \item 100 unanswerable questions
-        \item Unanswerable cases test abstention under insufficient evidence.
-      \end{itemize}
+      \textbf{400 answerable} + \textbf{100 unanswerable}. The latter test abstention when corpus evidence is absent.
     \end{block}
-    \textbf{Answer types}
-    \begin{itemize}
-      \item Abstractive
-      \item Boolean
-      \item Extractive
-      \item Unanswerable
-    \end{itemize}
+    \textbf{Answer types:} abstractive, boolean, extractive, and unanswerable.
   \column{0.49\textwidth}
     \begin{block}{Question categories}
-      \begin{itemize}
-        \item Single-hop: 265
-        \item Citation: 106
-        \item Legal validity: 96
-        \item Multi-hop: 21
-        \item Cross-document: 12
-      \end{itemize}
+      \begin{tabular}{lr}
+      Single-hop & 265 \\
+      Citation & 106 \\
+      Legal validity & 96 \\
+      Multi-hop & 21 \\
+      Cross-document & 12
+      \end{tabular}
     \end{block}
 
     \textbf{Generation model:} \texttt{gemini-3.1-flash-lite}
 
 \end{columns}
+\vspace{0.15cm}
+\begin{block}{Grounded QA construction}
+\scriptsize
+Bundles of 3--5 provisions $\rightarrow$ generate with Gemini $\rightarrow$ independently verify correctness, evidence sufficiency, hallucination, category, and difficulty $\rightarrow$ diversity filter and deduplicate. Sampled: 515 documents / 1,697 provisions; verifier pass rate: \textbf{72.41\%}.
+\end{block}
 \end{frame}
 
 \begin{frame}{Ground Truth and Evaluation Contract}
-\small
+\scriptsize
 
 Each benchmark query stores metadata, a reference answer, and evidence provenance:
 
