@@ -199,6 +199,62 @@ def test_generate_answer_records_error_without_raw_key(
     assert "sk-super-secret-key" not in str(excinfo.value)
     assert "***" in str(excinfo.value)
 
+
+def test_generator_client_retries_rate_limits_with_backoff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import generation.reasoning_client as mod
+
+    class _RateLimitError(RuntimeError):
+        status_code = 429
+        response = SimpleNamespace(headers={"retry-after": "3"})
+
+    calls = 0
+
+    class _Completions:
+        def create(self, **kwargs):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise _RateLimitError("rate limited")
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))])
+
+    sleeps: list[float] = []
+    monkeypatch.setattr(mod.time, "sleep", sleeps.append)
+    monkeypatch.setattr(mod.random, "uniform", lambda _low, _high: 0.0)
+    client = object.__new__(GeneratorClient)
+    client.model = "m"
+    client._base_url = "https://example.com"
+    client._api_key = "key"
+    client.client = SimpleNamespace(chat=SimpleNamespace(completions=_Completions()))
+
+    assert client.generate("prompt", max_retries=1).content == "ok"
+    assert calls == 2
+    assert sleeps == [3.0]
+
+
+def test_generator_client_does_not_retry_bad_requests() -> None:
+    class _BadRequestError(RuntimeError):
+        status_code = 400
+
+    calls = 0
+
+    class _Completions:
+        def create(self, **kwargs):
+            nonlocal calls
+            calls += 1
+            raise _BadRequestError("bad request")
+
+    client = object.__new__(GeneratorClient)
+    client.model = "m"
+    client._base_url = "https://example.com"
+    client._api_key = "key"
+    client.client = SimpleNamespace(chat=SimpleNamespace(completions=_Completions()))
+
+    with pytest.raises(RuntimeError, match="after 1 attempt"):
+        client.generate("prompt", max_retries=6)
+    assert calls == 1
+
     outcome = generate_answer(client, "q", [chunk], qa_id="qa-2")
     assert outcome.skipped_empty_context is False
     assert outcome.parsed is None

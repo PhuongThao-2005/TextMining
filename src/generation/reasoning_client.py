@@ -6,7 +6,9 @@ the final answer returned to evaluation artifacts.
 
 from __future__ import annotations
 
+import random
 import re
+import time
 from dataclasses import dataclass
 from typing import Any, Sequence
 
@@ -20,6 +22,7 @@ FINAL_ANSWER_RE = re.compile(
     r"(?:final\s+answer|answer|câu\s+trả\s+lời\s+cuối\s+cùng|trả\s+lời)\s*:\s*",
     re.IGNORECASE,
 )
+_RETRYABLE_STATUS_CODES = frozenset({408, 409, 429, 500, 502, 503, 504})
 
 # Backward-compatible public constant. New code should call build_generation_prompt.
 ANSWER_PROMPT = build_generation_prompt(
@@ -98,17 +101,19 @@ class GeneratorClient:
         for attempt in range(max_retries + 1):
             try:
                 response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                top_p=top_p,
-                max_tokens=max_output_tokens,
-                timeout=timeout_seconds,
-                extra_body={"enable_thinking": False},
-            )
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=temperature,
+                    top_p=top_p,
+                    max_tokens=max_output_tokens,
+                    timeout=timeout_seconds,
+                    extra_body={"enable_thinking": False},
+                )
                 break
             except Exception as exc:
-                if attempt < max_retries:
+                retry_delay = _retry_delay_seconds(exc, attempt)
+                if attempt < max_retries and retry_delay is not None:
+                    time.sleep(retry_delay + random.uniform(0.0, 1.0))
                     continue
                 message = _redact_secrets(str(exc), [self._api_key])
                 raise RuntimeError(
@@ -120,6 +125,33 @@ class GeneratorClient:
         content = (getattr(message, "content", None) or "").strip()
         reasoning_field = _extract_reasoning_field(message)
         return RawGenerationResponse(content=content, reasoning_field=reasoning_field)
+
+
+def _retry_delay_seconds(exc: Exception, attempt: int) -> float | None:
+    """Return a bounded retry delay for transient provider failures only."""
+
+    status_code = getattr(exc, "status_code", None)
+    if status_code is not None:
+        try:
+            status_code = int(status_code)
+        except (TypeError, ValueError):
+            return None
+        if status_code not in _RETRYABLE_STATUS_CODES:
+            return None
+
+    headers = getattr(getattr(exc, "response", None), "headers", None) or {}
+    retry_after = next(
+        (value for key, value in headers.items() if str(key).lower() == "retry-after"),
+        None,
+    )
+    try:
+        if retry_after is not None:
+            return min(120.0, max(0.0, float(retry_after)))
+    except (TypeError, ValueError):
+        pass
+
+    # 2, 4, 8, 16, 32, 60 seconds for successive retries.
+    return min(60.0, 2.0 ** (attempt + 1))
 
 
 def _extract_reasoning_field(message: Any) -> str | None:
