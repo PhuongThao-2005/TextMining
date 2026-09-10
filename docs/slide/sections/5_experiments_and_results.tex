@@ -43,7 +43,7 @@ Candidate budgets differ across experiment families, so scores are compared \tex
 Embedding text & Chunk-only; chunk + metadata & 10/10 & Indexed text \\
 Retrieval/graph & DenseOnly; HybridOnly; DenseGraph; HybridGraph & 50/10 & BM25 + graph \\
 Reranking & None; RRF; mMiniLM; Qwen3; BGE; Jina & 30/10 & Final ranker \\
-LLM reasoning & GPT-4o-mini Base; GPT-4o-mini CoT & fixed/10 & Prompt mode \\
+LLM reasoning & 4 models, each with Base and CoT & fixed/10 & Prompt mode \\
 \bottomrule
 \end{tabular}}
 \vspace{0.35cm}
@@ -51,7 +51,7 @@ LLM reasoning & GPT-4o-mini Base; GPT-4o-mini CoT & fixed/10 & Prompt mode \\
 All rerankers receive the same reconstructed RRF pool of 30 chunks. Candidate Recall@30 is 0.5995 and Hit@30 is 0.6450 for every configuration.
 \end{block}
 \vspace{0.15cm}
-The primary GPT-4o-mini reasoning runs cover 500/500 questions and use identical saved contexts, isolating prompt mode within the limits of automatic metrics.
+The GPT-4o-mini pair is the controlled primary comparison; the other three model pairs are descriptive checks because context or provenance is not fully aligned.
 \end{frame}
 
 \begin{frame}{Ablation 1: Does Metadata Improve Embeddings?}
@@ -172,61 +172,59 @@ Jina retains 88.50\% of gold chunks available in the shared candidate pool, comp
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{Ablation 4: GPT-4o-mini Base vs. CoT}
-\scriptsize
+\begin{frame}{Ablation 4: Consolidated LLM Generator Results}
+\tiny
 \centering
-\begin{tabular}{lrrrr}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{llrrrrrrrrr}
 \toprule
-\textbf{Metric} & \textbf{Base} & \textbf{CoT} & \textbf{$\Delta$ CoT--Base} & \textbf{95\% paired CI} \\
+\textbf{Model} & \textbf{Prompt} & \textbf{EM} & \textbf{F1} & \textbf{R-L} &
+\textbf{Decision} & \textbf{Cite pres.} & \textbf{Struct. cov.} &
+\textbf{Sources} & \textbf{Gen. p50/p95} & \textbf{Total p50/p95} \\
 \midrule
-Exact Match & 14.00\% & 13.75\% & $-0.25$ pp & $[-1.50,+1.00]$ \\
-Token F1 & 24.72\% & 23.15\% & $-1.57$ pp & $[-2.24,-0.92]$ \\
-ROUGE-L & 21.60\% & 19.90\% & $-1.71$ pp & $[-2.34,-1.10]$ \\
+GPT-4o-mini & Base & 14.00 & 24.72 & 21.60 & 82.60\% & 78.25\% & 89.42\% & 1.46 & 2.92/5.74 & 13.99/17.21 \\
+GPT-4o-mini & CoT & 13.75 & 23.15 & 19.90 & 84.00\% & 81.00\% & 87.91\% & 1.68 & 3.68/6.17 & 14.74/18.42 \\
+DeepSeek-V3.1 & Base & 22.25 & 17.84 & 15.28 & 92.00\% & 90.00\% & 82.38\% & 2.57 & 7.28/15.51 & 16.15/24.55 \\
+DeepSeek-V3.1 & CoT & 22.25 & 16.51 & 14.12 & 92.20\% & 90.75\% & 75.21\% & 2.71 & 7.82/21.02 & 18.52/31.37 \\
+GLM-5 & Base & 25.25 & 16.91 & 14.90 & 91.80\% & 91.75\% & 80.26\% & 2.72 & 4.17/8.79 & 14.29/19.09 \\
+GLM-5 & CoT & 25.00 & 16.23 & 14.27 & 93.40\% & 93.75\% & 78.12\% & 3.05 & 4.15/8.73 & 15.96/21.23 \\
+Qwen3-8B & Base & 19.25 & 21.98 & 18.92 & 95.80\% & 97.75\% & 65.78\% & 1.79 & 4.77/9.13 & 14.15/18.51 \\
+Qwen3-8B & CoT & 17.25 & 20.05 & 17.17 & 95.20\% & 98.25\% & 58.15\% & 1.81 & 4.97/10.47 & 14.58/20.16 \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \vspace{0.3cm}
-\begin{columns}[T]
-  \column{0.48\textwidth}
-    \begin{block}{Quality outcome}
-    Token F1 and ROUGE-L decrease with confidence intervals below zero. Exact Match is effectively unchanged.
-    \end{block}
-  \column{0.48\textwidth}
-    \begin{alertblock}{Latency outcome}
-    Generation p50 rises 2.92 $\rightarrow$ 3.68 s; total p50 rises 13.99 $\rightarrow$ 14.74 s.
-    \end{alertblock}
-\end{columns}
-\vspace{0.1cm}
-Token-F1 win/tie/loss for CoT: 79/164/157. Explicit reasoning is not a demonstrated quality improvement here.
+\begin{alertblock}{Reading boundary}
+EM, F1, ROUGE-L, and citation fields use 400 answerable outputs; decision accuracy uses all 500 cases. Only the GPT-4o-mini pair has fully identical saved contexts.
+\end{alertblock}
 \end{frame}
 
-\begin{frame}{What CoT Changes Beyond Lexical Overlap}
+\begin{frame}{Primary Pair: What GPT-4o-mini CoT Changes}
 \scriptsize
 \begin{columns}[T]
   \column{0.49\textwidth}
-    \textbf{Output-behavior diagnostics}
+    \textbf{Paired quality and latency}
     \begin{itemize}
-      \item Decision accuracy: 82.60\% $\rightarrow$ 84.00\%.
+      \item EM: $-0.25$ pp; CI $[-1.50,+1.00]$.
+      \item Token F1: $-1.57$ pp; CI $[-2.24,-0.92]$.
+      \item ROUGE-L: $-1.71$ pp; CI $[-2.34,-1.10]$.
+      \item Token-F1 win/tie/loss: 79/164/157.
+      \item Generation p50: 2.92 $\rightarrow$ 3.68 s.
+      \item Total p50: 13.99 $\rightarrow$ 14.74 s.
+    \end{itemize}
+  \column{0.48\textwidth}
+    \textbf{Behavior and evidence diagnostics}
+    \begin{itemize}
       \item False refusal: 21.25\% $\rightarrow$ 19.50\%.
       \item Unanswerable recognition: 98.00\% for both.
       \item Citation presence: 78.25\% $\rightarrow$ 81.00\%.
-      \item Mean unique sources: 1.46 $\rightarrow$ 1.68.
-      \item Structural citation coverage: 89.42\% $\rightarrow$ 87.91\%.
+      \item Structural coverage: 89.42\% $\rightarrow$ 87.91\%.
+      \item Token F1: full $-1.98$ pp; partial $-1.86$ pp; no gold support $-1.30$ pp.
     \end{itemize}
-  \column{0.48\textwidth}
-    \textbf{Token F1 by evidence availability}
-    \begin{itemize}
-      \item Full support ($n=138$): $-1.98$ pp.
-      \item Partial support ($n=29$): $-1.86$ pp.
-      \item No gold support ($n=233$): $-1.30$ pp.
-    \end{itemize}
-    \vspace{0.15cm}
-    \begin{block}{Cross-model inventory}
-    DeepSeek, GLM, and Qwen Base/CoT pairs are complete but descriptive because context or run provenance is not fully aligned.
-    \end{block}
 \end{columns}
 \vspace{0.15cm}
 \begin{alertblock}{Interpretation boundary}
-Decision and citation-marker diagnostics do not measure semantic refusal quality, claim faithfulness, or legal correctness.
+CoT lowers lexical overlap in every evidence stratum and adds latency. Decision and citation-marker diagnostics do not measure legal correctness, faithfulness, or citation entailment.
 \end{alertblock}
 \end{frame}
 

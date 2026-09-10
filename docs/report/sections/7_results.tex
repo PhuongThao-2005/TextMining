@@ -4,12 +4,13 @@
 \section{Results}
 \label{sec:results}
 
-The completed results are summarized in the tables below, including
-Tables~\ref{tab:embedding-results}--\ref{tab:llm-reasoning-evidence} and
-Table~\ref{tab:jina-slices}. Retrieval metrics use answerable questions and
-are paired within each experiment family. We use percentage points (pp) for
-deltas so that the magnitude of an effect is not confused with a relative
-percentage change.
+The completed retrieval, reranking, category, and efficiency results are
+summarized in the tables below. The generator-reasoning ablation, including
+its paired results and evidence-stratified analysis, is reported in
+Section~\ref{sec:ablation-reasoning}. Retrieval metrics use answerable
+questions and are paired within each experiment family. We use percentage
+points (pp) for deltas so that the magnitude of an effect is not confused
+with a relative percentage change.
 
 \subsection{Embedding Representation}
 \label{sec:embedding-results}
@@ -158,6 +159,7 @@ Jina also retains 0.8850 of the gold chunks available in \texttt{C30}, versus
 available evidence rather than a larger candidate pool. The full safety and
 win/tie/loss analysis is stored with the derived artifacts.
 
+\IfFileExists{../../ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v2/charts.png}{%
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{../../ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v2/charts.png}
@@ -167,109 +169,7 @@ paired confidence intervals in Table~\ref{tab:reranker-paired} are the primary
 uncertainty analysis.}
 \label{fig:reranker-curves}
 \end{figure*}
-
-\subsection{Generator Reasoning}
-\label{sec:llm-reasoning-results}
-
-The generator-reasoning runs keep the intended retrieval stack fixed and vary
-the prompt mode. Table~\ref{tab:llm-reasoning-runs} gives the refreshed run
-inventory. GPT-4o-mini is the pre-specified primary pair; the DeepSeek-V3.1-
-Thinking, GLM-5, and Qwen3-8B pairs are complete but descriptive. Four shared
-DeepSeek cases have different exact top-10 chunk-ID sequences between Base and CoT.
-The Qwen Base/CoT manifests use different code snapshots, timeout values, and
-retry limits, so its latency and failure behavior is not a strict
-apples-to-apples comparison. Percentages in this subsection are reported on the
-scheduled denominator for decision behavior and on the successful answerable
-cases for lexical answer metrics. The row-level denominators, pairing rule, and
-additional diagnostic calculations are defined in Section~\ref{sec:evaluation-metrics}.
-
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{End-to-end generator-reasoning run inventory. Lexical metrics are
-means over successful answerable cases; ``decision acc.'' is the saved
-template-based answerability decision diagnostic.}
-\label{tab:llm-reasoning-runs}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lllrrrrr}
-\toprule
-\textbf{Model} & \textbf{Prompt} & \textbf{Run directory} & \textbf{Valid/500} & \textbf{EM (\%)} &
-\textbf{Token F1 (\%)} & \textbf{ROUGE-L (\%)} & \textbf{Decision acc. (\%)} \\
-\midrule
-GPT-4o-mini & Base & \texttt{4o-mini-base} & 500/500 & 14.00 & 24.72 & 21.60 & 82.60 \\
-GPT-4o-mini & CoT & \texttt{4o-mini-CoT} & 500/500 & 13.75 & 23.15 & 19.90 & 84.00 \\
-DeepSeek-V3.1-Thinking & Base & \texttt{deepseekv3.1-thinking-base} & 500/500 & 22.25 & 17.84 & 15.28 & 92.00 \\
-DeepSeek-V3.1-Thinking & CoT & \texttt{deepseekv3.1-thinking-CoT} & 500/500 & 22.25 & 16.51 & 14.12 & 92.20 \\
-GLM-5 & Base & \texttt{glm5-base} & 500/500 & 25.25 & 16.91 & 14.90 & 91.80 \\
-GLM-5 & CoT & \texttt{glm5-CoT} & 500/500 & 25.00 & 16.23 & 14.27 & 93.40 \\
-Qwen3-8B & Base & \texttt{qwen3-8b-base} & 500/500 & 19.25 & 21.98 & 18.92 & 95.80 \\
-Qwen3-8B & CoT & \texttt{qwen-8b-CoT} & 500/500 & 17.25 & 20.05 & 17.17 & 95.20 \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-For the complete GPT-4o-mini pair, CoT lowers Token F1 by 1.57 pp and
-ROUGE-L by 1.71 pp, while exact match changes by only -0.25 pp. The paired
-95\% bootstrap intervals for the two overlap losses exclude zero. CoT wins,
-ties, and loses on Token F1 in 79, 164, and 157 cases, respectively. The
-template-based decision accuracy rises from 82.60\% to 84.00\% because false
-refusals on answerable questions fall from 21.25\% to 19.50\%; unanswerable
-recognition is 98.00\% for both prompts. These are observable output-format
-diagnostics, not semantic refusal quality or legal correctness. CoT increases
-citation presence (78.25\% to 81.00\%) and mean unique sources (1.46 to
-1.68), but structural citation coverage decreases from 89.42\% to 87.91\%.
-Generation p50/p95 latency increases from 2.92/5.74 s to 3.68/6.17 s, and
-total p50/p95 from 13.99/17.21 s to 14.74/18.42 s.
-
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Primary paired GPT-4o-mini Base-versus-CoT comparison on 400
-answerable questions. Deltas are CoT minus Base in percentage points; CIs are
-percentile bootstrap intervals from 10,000 paired resamples.}
-\label{tab:llm-reasoning-paired}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrr}
-\toprule
-\textbf{Metric} & \textbf{Base (\%)} & \textbf{CoT (\%)} &
-\textbf{$\Delta$ (pp)} & \textbf{95\% paired CI (pp)} \\
-\midrule
-Exact Match & 14.00 & 13.75 & $-0.25$ & $[-1.50,+1.00]$ \\
-Token F1 & 24.72 & 23.15 & $-1.57$ & $[-2.24,-0.92]$ \\
-ROUGE-L & 21.60 & 19.90 & $-1.71$ & $[-2.34,-1.10]$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-The fixed-context evidence strata show the same direction for Token F1:
-$-1.98$ pp with full support ($n=138$), $-1.86$ pp with partial support
-($n=29$), and $-1.30$ pp with no retrieved support ($n=233$). Table~\ref{tab:llm-reasoning-evidence}
-reports these conditional diagnostics; they describe output behavior given
-the retrieved context and do not measure claim-level faithfulness.
-
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Evidence-availability strata for the paired GPT-4o-mini reasoning
-comparison. Values are lexical means on the 400 paired answerable cases;
-deltas are CoT minus Base in percentage points.}
-\label{tab:llm-reasoning-evidence}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrrrrr}
-\toprule
-\textbf{Evidence stratum} & \textbf{$n$} & \textbf{Base F1} &
-\textbf{CoT F1} & \textbf{$\Delta$ F1} & \textbf{Base ROUGE-L} &
-\textbf{CoT ROUGE-L} & \textbf{$\Delta$ ROUGE-L} \\
-\midrule
-Support fully retrieved & 138 & 28.24 & 26.26 & $-1.98$ & 25.64 & 23.34 & $-2.30$ \\
-Partial support retrieved & 29 & 25.62 & 23.76 & $-1.86$ & 21.04 & 19.45 & $-1.59$ \\
-No support retrieved & 233 & 22.53 & 21.23 & $-1.30$ & 19.29 & 17.92 & $-1.37$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
+}{}
 
 \subsection{Category and Answer-Type Analysis}
 \label{sec:breakdown-analysis}

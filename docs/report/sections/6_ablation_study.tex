@@ -68,45 +68,122 @@ accuracy. These answer metrics are lexical/abstention diagnostics, not legal
 correctness judgments. Table~\ref{tab:reranker-results} reports the aggregate
 comparison and Table~\ref{tab:reranker-paired} reports paired effects.
 
-\subsection{Generator Reasoning: Base versus CoT}
+\subsection{LLM Generator Ablation: Base versus CoT}
 \label{sec:ablation-reasoning}
+\label{sec:llm-reasoning-results}
 
-The fourth family evaluates whether explicit chain-of-thought (CoT) prompting
-changes answer quality, abstention behavior, citations, or latency when the
-retrieved evidence is unchanged. The primary comparison uses the complete
-GPT-4o-mini Base and CoT runs: both cover all 500 benchmark questions and
-share 400 answerable question IDs. The frozen run artifacts report zero
-retrieval-context mismatches, so the paired answer deltas isolate the prompt
-mode within the limits of the lexical metrics.
+This ablation asks whether a reasoning-oriented prompt changes observable
+answer behavior when the model receives the same retrieved legal material.
+Every condition uses the same 500-question benchmark (400 answerable and 100
+unanswerable), top-10 context, dense--graph--RRF--mMiniLM retrieval stack,
+temperature 0, and 1,024-token output limit. GPT-4o-mini Base versus CoT is the
+pre-specified primary comparison. Both runs completed all 500 cases, their 400
+answerable rows pair exactly by question ID, and their saved ordered top-10
+chunk-ID sequences have zero mismatches.
 
-On the 400 paired answerable questions, CoT decreases Token F1 from 24.72\%
-to 23.15\% ($-1.57$ percentage points) and ROUGE-L from 21.60\% to 19.90\%
-($-1.71$ points). Exact match is essentially unchanged (14.00\% to 13.75\%,
-$-0.25$ points). The 95\% paired-bootstrap intervals exclude zero for both
-overlap losses; the full paired table is in Table~\ref{tab:llm-reasoning-paired}.
-The Token F1 win/tie/loss count is 79/164/157 in favor of Base, consistent
-with a broad but modest degradation rather than a universal per-question
-failure.
+The post-hoc analysis reads the frozen predictions, aggregate metrics, latency,
+error, and manifest files; it does not rerun retrieval or generation. Lexical
+metrics use successful answerable pairs. Deltas are CoT minus Base, with 95\%
+percentile confidence intervals from 10,000 paired bootstrap resamples (seed
+42); exact match also receives an exact McNemar test. Answerability decisions
+use all 500 scheduled cases. These procedures and denominators follow the
+operative no-rerun metric plan and are detailed in
+Section~\ref{sec:evaluation-metrics}.
 
-The template-based answerability decision accuracy increases from 82.60\% to
-84.00\%. This reflects a lower false-refusal rate on answerable questions
-(21.25\% to 19.50\%) while unanswerable recognition remains 98.00\% for both
-prompts; it is not a human-validated safety or legal-correctness measure.
-CoT also raises citation presence (78.25\% to 81.00\%) and mean unique
-sources (1.46 to 1.68), but structural citation coverage falls slightly
-(89.42\% to 87.91\%). Generation p50/p95 latency rises from 2.92/5.74 seconds
-to 3.68/6.17 seconds, and total p50/p95 rises from 13.99/17.21 to
-14.74/18.42 seconds.
+\subsubsection{Primary paired result}
 
-Evidence-stratified deltas do not reverse the result: CoT Token F1 is lower
-when all gold support is retrieved ($-1.98$ points, $n=138$), when support is
-partial ($-1.86$ points, $n=29$), and when support is absent ($-1.30$ points,
-$n=233$). The DeepSeek-V3.1-Thinking, GLM-5, and Qwen3-8B pairs are complete
-but descriptive. Four shared DeepSeek cases have different exact top-10
-chunk-ID sequences between Base and CoT. The Qwen pair also uses different code
-snapshots, timeout values, and retry limits, so its latency and failure behavior
-is not a strict apples-to-apples comparison. These inventory rows and caveats
-are shown in Table~\ref{tab:llm-reasoning-runs}; non-primary cells are not used
-for the primary paired claim. The derived report and
-machine-readable artifacts are linked from the reproducibility ledger in
+For the primary pair, CoT lowers Token F1 from 24.72\% to 23.15\%
+($-1.57$ percentage points; 95\% CI [$-2.24,-0.92$]) and ROUGE-L from
+21.60\% to 19.90\% ($-1.71$ points; 95\% CI [$-2.34,-1.10$]); both intervals
+exclude zero. Exact match changes by only $-0.25$ points and its interval
+includes zero (McNemar $p=1.00$). CoT wins/ties/loses on Token F1 in
+79/164/157 cases, so the aggregate decline is broad but not universal. It also
+adds 0.76 seconds to median generation and end-to-end latency and 1.21 seconds
+to end-to-end p95 latency.
+
+\subsubsection{Behavior conditional on available evidence}
+
+Because retrieval is fixed, Recall/MRR/nDCG are controls rather than LLM
+outcomes. We instead stratify answerable cases by saved context Recall@10.
+Token F1 is lower under CoT when all gold support is retrieved ($-1.98$
+points, $n=138$), when support is partial ($-1.86$, $n=29$), and when no gold
+support is retrieved ($-1.30$, $n=233$). ROUGE-L changes in the same direction
+($-2.30$, $-1.59$, and $-1.37$ points). Exact match rises by 0.72 points only
+in the fully retrieved group, but this small descriptive change does not
+reverse the primary result. Evidence availability is a context property, not
+a measure of whether generated claims are faithful to that evidence.
+
+\subsubsection{Answerability decisions}
+
+The saved field formerly called \texttt{unanswerable\_accuracy} is not refusal
+accuracy. It is a template-based answer/refuse decision check over both
+answerable and unanswerable questions. CoT does not improve recognition of the
+100 unanswerable cases: both prompts refuse 98 and answer 2. Its 1.40-point
+overall increase comes entirely from answering seven more answerable cases,
+which reduces template-detected false refusals from 85 to 78. The artifacts do
+not preserve a separate clarification decision, so this is not a semantic
+measure of refusal helpfulness or appropriateness.
+
+\subsubsection{Citation structure, reliability, and descriptive model checks}
+
+Table~\ref{tab:llm-reasoning-runs} provides one consolidated comparison for
+all four models and both prompt modes. For the primary GPT pair, CoT raises
+citation presence from 78.25\% to 81.00\% and mean unique sources from 1.46 to
+1.68, while structural citation coverage falls from 89.42\% to 87.91\%. Both
+runs have zero invalid markers. These fields test citation formatting only:
+they do not establish that a passage entails the adjacent claim.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Consolidated LLM generator ablation. EM, Token F1, ROUGE-L, and
+citation values use the 400 answerable outputs; template-based decision
+accuracy uses all 500 cases. Latencies are p50/p95 seconds. Structural coverage
+measures citation-marker placement, not semantic entailment.}
+\label{tab:llm-reasoning-runs}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrrrrrrr}
+\toprule
+\textbf{Model} & \textbf{Prompt} & \textbf{EM} & \textbf{F1} & \textbf{R-L} &
+\textbf{Decision} & \textbf{Cite pres.} & \textbf{Struct. cov.} &
+\textbf{Sources} & \textbf{Gen. p50/p95} & \textbf{Total p50/p95} \\
+\midrule
+GPT-4o-mini & Base & 14.00 & 24.72 & 21.60 & 82.60\% & 78.25\% & 89.42\% & 1.46 & 2.92/5.74 & 13.99/17.21 \\
+GPT-4o-mini & CoT & 13.75 & 23.15 & 19.90 & 84.00\% & 81.00\% & 87.91\% & 1.68 & 3.68/6.17 & 14.74/18.42 \\
+DeepSeek-V3.1-Thinking & Base & 22.25 & 17.84 & 15.28 & 92.00\% & 90.00\% & 82.38\% & 2.57 & 7.28/15.51 & 16.15/24.55 \\
+DeepSeek-V3.1-Thinking & CoT & 22.25 & 16.51 & 14.12 & 92.20\% & 90.75\% & 75.21\% & 2.71 & 7.82/21.02 & 18.52/31.37 \\
+GLM-5 & Base & 25.25 & 16.91 & 14.90 & 91.80\% & 91.75\% & 80.26\% & 2.72 & 4.17/8.79 & 14.29/19.09 \\
+GLM-5 & CoT & 25.00 & 16.23 & 14.27 & 93.40\% & 93.75\% & 78.12\% & 3.05 & 4.15/8.73 & 15.96/21.23 \\
+Qwen3-8B & Base & 19.25 & 21.98 & 18.92 & 95.80\% & 97.75\% & 65.78\% & 1.79 & 4.77/9.13 & 14.15/18.51 \\
+Qwen3-8B & CoT & 17.25 & 20.05 & 17.17 & 95.20\% & 98.25\% & 58.15\% & 1.81 & 4.97/10.47 & 14.58/20.16 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+The other model pairs are descriptive checks rather than additional primary
+tests. Their CoT-minus-Base Token-F1 changes are $-1.33$ points for
+DeepSeek-V3.1-Thinking (95\% CI [$-1.96,-0.73$]), $-0.68$ for GLM-5
+([$-1.23,-0.11$]), and $-1.92$ for Qwen3-8B ([$-2.77,-1.15$]). Four
+DeepSeek cases have different ordered top-10 chunk sequences across prompts.
+The Qwen manifests use different code snapshots, timeout values, and retry
+limits, so especially its latency and failure comparison is not strictly
+controlled. No prompt effect is pooled across models.
+
+\paragraph{Claim boundary.}
+The historical artifacts contain final answers, lexical scores, retrieved
+context, structural citation fields, and latency, but no legal-domain
+correctness annotations, atomic-claim support labels, citation-entailment
+judgments, structured public justifications, raw CoT, token accounting, or
+preferred answer/clarify/refuse labels. Consequently, this ablation supports a
+bounded conclusion about observable output behavior: GPT-4o-mini CoT reduces
+template-detected false refusals and increases citation presence, but lowers
+lexical overlap in every evidence-availability stratum and adds latency. It
+does not demonstrate better or worse latent reasoning, semantic grounding,
+legal correctness, citation entailment, or refusal quality. The derived report
+and machine-readable artifacts are linked from the reproducibility ledger in
 Section~\ref{sec:reproducibility}.
+
+% Keep the LLM-ablation tables with Section 6 instead of allowing the
+% two-column table floats to cross into the Results section.
+\FloatBarrier

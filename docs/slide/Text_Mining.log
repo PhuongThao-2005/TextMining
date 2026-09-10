@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.9.8)  10 SEP 2026 23:35
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.9.8)  11 SEP 2026 00:37
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1141,6 +1141,10 @@ Package hyperref Info: Link coloring OFF on input line 123.
 \@outlinefile=\write5
 \openout5 = `Text_Mining.out'.
 
+
+
+Package hyperref Warning: Rerun to get /PageLabels entry.
+
 LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
 (Font)                  OT1/cmr/m/n --> OT1/cmss/m/n on input line 123.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
@@ -1359,10 +1363,10 @@ Package rerunfilecheck Info: File `Text_Mining.out' has not changed.
 (rerunfilecheck)             Checksum: C83345D0CE45E868DA53E86EF2AA87E8;843.
  ) 
 Here is how much of TeX's memory you used:
- 29695 strings out of 402987
- 610292 string characters out of 5448525
- 1099144 words of memory out of 5000000
- 57809 multiletter control sequences out of 15000+600000
+ 29688 strings out of 402987
+ 609946 string characters out of 5448525
+ 1097000 words of memory out of 5000000
+ 57802 multiletter control sequences out of 15000+600000
  709997 words of font info for 102 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  128i,19n,123p,461b,1170s stack positions out of 10000i,1000n,20000p,200000b,200000s
