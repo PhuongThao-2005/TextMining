@@ -8,6 +8,24 @@ This report analyzes `8` saved runs under `/Users/mac/Dev/HCMUS/Text_mining/L_RA
 
 The historical outputs contain final answers, retrieval context, structural citation metadata, and lexical metrics, but no claim annotations, semantic entailment labels, structured justification, raw CoT, or reasoning-token accounting. Accordingly, this report does **not** claim legal correctness, claim faithfulness, citation entailment, refusal quality, or faithful latent reasoning.
 
+## How the evaluation works
+
+Each condition is a saved 500-case run: the same question IDs, benchmark labels, retrieved top-10 context, generation settings, and answer references are recorded for Base and CoT. The post-hoc script reads those records; it does not call a model or rerun retrieval.
+
+1. **Validate and pair rows.** A row is valid when it is not marked failed, error, or skipped, has no saved error, and contains a prediction (the last check supports older artifacts). Lexical metrics use successful answerable rows. A Base/CoT pair uses only question IDs that are successful and answerable in both runs and have all three lexical metrics.
+2. **Read the original per-row scores.** Exact Match, Token F1, ROUGE-L, `context_recall@k`, and the persisted answerability score are produced by the run evaluator and read unchanged here.
+3. **Compute paired effects.** For every shared question, the script calculates `CoT - Base`, then reports the mean delta, win/tie/loss counts, and a percentile paired-bootstrap 95% CI (10,000 resamples, seed 42). Exact Match also gets an exact McNemar test.
+4. **Add diagnostics.** The script summarizes evidence availability, answer/refuse decisions, structural citation fields, completion/failure reasons, and saved latency percentiles. These diagnostics describe observable output behavior; they do not measure legal validity or hidden reasoning.
+
+### How the additional metrics are calculated
+
+- **Answer overlap:** the original evaluator applies Unicode NFC normalization, lowercasing, punctuation-to-space replacement, and whitespace collapse. Exact Match is 1 when normalized prediction and reference match (for boolean items, the first non-empty line is compared). Token F1 uses multiset token overlap, with `F1 = 2 * precision * recall / (precision + recall)`. ROUGE-L uses the token-level longest common subsequence in the same F-score form.
+- **Evidence availability:** `context_recall@k = |gold chunk IDs intersect retrieved top-k IDs| / |gold chunk IDs|`. Answerable cases are stratified as support fully retrieved (`=1`), partial (`0<value<1`), or absent (`=0`). This is a context-availability variable, not an outcome that CoT can improve.
+- **Answerability decision accuracy:** the saved `unanswerable_accuracy` detector is reused. On an answerable case, 1 means the output did not match a refusal marker; on an unanswerable case, 1 means it did. Overall scheduled accuracy counts correct answer/refuse decisions over all 500 scheduled rows; valid-only accuracy excludes failed rows. It is not semantic refusal quality.
+- **Citation diagnostics:** among successful answerable rows, citation presence is the fraction with at least one marker; structural coverage is the mean saved share of scored factual sentences carrying a marker; mean unique sources averages the saved source count; invalid-marker rate is total invalid markers divided by all markers. None tests citation entailment.
+- **Reliability and latency:** completion is successful rows divided by scheduled rows. Failure stage and reason come from `errors.jsonl` (or the saved failure rows). Generation and total p50/p95 are the saved millisecond values converted to seconds; p95 exposes the long tail.
+- **Context control:** for shared successful rows, the script compares the ordered top-10 chunk-ID sequences. A mismatch is reported as a control warning rather than silently treated as identical evidence.
+
 ## Data-integrity notes
 
 The following provenance or control checks found issues. They are reported rather than repaired automatically:

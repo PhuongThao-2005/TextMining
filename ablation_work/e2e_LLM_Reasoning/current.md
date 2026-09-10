@@ -60,6 +60,17 @@ where recorded.
   ordering). Its comparison remains descriptive because the primary inference
   remains the pre-specified GPT pair.
 
+## Evaluation workflow
+
+The post-hoc analyzer reads the saved per-question rows, pairs Base and CoT by
+`qa_id`, and uses only successful answerable rows for EM, Token F1, and ROUGE-L.
+It reports `CoT - Base` deltas, win/tie/loss counts, 10,000 paired-bootstrap
+confidence intervals, and an exact McNemar test for EM. The added evidence,
+answerability, citation, completion, failure, and latency fields are derived
+from the saved context/metadata and are diagnostics of observable output
+behavior, not semantic legal or hidden-reasoning scores. The exact formulas
+and denominators are documented in the generated post-hoc report.
+
 ## Source Artifacts
 
 - Per-run reports: `*/report.md`

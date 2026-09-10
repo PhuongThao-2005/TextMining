@@ -92,6 +92,44 @@ used for the primary paired claim. The post-hoc analysis and frozen result ledge
 \url{ablation_study/e2e_LLM_reasoning/results/report.md} and
 \url{ablation_work/e2e_LLM_Reasoning/analyze_posthoc.py}.
 
+\subsection{Evaluation Workflow and Derived Metrics}
+\label{sec:evaluation-metrics}
+
+Each condition is a saved 500-case run over the same question IDs, benchmark
+labels, retrieved top-10 context, generation settings, and reference answers.
+The post-hoc analysis reads these records and does not call a model or rerun
+retrieval. A row is valid when it is not marked failed, errored, or skipped,
+has no saved error, and contains a prediction. Lexical metrics use successful
+answerable rows; a paired Base/CoT statistic uses only IDs that satisfy these
+conditions in both runs and contain all three lexical metrics.
+
+The original evaluator normalizes text with Unicode NFC, lowercasing,
+punctuation-to-space replacement, and whitespace collapse. Exact Match is the
+binary equality of normalized prediction and reference (for boolean items, the
+first non-empty line is compared). Token F1 uses multiset token overlap, with
+$F_1=2PR/(P+R)$, where $P$ and $R$ are token precision and recall. ROUGE-L uses
+the token-level longest common subsequence in the same F-score form. For each
+paired ID we calculate $\Delta=m_{\mathrm{CoT}}-m_{\mathrm{Base}}$, average the
+deltas, count CoT wins, ties, and losses, and form a percentile paired-bootstrap
+95\% confidence interval from 10,000 resamples (seed 42). Exact Match also
+uses an exact McNemar test on discordant binary outcomes.
+
+Additional diagnostics are calculated as follows. Evidence availability is
+$\text{context-recall@}k=|G\cap R_k|/|G|$, where $G$ is the gold chunk-ID set
+and $R_k$ is the retrieved top-$k$ set; answerable cases are stratified as
+fully retrieved, partial, or absent. The persisted
+\texttt{unanswerable\_accuracy} detector is mapped to answer/refuse decisions:
+an answerable refusal is an error, while a refusal marker on an unanswerable
+case is correct. Scheduled decision accuracy uses all 500 rows, whereas
+valid-only accuracy excludes failed rows. Citation presence is the fraction of
+successful answerable rows with at least one marker; structural coverage is
+the mean saved share of scored factual sentences with a marker; invalid-marker
+rate is total invalid markers divided by all markers. Completion is successful
+rows divided by scheduled rows, and latency p50/p95 are the saved millisecond
+values converted to seconds. These fields are structural or operational
+diagnostics, not tests of citation entailment, legal correctness, or hidden
+reasoning.
+
 \subsection{Ablation Configurations}
 \label{sec:configurations}
 
