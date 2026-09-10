@@ -18,14 +18,13 @@ from service.local_env import apply_local_environment  # noqa: E402
 apply_local_environment(PROJECT_ROOT)
 
 import streamlit as st  # noqa: E402
-import streamlit.components.v1 as st_components  # noqa: E402
 
 from service.qa_service import (  # noqa: E402
     PreflightCheck, QuestionRequest, answer_question, apply_safe_overrides, build_question_resources,
     format_safe_error, load_ui_config_registry,
 )
 from service.ui_models import (  # noqa: E402
-    ConversationTurn, SourceSelection, clear_conversation, clear_source_selection,
+    ConversationTurn, SourceSelection, append_conversation_turn, clear_conversation, clear_source_selection,
     parse_source_selection,
 )
 from service.ui_runtime import (  # noqa: E402
@@ -33,11 +32,11 @@ from service.ui_runtime import (  # noqa: E402
     ProductionReadiness, load_demo_qa_examples, resolve_runtime_mode, scan_production_readiness,
 )
 from src.ui.components import (  # noqa: E402
-    render_app_header, render_blocked_setup, render_design_preview,
+    display_sources_for_response, render_app_header, render_blocked_setup, render_design_preview,
     render_evidence_panel, render_followup_composer, render_landing_hero,
     render_readiness_summary, render_sidebar_brand, render_turn, scroll_to_latest_turn,
 )
-from src.ui.i18n import t  # noqa: E402
+from src.ui.i18n import LANGUAGE_LABELS, normalize_language, t, theme_label  # noqa: E402
 from src.ui.styles import build_application_css  # noqa: E402
 from src.ui.theme import THEME_CHOICES  # noqa: E402
 
@@ -57,19 +56,19 @@ DEMO_EXAMPLES_VI = (
     ("Trích dẫn sai", "Hiển thị ví dụ trích dẫn không hợp lệ."),
 )
 PRODUCTION_EXAMPLES_EN = (
-    ("Rule", "How many annual leave days does an employee receive?"),
-    ("Exception", "Which cases do not apply this rule?"),
-    ("Legal source", "Which document governs severance allowance?"),
+    ("Annual leave", "How many annual leave days does an employee receive?"),
+    ("Unemployment benefits", "What are the eligibility requirements for unemployment benefits?"),
+    ("Overtime", "What are the rules on working overtime?"),
 )
 PRODUCTION_EXAMPLES_VI = (
-    ("Quy định", "Người lao động được nghỉ phép năm bao nhiêu ngày?"),
-    ("Ngoại lệ", "Trường hợp nào không áp dụng quy định này?"),
-    ("Nguồn pháp lý", "Văn bản nào quy định về trợ cấp thôi việc?"),
+    ("Nghỉ phép năm", "Người lao động được nghỉ phép năm bao nhiêu ngày?"),
+    ("Trợ cấp thất nghiệp", "Điều kiện hưởng trợ cấp thất nghiệp là gì?"),
+    ("Làm thêm giờ", "Quy định về làm thêm giờ như thế nào?"),
 )
 DEFAULT_CONFIG_NAME = "Agent-None-PlainRAG"
 REMOTE_DENSE_CONFIG_NAME = "Agent-None-RemoteDense"
 DEFAULT_TOP_K = 5
-DEFAULT_FILTER_PROFILE = "current_law"
+DEFAULT_FILTER_PROFILE = "broad"
 RUNTIME_CHOICES = (PRODUCTION_MODE, DEMO_MODE)
 BASE_RETRIEVAL_MODES = ("dense_only", "dense_sparse")
 FILTER_PROFILE_CHOICES = ("current_law", "broad", "historical")
@@ -116,7 +115,8 @@ def _cached_readiness(
 def main() -> None:
     st.set_page_config(page_title="LexVN · Legal Q&A", layout="wide", initial_sidebar_state="expanded")
     _initialize_state()
-    lang = "vi"
+    lang = normalize_language(st.session_state["language_choice"])
+    st.session_state["show_developer_ui"] = _developer_ui_enabled()
     theme_choice = str(st.session_state.get("theme_choice") or "System")
     with st.sidebar:
         render_sidebar_brand(lang)
@@ -161,8 +161,9 @@ def main() -> None:
                 },
             )
         _set_preview_selection(response)
-        render_app_header(active_mode, DEMO_MODE if active_mode == "demo" else "Production", True, lang, theme_choice=theme_choice)
+        render_app_header(active_mode, DEMO_MODE if active_mode == "demo" else "Production", True, lang, theme_choice=theme_choice, is_conversation=True)
         render_turn(response, _demo_examples(lang)[0][1], 1, False, lang)
+        render_evidence_panel(response, 1, lang)
         return
     if preview_page == "blocked":
         render_app_header("production", "Production", False, lang, theme_choice=theme_choice)
@@ -177,7 +178,10 @@ def main() -> None:
     try:
         registry = _cached_registry(str(CONFIG_PATH), CONFIG_PATH.stat().st_mtime_ns)
     except Exception as exc:
-        st.error(f"Configuration registry could not be loaded: {format_safe_error(exc)}")
+        st.error(t(lang, "service_unavailable"))
+        if st.session_state["show_developer_ui"]:
+            with st.expander(t(lang, "developer_settings")):
+                st.code(format_safe_error(exc), language=None)
         return
 
     settings = _render_settings(registry, lang)
@@ -199,34 +203,21 @@ def main() -> None:
             _submit(question, settings, readiness, resolution.active_mode)
     else:
         _render_answer_scroll_anchor()
+        _restore_selection_from_query(turns)
+        for index, turn in enumerate(turns, 1):
+            turn_id = turn.turn_id if turn.turn_id is not None else index
+            render_turn(
+                turn.response, turn.question, turn_id, settings["show_diagnostics"], lang,
+                show_followups=index == len(turns),
+                is_latest=index == len(turns),
+            )
+        followup = render_followup_composer(lang)
+        if followup:
+            _submit(followup, settings, readiness, resolution.active_mode)
         evidence_turn = _selected_evidence_turn(turns)
-        suggested: str | None = None
-        if evidence_turn is None:
-            for index, turn in enumerate(turns, 1):
-                turn_id = turn.turn_id if turn.turn_id is not None else index
-                suggested = render_turn(
-                    turn.response, turn.question, turn_id, settings["show_diagnostics"], lang,
-                    show_followups=index == len(turns),
-                )
-            followup = suggested or render_followup_composer(lang)
-            if followup:
-                _submit(followup, settings, readiness, resolution.active_mode)
-        else:
-            main_col, evidence_col = st.columns([0.68, 0.32], gap="large")
-            with main_col:
-                for index, turn in enumerate(turns, 1):
-                    turn_id = turn.turn_id if turn.turn_id is not None else index
-                    suggested = render_turn(
-                        turn.response, turn.question, turn_id, settings["show_diagnostics"], lang,
-                        show_followups=index == len(turns),
-                    )
-                followup = suggested or render_followup_composer(lang)
-                if followup:
-                    _submit(followup, settings, readiness, resolution.active_mode)
-            with evidence_col:
-                render_evidence_panel(evidence_turn.response, evidence_turn.turn_id or len(turns), lang)
+        if evidence_turn is not None:
+            render_evidence_panel(evidence_turn.response, evidence_turn.turn_id or len(turns), lang)
 
-        st.markdown('<div id="ga-latest-turn-anchor"></div>', unsafe_allow_html=True)
         if st.session_state.pop("scroll_to_latest_turn", False):
             scroll_to_latest_turn()
 
@@ -235,65 +226,134 @@ def main() -> None:
         st.session_state["notice"] = None
 
 
-def _render_settings(registry: dict[str, dict[str, Any]], lang: str) -> dict[str, Any]:
+def _developer_ui_enabled() -> bool:
+    return os.environ.get("SHOW_DEVELOPER_UI", "").strip().lower() in {"true", "1", "yes", "on"}
+
+
+def _copy_preference(widget_key: str, state_key: str) -> None:
+    # Keep durable preferences separate from Streamlit's widget cleanup lifecycle.
+    st.session_state[state_key] = st.session_state[widget_key]
+
+
+def _new_question(lang: str) -> None:
+    st.session_state["conversation"] = clear_conversation()
+    st.session_state["scroll_to_answer"] = False
+    st.session_state["scroll_to_latest_turn"] = False
+    _clear_source_selection()
+    st.session_state["notice"] = t(lang, "new_question_ready")
+
+
+def _render_sidebar(lang: str) -> Any:
+    """User navigation and preferences, with an explicit development-only section."""
+    developer_container = None
     with st.sidebar:
-        st.markdown("### Chạy")
-        requested_mode = _render_choice_toggle(
-            t(lang, "mode"), RUNTIME_CHOICES, "runtime_mode", PRODUCTION_MODE,
-            lambda value: t(lang, "mode_demo") if value == DEMO_MODE else t(lang, "mode_production"),
+        st.button(
+            t(lang, "new_question"), key="new-question",
+            use_container_width=True, type="primary", on_click=_new_question, args=(lang,),
         )
-        requested_mode = str(requested_mode or PRODUCTION_MODE)
+        with st.container(key="sidebar-history"):
+            st.caption(t(lang, "recent"))
+            turns = st.session_state.get("conversation", [])
+            if turns:
+                for turn in reversed(turns[-5:]):
+                    st.markdown(
+                        f"[{_history_label(turn.question)}](#turn-{turn.turn_id})",
+                        help=turn.question,
+                    )
+            else:
+                st.caption(t(lang, "recent_empty"))
+        with st.container(key="sidebar-footer"):
+            # Demo remains accessible during product testing, independent of developer UI.
+            st.caption(t(lang, "mode"))
+            _render_choice_toggle(
+                t(lang, "mode"), RUNTIME_CHOICES, "runtime_mode", PRODUCTION_MODE,
+                lambda value: t(lang, "mode_demo") if value == DEMO_MODE else t(lang, "mode_production"),
+            )
+            if st.session_state["runtime_mode"] == DEMO_MODE:
+                st.caption(t(lang, "demo_help"))
+            with st.container(key="sidebar-help"):
+                with st.expander(t(lang, "help")):
+                    st.caption(t(lang, "help_body"))
+            with st.container(key="sidebar-settings"):
+                with st.expander(t(lang, "settings"), expanded=True):
+                    _render_user_settings(lang)
+                    st.session_state["preference-language"] = st.session_state["language_choice"]
+                    st.selectbox(
+                        t(lang, "language"), ("vi", "en"), key="preference-language",
+                        format_func=lambda value: LANGUAGE_LABELS[value],
+                        on_change=_copy_preference, args=("preference-language", "language_choice"),
+                    )
+                    st.session_state["preference-theme"] = st.session_state["theme_choice"]
+                    st.selectbox(
+                        t(lang, "theme"), THEME_CHOICES, key="preference-theme",
+                        format_func=lambda value: theme_label(lang, value),
+                        on_change=_copy_preference, args=("preference-theme", "theme_choice"),
+                    )
+            if st.session_state["show_developer_ui"]:
+                with st.container(key="sidebar-developer"):
+                    with st.expander(t(lang, "developer_settings")):
+                        developer_container = st.container(key="developer-settings")
+    return developer_container
 
-        st.markdown(f"### {t(lang, 'retrieval')}")
-        base_retrieval_mode = _render_choice_toggle(
-            t(lang, "retrieval_mode"), BASE_RETRIEVAL_MODES, "retrieval_base_mode", "dense_sparse",
-            lambda value: _base_retrieval_label(str(value)),
-            columns_per_row=2,
-        )
-        base_retrieval_mode = str(base_retrieval_mode or "dense_only")
-        st.markdown("### Kết hợp")
-        graph_enabled = _render_bool_toggle("Graph", "graph_enabled", False)
-        reranker_enabled = _render_bool_toggle("Reranker", "reranker_enabled", False)
 
-        generation_settings = _render_generation_controls(lang)
+def _history_label(question: str) -> str:
+    # Markdown navigation is presentation-only; no conversation persistence is invented.
+    import re
+    label = " ".join(question.split())
+    label = label[:46] + "…" if len(label) > 46 else label
+    return re.sub(r"([\\`*_{}\[\]()<>!#|])", r"\\\1", label)
 
-        st.markdown(f"### {t(lang, 'actions')}")
-        if st.session_state.get("conversation"):
-            if st.button(t(lang, "new_question"), key="new-question", use_container_width=True):
-                st.session_state["conversation"] = clear_conversation()
-                st.session_state["scroll_to_answer"] = False
-                _clear_source_selection()
-                st.session_state["notice"] = t(lang, "new_question_ready")
-                st.rerun()
-        if st.button(t(lang, "clear_resource_cache"), use_container_width=True):
-            _cached_registry.clear()
-            _cached_resources.clear()
-            _cached_readiness.clear()
-            st.session_state["cache_epoch"] += 1
-            st.session_state["notice"] = t(lang, "cache_cleared")
-            st.rerun()
 
-    retrieval_mode = _compose_retrieval_mode(base_retrieval_mode, graph_enabled, reranker_enabled)
+def _render_user_settings(lang: str) -> None:
+    st.caption(t(lang, "retrieval"))
+    _render_choice_toggle(
+        t(lang, "retrieval_mode"), BASE_RETRIEVAL_MODES, "retrieval_base_mode", "dense_sparse",
+        lambda value: _base_retrieval_label(str(value)), columns_per_row=2,
+    )
+    columns = st.columns(2)
+    with columns[0]:
+        _render_bool_toggle("Graph", "graph_enabled", False)
+    with columns[1]:
+        _render_bool_toggle("Reranker", "reranker_enabled", False)
+    _render_generation_controls(lang)
+    if st.button(t(lang, "clear_resource_cache"), key="clear-resource-cache", use_container_width=True):
+        _cached_registry.clear()
+        _cached_resources.clear()
+        _cached_readiness.clear()
+        st.session_state["cache_epoch"] += 1
+        st.session_state["notice"] = t(lang, "cache_cleared")
+        st.rerun()
+
+
+def _render_settings(registry: dict[str, dict[str, Any]], lang: str) -> dict[str, Any]:
+    developer_container = _render_sidebar(lang)
+
+    requested_mode = str(st.session_state["runtime_mode"])
+    base_retrieval_mode = str(st.session_state["retrieval_base_mode"])
+    graph_enabled = st.session_state["graph_enabled"] == "on"
+    reranker_enabled = st.session_state["reranker_enabled"] == "on"
+    generation_settings = {
+        "generation_model": _model_choice_value(st.session_state["model_choice"]),
+        "prompt_strategy": str(st.session_state["prompt_strategy"]),
+    }
+    sparse_requested = base_retrieval_mode == "dense_sparse"
+    sparse_available = _sparse_runtime_available()
+    sparse = sparse_requested and sparse_available
+    effective_base_mode = "dense_sparse" if sparse else "dense_only"
+    retrieval_mode = _compose_retrieval_mode(effective_base_mode, graph_enabled, reranker_enabled)
     config_name = _config_for_retrieval_mode(base_retrieval_mode)
-    mode_blocker = _retrieval_mode_blocker(base_retrieval_mode)
+    setup_warnings = []
+    if sparse_requested and not sparse_available:
+        setup_warnings.append(
+            "Dense-Sparse chưa có BM25/sparse index; đang chạy tạm Production bằng Dense Only local."
+        )
     if config_name not in registry:
-        st.sidebar.warning(f"Không tìm thấy cấu hình {config_name}. Đang dùng {DEFAULT_CONFIG_NAME}.")
+        setup_warnings.append(f"Configuration {config_name} unavailable; using {DEFAULT_CONFIG_NAME}.")
         config_name = DEFAULT_CONFIG_NAME
     selected = registry[config_name]
     retrieval = selected["retrieval"]
     top_k = int(retrieval.get("top_k") or DEFAULT_TOP_K)
-    configured_filter_profile = str(retrieval.get("filter_profile") or DEFAULT_FILTER_PROFILE)
-    with st.sidebar:
-        st.markdown(f"### {t(lang, 'filter_profile')}")
-        filter_profile = _render_choice_toggle(
-            t(lang, "filter_profile"),
-            FILTER_PROFILE_CHOICES,
-            "filter_profile",
-            configured_filter_profile if configured_filter_profile in FILTER_PROFILE_CHOICES else DEFAULT_FILTER_PROFILE,
-            _filter_profile_label,
-            columns_per_row=3,
-        )
-    sparse = base_retrieval_mode == "dense_sparse"
+    filter_profile = str(st.session_state["filter_profile"])
     graph, fusion, reranker = _retrieval_mode_flags(graph_enabled, reranker_enabled)
 
     try:
@@ -304,49 +364,43 @@ def _render_settings(registry: dict[str, dict[str, Any]], lang: str) -> dict[str
         )
     except Exception as exc:
         effective = selected
-        st.sidebar.warning(format_safe_error(exc))
+        setup_warnings.append(format_safe_error(exc))
 
     readiness = _cached_readiness(
         json.dumps(effective, ensure_ascii=False, sort_keys=True), config_name,
         str(PROJECT_ROOT), None, st.session_state["cache_epoch"],
     )
-    if mode_blocker is not None:
-        readiness = replace(
-            readiness,
-            ready=False,
-            checks=(PreflightCheck("retrieval_mode", "blocked", mode_blocker), *readiness.checks),
-            blockers=(mode_blocker, *readiness.blockers),
-        )
     if len(readiness.candidates) > 1:
-        with st.sidebar:
-            choices = {candidate.label: candidate for candidate in readiness.candidates}
-            artifact_label = st.selectbox(t(lang, "compatible_artifact"), list(choices))
+        choices = {candidate.label: candidate for candidate in readiness.candidates}
+        artifact_label = st.session_state.get("selected_artifact_label")
+        if artifact_label not in choices:
+            artifact_label = next(iter(choices))
+        st.session_state["selected_artifact_label"] = artifact_label
+        if developer_container is not None:
+            with developer_container:
+                st.session_state["artifact-picker"] = artifact_label
+                artifact_label = st.selectbox(
+                    t(lang, "compatible_artifact"), list(choices), key="artifact-picker",
+                    on_change=_copy_preference, args=("artifact-picker", "selected_artifact_label"),
+                )
         readiness = _cached_readiness(
             json.dumps(effective, ensure_ascii=False, sort_keys=True), config_name,
             str(PROJECT_ROOT), str(choices[artifact_label].index_dir), st.session_state["cache_epoch"],
         )
-        if mode_blocker is not None:
-            readiness = replace(
-                readiness,
-                ready=False,
-                checks=(PreflightCheck("retrieval_mode", "blocked", mode_blocker), *readiness.checks),
-                blockers=(mode_blocker, *readiness.blockers),
-            )
-
-    with st.sidebar:
-        if mode_blocker is not None:
-            st.caption(mode_blocker)
-        status = "Sẵn sàng" if readiness.ready else "Cần cấu hình"
-        st.caption(f"Production: {status}")
-        for blocker in readiness.blockers[:2]:
-            st.caption(f"• {blocker}")
+    if developer_container is not None:
+        with developer_container:
+            for warning in setup_warnings:
+                st.warning(warning)
+            render_readiness_summary(readiness, lang)
+            if st.session_state.get("last_request_error"):
+                st.code(st.session_state["last_request_error"], language=None)
 
     return {
         "requested_mode": requested_mode, "config_name": config_name,
         "top_k": int(top_k), "filter_profile": filter_profile,
         "retrieval_mode": retrieval_mode, "retrieval_base_mode": base_retrieval_mode,
         "sparse": sparse, "graph": graph, "fusion": fusion,
-        "reranker": reranker, "show_diagnostics": False,
+        "reranker": reranker, "show_diagnostics": st.session_state["show_developer_ui"],
         **generation_settings,
         "settings_signature": "|".join((
             config_name, retrieval_mode, generation_settings["generation_model"],
@@ -367,9 +421,10 @@ def _submit(question: str, settings: dict[str, Any], readiness: ProductionReadin
         settings,
     )
     try:
-        with st.status(t(lang, "checking_sources"), expanded=True) as progress:
+        st.session_state["last_request_error"] = None
+        with st.status(t(lang, "checking_sources"), expanded=False) as progress:
             if active_mode == "demo":
-                progress.update(label="Đang chuẩn bị demo giao diện..." if lang == "vi" else "Preparing the deterministic interface preview...")
+                progress.update(label=t(lang, "checking_sources"))
                 provider = DemoAnswerProvider()
             else:
                 if not readiness.ready:
@@ -390,16 +445,21 @@ def _submit(question: str, settings: dict[str, Any], readiness: ProductionReadin
             progress.update(label=t(lang, "validate_sources"))
             response = replace(response, diagnostics=_response_diagnostics(response, settings, readiness))
             progress.update(label=t(lang, "answer_ready"), state="complete", expanded=False)
-        st.session_state["conversation"] = [
-            ConversationTurn(question.strip(), response, st.session_state["next_turn_id"])
-        ]
+        st.session_state["conversation"] = append_conversation_turn(
+            st.session_state["conversation"],
+            ConversationTurn(question.strip(), response, st.session_state["next_turn_id"]),
+        )
         st.session_state["next_turn_id"] += 1
         st.session_state["scroll_to_latest_turn"] = True
-        st.session_state["scroll_to_answer"] = True
+        st.session_state["scroll_to_answer"] = False
         _clear_source_selection()
         st.rerun()
     except Exception as exc:
-        st.session_state["notice"] = f"Unable to complete the request safely: {format_safe_error(exc)}"
+        st.session_state["last_request_error"] = format_safe_error(exc)
+        st.error(t(lang, "request_failed"))
+        if settings.get("show_diagnostics"):
+            with st.expander(t(lang, "developer_settings")):
+                st.code(st.session_state["last_request_error"], language=None)
 
 
 def _response_diagnostics(response: Any, settings: dict[str, Any], readiness: ProductionReadiness) -> dict[str, Any]:
@@ -440,8 +500,7 @@ def _render_answer_scroll_anchor() -> None:
     if not st.session_state.get("scroll_to_answer"):
         return
     st.session_state["scroll_to_answer"] = False
-    st_components.html(
-        """
+    script = """
         <script>
         const scrollToAnswer = () => {
           const anchor = window.parent.document.getElementById("answer-scroll-anchor");
@@ -452,22 +511,27 @@ def _render_answer_scroll_anchor() -> None:
         window.setTimeout(scrollToAnswer, 80);
         window.setTimeout(scrollToAnswer, 260);
         </script>
-        """,
-        height=0,
-    )
+    """
+    iframe = getattr(st, "iframe", None)
+    if iframe is not None:
+        iframe(script, height="content")
+        return
+    st.html(script, width="content", unsafe_allow_javascript=True)
 
 
 def _render_generation_controls(lang: str) -> dict[str, str]:
-    st.markdown("### Model")
+    st.caption(t(lang, "model_selector"))
+    st.session_state["developer-model-choice"] = st.session_state["model_choice"]
     model_choice = st.selectbox(
         t(lang, "model_selector"),
         MODEL_CHOICES,
-        key="model_choice",
+        key="developer-model-choice",
         label_visibility="collapsed",
+        on_change=_copy_preference, args=("developer-model-choice", "model_choice"),
     )
     model_key = str(model_choice or MODEL_CHOICES[0])
 
-    st.markdown(f"### {t(lang, 'prompt_strategy')}")
+    st.caption(t(lang, "prompt_strategy"))
     strategy = _render_choice_toggle(
         t(lang, "prompt_strategy"), PROMPT_STRATEGIES, "prompt_strategy", "base",
         lambda value: _prompt_mode_label(str(value)),
@@ -521,11 +585,11 @@ def _base_retrieval_label(value: str) -> str:
     }.get(value, value)
 
 
-def _filter_profile_label(value: str) -> str:
+def _filter_profile_label(value: str, lang: str = "vi") -> str:
     return {
-        "current_law": "Current",
-        "broad": "Broad",
-        "historical": "Historical",
+        "current_law": "Hiện hành" if lang == "vi" else "Current",
+        "broad": "Mở rộng" if lang == "vi" else "Broad",
+        "historical": "Lịch sử" if lang == "vi" else "Historical",
     }.get(value, value)
 
 
@@ -543,10 +607,14 @@ def _bm25_service_configured() -> bool:
     return bool(os.environ.get("BM25_SERVICE_URL", "").strip())
 
 
+def _sparse_runtime_available() -> bool:
+    return _bm25_service_configured() or _local_sparse_index_available()
+
+
 def _retrieval_mode_blocker(value: str) -> str | None:
     if value != "dense_sparse":
         return None
-    if _bm25_service_configured() or _local_sparse_index_available():
+    if _sparse_runtime_available():
         return None
     return (
         "Dense-Sparse cần sparse/BM25. Hãy build data/sparse_index hoặc cấu hình "
@@ -641,7 +709,7 @@ def _initialize_state() -> None:
     st.session_state.setdefault("prompt_strategy", "base")
     if st.session_state["prompt_strategy"] not in PROMPT_STRATEGIES:
         st.session_state["prompt_strategy"] = "base"
-    st.session_state.setdefault("theme_choice", "System")
+    st.session_state.setdefault("theme_choice", "Dark")
     st.session_state.setdefault("language_choice", "vi")
     st.session_state.setdefault("next_turn_id", 1)
     st.session_state.setdefault("selected_source", None)
@@ -673,19 +741,43 @@ def _isolate_thread(active_mode: str, requested_mode: str, config_name: str) -> 
     if st.session_state.get("thread_signature") not in (None, signature):
         st.session_state["conversation"] = clear_conversation()
         _clear_source_selection()
-        st.session_state["notice"] = "Conversation cleared because runtime mode or configuration changed."
+        st.session_state["notice"] = t(st.session_state.get("language_choice", "vi"), "configuration_changed")
     st.session_state["thread_signature"] = signature
 
 
 def _selected_evidence_turn(turns: Sequence[ConversationTurn]) -> ConversationTurn | None:
     selection = parse_source_selection(st.session_state.get("selected_source"))
-    if selection is None or selection.viewer_open:
+    if selection is None:
         return None
     for index, turn in enumerate(turns, 1):
         turn_id = turn.turn_id if turn.turn_id is not None else index
         if turn_id == selection.turn_id:
             return turn
     return None
+
+
+def _restore_selection_from_query(turns: Sequence[ConversationTurn]) -> None:
+    value = st.query_params.get("citation")
+    if not isinstance(value, str) or "-" not in value:
+        return
+    try:
+        turn_id_text, citation_id_text = value.split("-", 1)
+        turn_id = int(turn_id_text)
+        citation_id = int(citation_id_text)
+    except ValueError:
+        _clear_source_selection()
+        return
+    for index, turn in enumerate(turns, 1):
+        stable_id = turn.turn_id if turn.turn_id is not None else index
+        if stable_id != turn_id:
+            continue
+        sources = display_sources_for_response(turn.response)
+        if any(source.citation_id == citation_id for source in sources):
+            st.session_state["selected_source"] = SourceSelection(
+                turn_id, citation_id, st.query_params.get("full_source") == "1",
+            ).to_state()
+            return
+    _clear_source_selection()
 
 
 def _clear_source_selection() -> None:
@@ -703,7 +795,7 @@ def _set_preview_selection(response: Any) -> None:
             citation_id = int(value.split("-", 1)[1])
         except ValueError:
             return
-        if any(source.citation_id == citation_id for source in response.citation_sources):
+        if any(source.citation_id == citation_id for source in display_sources_for_response(response)):
             st.session_state["selected_source"] = SourceSelection(
                 1, citation_id, st.query_params.get("full_source") == "1",
             ).to_state()

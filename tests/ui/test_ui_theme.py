@@ -68,29 +68,29 @@ def test_followup_composer_uses_streamlit_current_dom_contract() -> None:
     assert 'background:var(--legal-accent) !important;' in css
 
 
-def test_source_dialog_constrains_streamlit_modal_content() -> None:
+def test_source_dialog_is_a_right_drawer_with_mobile_sheet_fallback() -> None:
     css = build_application_css("Dark")
 
     assert '[data-testid="stDialog"] > div {' in css
-    assert 'width:min(860px, calc(100vw - 64px)) !important;' in css
+    assert 'width:min(520px, 100vw) !important;' in css
+    assert 'margin:0 0 0 auto !important;' in css
     assert '[data-testid="stDialog"] [role="dialog"] {' in css
-    assert 'width:100%; max-width:none;' in css
+    assert 'width:100%; max-width:none; height:100dvh; max-height:100dvh;' in css
+    assert '[data-testid="stDialog"] > div { width:100vw !important; max-width:100vw !important; }' in css
 
 
-def test_followup_suggestions_are_scoped_to_the_answer_column() -> None:
+def test_followup_suggestion_buttons_are_not_rendered_or_styled() -> None:
     css = build_application_css("Dark")
 
-    assert '[class*="st-key-followup-suggestions-"] [data-testid="stButton"] button {' in css
-    assert 'max-width:760px; margin:0 auto;' in css
-    assert 'justify-content:center !important;' in css
-    assert 'content:"→"; position:absolute; right:16px;' in css
+    assert "st-key-followup-suggestions" not in css
 
 
-def test_answer_actions_use_balanced_centered_button_styles() -> None:
+def test_answer_actions_are_compact_and_left_aligned() -> None:
     css = build_application_css("Dark")
 
     assert '[class*="st-key-answer-primary-source-"] {' in css
-    assert 'max-width:180px; margin:8px auto 0;' in css
+    assert 'max-width:180px; margin:8px 0 0;' in css
+    assert 'min-height:34px; padding:5px 9px;' in css
     assert '[class*="st-key-evidence-answer"] button p { width:100%; margin:0; text-align:center !important; }' in css
 
 

@@ -61,6 +61,7 @@ class CitationSource:
     text: str
     is_mock: bool = False
     evidence: EvidenceSpan | None = None
+    citation: str | None = None
 
     def to_dict(self, *, include_text: bool = True) -> dict[str, Any]:
         value = asdict(self)
@@ -98,7 +99,7 @@ _SECRET_QUERY_KEYS = ("key", "token", "secret", "password", "credential", "signa
 _SOURCE_FIELDS = (
     "text", "chunk_text", "document_id", "id_str", "chunk_id", "rank", "url",
     "rerank_score", "score", "vector_score", "title", "section", "provision_id",
-    "parent_unit_id", "citation_anchor", "citation_label", "article", "article_number",
+    "parent_unit_id", "citation", "citation_anchor", "citation_label", "article", "article_number",
     "page", "source_path", "path",
     "evidence",
 )
@@ -139,13 +140,13 @@ def prepare_citation_sources(
             citation_id=len(sources) + 1, context_id=context_id,
             document_id=document_id, chunk_id=chunk_id,
             title=_metadata_text(data.get("title")),
-            section=_metadata_text(data.get("section") or data.get("provision_id") or data.get("parent_unit_id")
-                                   or data.get("citation_anchor") or data.get("citation_label")),
+            section=_metadata_text(data.get("section") or data.get("provision_id") or data.get("parent_unit_id")),
             article=_metadata_text(data.get("article") or data.get("article_number")),
             page=page,
             source_path=_metadata_text(data.get("source_path") or data.get("path")), url=url,
             rank=rank, score=score, text=_bounded(text, max_text_chars),
             is_mock=bool(data.get("is_mock", False)), evidence=evidence,
+            citation=_metadata_text(data.get("citation") or data.get("citation_anchor") or data.get("citation_label")),
         ))
     return tuple(sources)
 
@@ -154,7 +155,7 @@ def format_sources_for_prompt(sources: Sequence[CitationSource]) -> str:
     blocks: list[str] = []
     for source in sources:
         lines = [f"[SOURCE {source.citation_id}]"]
-        for label, value in (("Title", source.title), ("Section", source.section),
+        for label, value in (("Title", source.title), ("Citation", source.citation), ("Section", source.section),
                              ("Article", source.article), ("Document ID", source.document_id),
                              ("Chunk ID", source.chunk_id), ("Page", source.page)):
             if value not in (None, ""):
