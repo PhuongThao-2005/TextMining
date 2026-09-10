@@ -1,0 +1,102 @@
+% ==============================================================
+%  Sections 8--10: Discussion, limitations, and conclusion
+% ==============================================================
+\section{Discussion and Conclusion}
+
+\begin{frame}{Interpretation and Design Implications}
+\small
+\begin{enumerate}
+  \item \textbf{Metadata changes the level of success:} it improves document identification, but can push the exact gold chunk lower in the ranking.
+  \item \textbf{Current hybrid retrieval is not a good default:} its paired recall loss and large latency cost outweigh the observed benefit under the tested settings.
+  \item \textbf{Current graph expansion trades coverage for density:} adjacent passages can replace high-confidence seed evidence within a fixed context budget.
+  \item \textbf{Reranking is the clearest positive result:} every tested cross-encoder improves Recall, MRR, and nDCG over RRF-only at a fixed candidate pool.
+\end{enumerate}
+\vspace{0.2cm}
+\begin{block}{What can still change?}
+These findings apply to the tested index, tokenization, fusion constant, candidate budgets, graph policy, and benchmark---not to every hybrid or GraphRAG design.
+\end{block}
+\end{frame}
+
+\begin{frame}{Recommended Engineering Direction}
+\small
+\centering
+\resizebox{0.96\linewidth}{!}{
+\begin{tikzpicture}[
+  node distance=0.45cm,
+  box/.style={draw, rounded corners, align=center, minimum width=2.5cm, minimum height=0.9cm, fill=blue!7},
+  optional/.style={box, dashed, fill=green!9},
+  answer/.style={box, fill=orange!12},
+  arrow/.style={-{Latex}, thick, UniBlue}
+]
+\node[box] (q) {Legal query};
+\node[box, right=of q] (dense) {Dense retrieval\\+ metadata};
+\node[box, right=of dense] (jina) {Jina reranker\\top 30 $\rightarrow$ top 10};
+\node[answer, right=of jina] (gen) {Grounded answer\\+ citations};
+\node[optional, below=0.65cm of jina] (g) {Conditional graph mode\\validity / relationships};
+\draw[arrow] (q)--(dense);
+\draw[arrow] (dense)--(jina);
+\draw[arrow] (jina)--(gen);
+\draw[arrow,dashed] (q)|-(g);
+\draw[arrow,dashed] (g)--(jina);
+\end{tikzpicture}}
+\vspace{0.35cm}
+\begin{columns}[T]
+  \column{0.48\textwidth}
+    \textbf{Default path}
+    \begin{itemize}
+      \item Dense retrieval followed by Jina.
+      \item mMiniLM when latency is the priority.
+      \item BGE when lexical overlap is preferred.
+    \end{itemize}
+  \column{0.49\textwidth}
+    \textbf{Conditional modules}
+    \begin{itemize}
+      \item Retune BM25/RRF before enabling hybrid by default.
+      \item Gate graph expansion by query intent.
+      \item Preserve high-confidence seed passages.
+    \end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Limitations and Ethical Considerations}
+\small
+\begin{columns}[T]
+  \column{0.49\textwidth}
+    \textbf{Threats to validity}
+    \begin{itemize}
+      \item Only 500 questions; multi-hop, hard, and cross-document slices are small.
+      \item Gold chunks may omit legally sufficient alternatives.
+      \item Candidate budgets differ across experiment families.
+      \item One encoder, generator, prompt, and corpus version were tested.
+      \item Graph relationships still contain direction and validity uncertainty.
+    \end{itemize}
+  \column{0.48\textwidth}
+    \textbf{Responsible use}
+    \begin{itemize}
+      \item Expose citations and validity metadata.
+      \item Abstain when evidence is insufficient.
+      \item Protect privacy in user questions.
+      \item Account for uneven legal-corpus coverage.
+      \item Require qualified human legal review.
+    \end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Conclusion and Future Work}
+\small
+\begin{block}{Final conclusion}
+The controlled study supports \textbf{dense retrieval followed by a cross-encoder}, with \textbf{Jina} as the current quality--latency candidate. Metadata helps at document level; the tested hybrid and graph policies require redesign before becoming defaults.
+\end{block}
+\vspace{0.2cm}
+\textbf{Next experiments}
+\begin{itemize}
+  \item Collect blinded labels for legal correctness, completeness, faithfulness, and citation quality.
+  \item Sweep candidate-pool size, RRF parameters, and graph-context budgets.
+  \item Implement seed-preserving graph expansion and validate edge directions.
+  \item Evaluate generator reasoning strategies and larger, more diverse benchmarks.
+  \item Measure full-online p95 latency, GPU memory, and throughput.
+\end{itemize}
+\vspace{0.15cm}
+\centering
+\hi{The results are benchmark-bounded engineering evidence---not certification of legal reliability.}
+\end{frame}

@@ -1,0 +1,196 @@
+% ==============================================================
+%  Sections 5--7: Experimental setup, ablations, and results
+% ==============================================================
+\section{Experiments and Results}
+
+\begin{frame}{Controlled Experimental Protocol}
+\small
+\begin{columns}[T]
+  \column{0.48\textwidth}
+    \textbf{Shared settings}
+    \begin{itemize}
+      \item Frozen benchmark: 500 QA pairs.
+      \item Retrieval metrics: 400 answerable cases.
+      \item Dense encoder: \texttt{multilingual-e5-large}.
+      \item Generator: \texttt{gpt-4o-mini}, $T=0$, 1,024 tokens.
+      \item Comparisons paired by \texttt{qa\_id}.
+    \end{itemize}
+  \column{0.49\textwidth}
+    \textbf{Uncertainty analysis}
+    \begin{itemize}
+      \item Mean per-question deltas.
+      \item Percentile-bootstrap 95\% confidence intervals.
+      \item 10,000 resamples for primary comparisons.
+      \item A CI containing zero is treated as inconclusive.
+    \end{itemize}
+\end{columns}
+\vspace{0.2cm}
+\begin{alertblock}{Important}
+Candidate budgets differ across experiment families, so scores are compared \textbf{within a family}, not as one pooled factorial study.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Three Completed Ablation Families}
+\scriptsize
+\centering
+\resizebox{0.98\linewidth}{!}{%
+\begin{tabular}{llll}
+\toprule
+\textbf{Family} & \textbf{Compared configurations} & \textbf{Candidate/final} & \textbf{Changed factor} \\
+\midrule
+Embedding text & Chunk-only; chunk + metadata & 10/10 & Indexed text \\
+Retrieval/graph & DenseOnly; HybridOnly; DenseGraph; HybridGraph & 50/10 & BM25 + graph \\
+Reranking & None; RRF; mMiniLM; Qwen3; BGE; Jina & 30/10 & Final ranker \\
+\bottomrule
+\end{tabular}}
+\vspace{0.35cm}
+\begin{block}{Fixed candidate-pool test}
+All rerankers receive the same reconstructed RRF pool of 30 chunks. Candidate Recall@30 is 0.5995 and Hit@30 is 0.6450 for every configuration.
+\end{block}
+\vspace{0.15cm}
+The planned generator-reasoning ablation is not included because semantic legal-correctness labels are not yet available.
+\end{frame}
+
+\begin{frame}{Ablation 1: Does Metadata Improve Embeddings?}
+\scriptsize
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Variant} & \textbf{Hit@10} & \textbf{Recall@10} & \textbf{MRR@10} & \textbf{Document@10} \\
+\midrule
+Chunk-only & 53.5\% & 48.5\% & 28.6\% & 65.8\% \\
+Chunk + metadata & 53.2\% & 48.5\% & 22.7\% & 70.2\% \\
+Paired delta & $-0.2$ pp & $+0.1$ pp & $-5.9$ pp & $+4.5$ pp \\
+\bottomrule
+\end{tabular}
+\vspace{0.35cm}
+\begin{columns}[T]
+  \column{0.48\textwidth}
+    \begin{block}{Positive effect}
+    Document success improves by \textbf{+4.5 pp}; 95\% CI $[+0.5,+8.8]$.
+    \end{block}
+  \column{0.48\textwidth}
+    \begin{alertblock}{Trade-off}
+    Exact-chunk MRR falls by \textbf{5.9 pp}; 95\% CI $[-9.1,-2.7]$.
+    \end{alertblock}
+\end{columns}
+\vspace{0.1cm}
+\centering
+Metadata helps locate the correct document, but the first exact gold chunk appears later.
+\end{frame}
+
+\begin{frame}{Ablation 2: Dense, Hybrid, and Graph Retrieval}
+\scriptsize
+\centering
+\resizebox{0.98\linewidth}{!}{%
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Method} & \textbf{Recall@10} & \textbf{MRR@10} & \textbf{nDCG@10} & \textbf{ID precision} & \textbf{Avg. chunks} & \textbf{Total p50 (s)} \\
+\midrule
+\textbf{DenseOnly} & \textbf{0.4855} & \textbf{0.2267} & \textbf{0.2813} & 0.0580 & 10.000 & 5.483 \\
+HybridOnly & 0.4257 & 0.2252 & 0.2638 & 0.0493 & 10.000 & 31.538 \\
+DenseGraph & 0.3615 & 0.2045 & 0.2374 & \textbf{0.0800} & 5.605 & \textbf{4.998} \\
+HybridGraph & 0.3076 & 0.2012 & 0.2228 & 0.0641 & 6.305 & 31.180 \\
+\bottomrule
+\end{tabular}}
+\vspace{0.3cm}
+\begin{columns}[T]
+  \column{0.48\textwidth}
+    \textbf{Hybrid effect}
+    \begin{itemize}
+      \item Recall changes by $-5.98$ pp vs. DenseOnly.
+      \item 95\% CI: $[-9.71,-2.21]$.
+      \item Median latency rises by about 26 seconds.
+    \end{itemize}
+  \column{0.49\textwidth}
+    \textbf{Graph effect}
+    \begin{itemize}
+      \item Recall: $-12.40$ pp (dense), $-11.81$ pp (hybrid).
+      \item Higher identity precision, but lower evidence coverage.
+      \item Expansion removes more gold evidence than it adds.
+    \end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Ablation 3: Reranker Comparison}
+\tiny
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrrrr}
+\toprule
+\textbf{Model} & \textbf{Recall@10} & \textbf{Hit@10} & \textbf{MRR@10} & \textbf{nDCG@10} & \textbf{Token F1} & \textbf{ROUGE-L} & \textbf{Rerank p50} & \textbf{Total p50} \\
+\midrule
+None & 0.4842 & 0.5375 & 0.2167 & 0.2714 & 0.2801 & 0.2453 & 0.000 & 2.925 \\
+RRF-only & 0.4382 & 0.4800 & 0.2335 & 0.2728 & 0.2750 & 0.2416 & 0.000 & 2.972 \\
+mMiniLM & 0.4973 & 0.5425 & 0.3047 & 0.3425 & 0.2901 & 0.2568 & \textbf{0.385} & 3.343 \\
+Qwen3 & 0.5218 & 0.5725 & 0.3418 & 0.3688 & 0.2912 & 0.2583 & 9.695 & 13.007 \\
+BGE & 0.5188 & 0.5675 & 0.3247 & 0.3593 & \textbf{0.2955} & \textbf{0.2603} & 2.872 & 5.848 \\
+\textbf{Jina} & \textbf{0.5305} & \textbf{0.5850} & \textbf{0.3670} & \textbf{0.3914} & 0.2913 & 0.2558 & 1.278 & \textbf{4.158} \\
+\bottomrule
+\end{tabular}}
+\vspace{0.35cm}
+\small
+\begin{columns}[T]
+  \column{0.48\textwidth}
+    \begin{block}{Best retrieval frontier}
+    Jina gives the best Recall, Hit, MRR, and nDCG with intermediate reranking cost.
+    \end{block}
+  \column{0.48\textwidth}
+    \begin{block}{Other operating points}
+    BGE leads lexical answer overlap; mMiniLM is the latency-oriented fallback.
+    \end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Why Jina Is the Final Reranker Candidate}
+\scriptsize
+\begin{columns}[T]
+  \column{0.48\textwidth}
+    \begin{block}{Paired gain vs. RRF-only}
+      \begin{itemize}
+        \item Recall@10: \textbf{+9.23 pp}\\CI $[+5.51,+12.98]$
+        \item MRR@10: \textbf{+13.35 pp}\\CI $[+9.51,+17.24]$
+        \item nDCG@10: \textbf{+11.85 pp}\\CI $[+8.46,+15.27]$
+      \end{itemize}
+    \end{block}
+  \column{0.49\textwidth}
+    \begin{block}{Largest category gains}
+      \begin{itemize}
+        \item Legal validity ($n=91$): Recall \textbf{+14.47 pp}
+        \item Citation ($n=106$): Recall \textbf{+11.89 pp}
+        \item Abstractive ($n=199$): Recall \textbf{+13.65 pp}
+        \item Boolean ($n=123$): Recall \textbf{+7.86 pp}
+      \end{itemize}
+    \end{block}
+\end{columns}
+\vspace{0.25cm}
+\begin{alertblock}{Evidence ceiling}
+Jina retains 88.50\% of gold chunks available in the shared candidate pool, compared with 71.29\% for RRF-only. The gain is better promotion, not a larger pool.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Efficiency and What the Metrics Do Not Prove}
+\small
+\begin{columns}[T]
+  \column{0.48\textwidth}
+    \textbf{Measured efficiency}
+    \begin{itemize}
+      \item Dense total p50: 5.483 s.
+      \item Hybrid total p50: 31.538 s.
+      \item Reranker p50: mMiniLM 0.385 s; Jina 1.278 s; BGE 2.872 s; Qwen3 9.695 s.
+      \item Cached BM25 makes reranker latency incomplete for full-online deployment.
+    \end{itemize}
+  \column{0.49\textwidth}
+    \textbf{Missing validation}
+    \begin{itemize}
+      \item Human-rated legal correctness and completeness.
+      \item Claim faithfulness to retrieved passages.
+      \item Citation precision and citation recall.
+      \item Full-online p95 latency, throughput, and GPU memory.
+    \end{itemize}
+\end{columns}
+\vspace{0.2cm}
+\begin{alertblock}{Interpretation boundary}
+Token F1, ROUGE-L, and refusal markers are diagnostics; they cannot certify that an answer is legally correct.
+\end{alertblock}
+\end{frame}
