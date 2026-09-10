@@ -22,11 +22,11 @@ replicates (seed 42).
 
 ## Claim boundary
 
-GPT-4o-mini is the pre-specified primary Base-versus-CoT pair. The GLM-5 and
-Qwen3-8B pairs are complete but remain descriptive. DeepSeek has an incomplete
-CoT cell with seven provider failures, and its Base/CoT retrieved top-10
-chunk-ID sequences differ for four shared successful cases. The Qwen Base/CoT
-manifests also use different code snapshots, timeouts, and retry limits, so its
-latency and failure behavior are descriptive. Structural citation validity is
-not citation entailment, and the saved records cannot support claim-level
-faithfulness or semantic legal-correctness conclusions.
+GPT-4o-mini is the pre-specified primary Base-versus-CoT pair. The DeepSeek,
+GLM-5, and Qwen3-8B pairs are complete but remain descriptive. DeepSeek
+Base/CoT retrieved top-10 chunk-ID sequences differ in four of 500 shared
+cases. The Qwen Base/CoT manifests also use different code snapshots, timeouts,
+and retry limits, so its latency and failure behavior are descriptive.
+Structural citation validity is not citation entailment, and the saved records
+cannot support claim-level faithfulness or semantic legal-correctness
+conclusions.

@@ -173,8 +173,9 @@ uncertainty analysis.}
 
 The generator-reasoning runs keep the intended retrieval stack fixed and vary
 the prompt mode. Table~\ref{tab:llm-reasoning-runs} gives the refreshed run
-inventory. GPT-4o-mini is the pre-specified primary pair; the GLM-5 and Qwen3-8B
-pairs are complete but descriptive, while the DeepSeek CoT cell is incomplete.
+inventory. GPT-4o-mini is the pre-specified primary pair; the DeepSeek-V3.1-
+Thinking, GLM-5, and Qwen3-8B pairs are complete but descriptive. Four shared
+DeepSeek cases have different exact top-10 chunk-ID sequences between Base and CoT.
 The Qwen Base/CoT manifests use different code snapshots, timeout values, and
 retry limits, so its latency and failure behavior is not a strict
 apples-to-apples comparison. Percentages in this subsection are reported on the
@@ -186,8 +187,7 @@ cases for lexical answer metrics.
 \scriptsize
 \caption{End-to-end generator-reasoning run inventory. Lexical metrics are
 means over successful answerable cases; ``decision acc.'' is the saved
-template-based answerability decision diagnostic. An asterisk marks an
-incomplete run.}
+template-based answerability decision diagnostic.}
 \label{tab:llm-reasoning-runs}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lllrrrrr}
@@ -198,7 +198,7 @@ incomplete run.}
 GPT-4o-mini & Base & \texttt{4o-mini-base} & 500/500 & 14.00 & 24.72 & 21.60 & 82.60 \\
 GPT-4o-mini & CoT & \texttt{4o-mini-CoT} & 500/500 & 13.75 & 23.15 & 19.90 & 84.00 \\
 DeepSeek-V3.1-Thinking & Base & \texttt{deepseekv3.1-thinking-base} & 500/500 & 22.25 & 17.84 & 15.28 & 92.00 \\
-DeepSeek-V3.1-Thinking & CoT* & \texttt{deepseekv3.1-thinking-CoT} & 493/500 & 22.39 & 16.50 & 14.15 & 92.29 \\
+DeepSeek-V3.1-Thinking & CoT & \texttt{deepseekv3.1-thinking-CoT} & 500/500 & 22.25 & 16.51 & 14.12 & 92.20 \\
 GLM-5 & Base & \texttt{glm5-base} & 500/500 & 25.25 & 16.91 & 14.90 & 91.80 \\
 GLM-5 & CoT & \texttt{glm5-CoT} & 500/500 & 25.00 & 16.23 & 14.27 & 93.40 \\
 Qwen3-8B & Base & \texttt{qwen3-8b-base} & 500/500 & 19.25 & 21.98 & 18.92 & 95.80 \\

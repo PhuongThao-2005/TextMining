@@ -228,17 +228,17 @@
     {
       "confusion": [
         {
-          "count": 355,
+          "count": 361,
           "decision": "answer",
           "gold": "answerable"
         },
         {
-          "count": 38,
+          "count": 39,
           "decision": "refuse",
           "gold": "answerable"
         },
         {
-          "count": 7,
+          "count": 0,
           "decision": "failed",
           "gold": "answerable"
         },
@@ -265,20 +265,20 @@
       "run": "deepseekv3.1-thinking-CoT",
       "scheduled": 500,
       "scheduled_metrics": {
-        "answerable_non_refusal_rate": 0.8875,
-        "false_refusal_rate": 0.095,
-        "overall_template_decision_accuracy": 0.91,
+        "answerable_non_refusal_rate": 0.9025,
+        "false_refusal_rate": 0.0975,
+        "overall_template_decision_accuracy": 0.922,
         "unanswerable_recognition_rate": 1.0
       },
-      "valid": 493,
+      "valid": 500,
       "valid_only_confusion": [
         {
-          "count": 355,
+          "count": 361,
           "decision": "answer",
           "gold": "answerable"
         },
         {
-          "count": 38,
+          "count": 39,
           "decision": "refuse",
           "gold": "answerable"
         },
@@ -294,9 +294,9 @@
         }
       ],
       "valid_only_metrics": {
-        "answerable_non_refusal_rate": 0.9033078880407125,
-        "false_refusal_rate": 0.09669211195928754,
-        "overall_template_decision_accuracy": 0.922920892494929,
+        "answerable_non_refusal_rate": 0.9025,
+        "false_refusal_rate": 0.0975,
+        "overall_template_decision_accuracy": 0.922,
         "unanswerable_recognition_rate": 1.0
       }
     },
@@ -680,22 +680,22 @@
     },
     {
       "cases_with_invalid_citations": 0,
-      "cases_with_no_valid_citation": 36,
-      "citation_presence_count": 357,
-      "citation_presence_rate": 0.9083969465648855,
+      "cases_with_no_valid_citation": 37,
+      "citation_presence_count": 363,
+      "citation_presence_rate": 0.9075,
       "claim_entailment_available": false,
       "display_model": "DeepSeek-V3.1-Thinking",
       "invalid_marker_count": 0,
       "invalid_marker_rate": 0.0,
-      "mean_unique_cited_sources": 2.7099236641221376,
+      "mean_unique_cited_sources": 2.71,
       "model": "deepseek-v3.1-thinking",
       "prompt": "CoT",
       "run": "deepseekv3.1-thinking-CoT",
       "scheduled_answerable": 400,
-      "structural_coverage_mean": 0.7514638274033857,
-      "structural_coverage_n": 356,
-      "total_marker_count": 1365,
-      "valid_answerable": 393
+      "structural_coverage_mean": 0.7521301728055395,
+      "structural_coverage_n": 362,
+      "total_marker_count": 1388,
+      "valid_answerable": 400
     },
     {
       "cases_with_invalid_citations": 0,
@@ -785,7 +785,7 @@
   },
   "data_quality_warnings": [
     "Qwen3-8B Base/CoT provenance differs (git commit Base=bce815dac051401f920934228a365d0f318694d6, CoT=32a3b70a5a8b06de0329812238e936ae138b4ca8; timeout Base=90.0, CoT=60.0; max retries Base=6, CoT=2); latency and failure comparisons for this pair are descriptive.",
-    "DeepSeek-V3.1-Thinking Base/CoT exact retrieved top-10 chunk-ID sequences differ for 4 of 493 shared successful cases; treat the fixed-context comparison as descriptive for those cases."
+    "DeepSeek-V3.1-Thinking Base/CoT exact retrieved top-10 chunk-ID sequences differ for 4 of 500 shared successful cases; treat the fixed-context comparison as descriptive for those cases."
   ],
   "evidence_context_mismatches": 0,
   "output_directory": "/Users/mac/Dev/HCMUS/Text_mining/L_RAG/ablation_work/e2e_LLM_Reasoning/posthoc_results",
@@ -1008,62 +1008,62 @@
       "base_failed": 0,
       "base_run": "deepseekv3.1-thinking-base",
       "base_scheduled": 500,
-      "cot_completed": 493,
-      "cot_failed": 7,
+      "cot_completed": 500,
+      "cot_failed": 0,
       "cot_run": "deepseekv3.1-thinking-CoT",
       "cot_scheduled": 500,
       "display_model": "DeepSeek-V3.1-Thinking",
-      "fully_paired": false,
+      "fully_paired": true,
       "interpretation": "descriptive only",
       "metrics": {
         "exact_match": {
-          "base_mean": 0.22137404580152673,
-          "cot_mean": 0.22391857506361323,
-          "delta_ci_high": 0.022900763358778626,
-          "delta_ci_low": -0.017811704834605598,
-          "delta_mean": 0.002544529262086514,
-          "loss_rate": 0.020356234096692113,
-          "losses": 8,
+          "base_mean": 0.2225,
+          "cot_mean": 0.2225,
+          "delta_ci_high": 0.02,
+          "delta_ci_low": -0.02,
+          "delta_mean": 0.0,
+          "loss_rate": 0.0225,
+          "losses": 9,
           "mcnemar_exact_p": 1.0,
-          "n": 393,
-          "tie_rate": 0.9567430025445293,
-          "ties": 376,
-          "win_rate": 0.022900763358778626,
+          "n": 400,
+          "tie_rate": 0.955,
+          "ties": 382,
+          "win_rate": 0.0225,
           "wins": 9
         },
         "rouge_l": {
-          "base_mean": 0.1532161111724738,
-          "cot_mean": 0.1414769088038723,
-          "delta_ci_high": -0.006110104203003644,
-          "delta_ci_low": -0.017793832417879477,
-          "delta_mean": -0.01173920236860149,
-          "loss_rate": 0.5877862595419847,
-          "losses": 231,
-          "n": 393,
-          "tie_rate": 0.11450381679389313,
-          "ties": 45,
-          "win_rate": 0.29770992366412213,
-          "wins": 117
+          "base_mean": 0.15275055977462806,
+          "cot_mean": 0.1412464017924801,
+          "delta_ci_high": -0.005937318881395614,
+          "delta_ci_low": -0.017398150844058637,
+          "delta_mean": -0.011504157982147978,
+          "loss_rate": 0.585,
+          "losses": 234,
+          "n": 400,
+          "tie_rate": 0.115,
+          "ties": 46,
+          "win_rate": 0.3,
+          "wins": 120
         },
         "token_f1": {
-          "base_mean": 0.17848930542192373,
-          "cot_mean": 0.16496340192658726,
-          "delta_ci_high": -0.007540782377586828,
-          "delta_ci_low": -0.019842324867074525,
-          "delta_mean": -0.013525903495336486,
-          "loss_rate": 0.5776081424936387,
-          "losses": 227,
-          "n": 393,
-          "tie_rate": 0.11704834605597965,
-          "ties": 46,
-          "win_rate": 0.3053435114503817,
-          "wins": 120
+          "base_mean": 0.17841324413862336,
+          "cot_mean": 0.16507438648307118,
+          "delta_ci_high": -0.007328258848173616,
+          "delta_ci_low": -0.019582012747144203,
+          "delta_mean": -0.013338857655552152,
+          "loss_rate": 0.5725,
+          "losses": 229,
+          "n": 400,
+          "tie_rate": 0.1175,
+          "ties": 47,
+          "win_rate": 0.31,
+          "wins": 124
         }
       },
       "model": "deepseek-v3.1-thinking",
-      "retrieval_context_comparable_n": 493,
+      "retrieval_context_comparable_n": 500,
       "retrieval_context_id_mismatches": 4,
-      "shared_successful_answerable_n": 393
+      "shared_successful_answerable_n": 400
     },
     {
       "all_question_ids_equal": true,
@@ -1282,31 +1282,26 @@
       "skipped": 0
     },
     {
-      "completed": 493,
-      "completion_rate": 0.986,
+      "completed": 500,
+      "completion_rate": 1.0,
       "display_model": "DeepSeek-V3.1-Thinking",
-      "error_artifact_count": 7,
-      "failed": 7,
-      "failure_rate": 0.014,
-      "failure_reasons": {
-        "model unavailable": 6,
-        "rate limit": 1
-      },
-      "failure_stages": {
-        "generation": 7
-      },
+      "error_artifact_count": 0,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "failure_reasons": {},
+      "failure_stages": {},
       "latency": {
         "generation": {
-          "count": 493,
-          "mean_s": 9.54689937992495,
-          "p50_s": 7.741607426,
-          "p95_s": 20.409258682
+          "count": 500,
+          "mean_s": 9.936568227074,
+          "p50_s": 7.823279448499999,
+          "p95_s": 21.0151191
         },
         "total": {
           "count": 500,
-          "mean_s": 20.199686443786,
+          "mean_s": 20.591099446926002,
           "p50_s": 18.522674158,
-          "p95_s": 30.997684736
+          "p95_s": 31.369452686
         }
       },
       "model": "deepseek-v3.1-thinking",

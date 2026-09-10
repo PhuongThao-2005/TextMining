@@ -83,9 +83,8 @@ The generator-reasoning family holds the retrieval stack and intended retrieved
 top-10 context fixed for each question, and changes the prompt mode for the
 generator. The primary paired comparison uses the complete GPT-4o-mini Base and
 CoT runs (500/500 questions, with 400 answerable pairs); their saved contexts
-match exactly. The GLM-5 and Qwen3-8B pairs are also complete but remain
-descriptive cross-model checks. The DeepSeek CoT cell is incomplete (493/500,
-with seven provider failures), and four of its 493 shared successful cases have
+match exactly. The DeepSeek-V3.1-Thinking, GLM-5, and Qwen3-8B pairs are also
+complete but remain descriptive cross-model checks. Four of the 500 shared DeepSeek cases have
 different exact top-10 chunk-ID sequences between Base and CoT. The Qwen Base
 and CoT manifests use different code snapshots, timeouts, and retry limits, so
 their latency and failure comparisons are descriptive. These conditions are not

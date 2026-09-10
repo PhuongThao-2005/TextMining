@@ -13,12 +13,17 @@ not change recognition of the saved unanswerable set (98.00% for both). It
 reduced template-detected false refusals from 21.25% to 19.50%; this is a
 format-level decision diagnostic, not semantic refusal quality.
 
-The refreshed artifacts now complete both the GLM-5 and Qwen3-8B Base/CoT
-pairs. DeepSeek Base is recorded under the normalized
-`deepseekv3.1-thinking-base` directory; its CoT cell remains incomplete at
-493/500 because of seven provider failures. The Qwen Base/CoT pair is complete,
-but its manifests use different code snapshots, timeout values, and retry
-limits, so its latency and failure behavior remain descriptive.
+The refreshed artifacts now complete the DeepSeek-V3.1-Thinking, GLM-5, and
+Qwen3-8B Base/CoT pairs. DeepSeek Base is recorded under the normalized
+`deepseekv3.1-thinking-base` directory, and its repaired CoT run evaluates all
+500 questions. The Qwen Base/CoT pair is complete, but its manifests use
+different code snapshots, timeout values, and retry limits, so its latency and
+failure behavior remain descriptive.
+
+DeepSeek CoT is 22.25% exact match, 16.51% Token F1, 14.12% ROUGE-L, and
+92.20% template-based decision accuracy. Its Base/CoT retrieved top-10
+chunk-ID sequences differ in four of 500 shared cases, so that comparison
+remains descriptive.
 
 The complete GLM pair is also descriptive: CoT minus Base is -0.68 pp Token
 F1, -0.63 pp ROUGE-L, -0.25 pp exact match, and +1.60 pp template decision
