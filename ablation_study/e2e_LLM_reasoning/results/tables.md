@@ -4,6 +4,9 @@ The full study-facing narrative is in [`report.md`](report.md). The tables
 below are generated from the frozen artifacts using 10,000 paired-bootstrap
 replicates (seed 42).
 
+The narrative report explains the evaluation workflow, row-validity rule,
+denominators, pairing, and formulas for each additional metric.
+
 ## Main derived tables
 
 - [Primary and descriptive Base/CoT deltas](paired_metrics.csv)

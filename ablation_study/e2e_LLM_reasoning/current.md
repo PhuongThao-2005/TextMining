@@ -25,6 +25,24 @@ DeepSeek CoT is 22.25% exact match, 16.51% Token F1, 14.12% ROUGE-L, and
 chunk-ID sequences differ in four of 500 shared cases, so that comparison
 remains descriptive.
 
+## Evaluation and metric calculation
+
+Each run contains 500 fixed question IDs and a saved top-10 retrieved context.
+The analyzer pairs Base and CoT by `qa_id`; lexical metrics use the successful
+answerable intersection (400 cases for every complete pair). Exact Match,
+Token F1, and ROUGE-L are read from the original evaluator. Paired deltas are
+`CoT - Base`, with 10,000 paired-bootstrap resamples (seed 42); Exact Match
+also uses an exact McNemar test.
+
+Additional diagnostics use the saved fields: `context_recall@k` measures the
+fraction of gold chunk IDs present in the retrieved top-k and defines fully
+retrieved/partial/absent evidence strata; the template-based answerability
+score counts answer/refuse decisions; citation presence, structural coverage,
+unique sources, and invalid markers describe citation formatting; completion,
+failure stage, and latency p50/p95 describe operational reliability. None of
+these structural metrics establishes legal correctness, citation entailment, or
+faithful hidden reasoning.
+
 The complete GLM pair is also descriptive: CoT minus Base is -0.68 pp Token
 F1, -0.63 pp ROUGE-L, -0.25 pp exact match, and +1.60 pp template decision
 accuracy; total-latency p50 rises from 14.29 s to 15.96 s. The complete Qwen
