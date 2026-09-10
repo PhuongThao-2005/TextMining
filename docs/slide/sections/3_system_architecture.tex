@@ -110,9 +110,9 @@ The in-memory loader, builder, traversal, expansion, overlay, and context module
     \textbf{Supported backends}
     \begin{enumerate}
       \item mMiniLMv2 (117M): lightweight baseline.
-      \item BGE-Reranker-v2-m3 (567M): multilingual reranker.
+      \item BGE-Reranker-v2-m3 (567M): multilingual long-context model.
       \item Jina-Reranker-v2 (278M): multilingual long-context model.
-      \item Qwen3-Reranker-0.6B: causal-LM reranker in FP16.
+      \item Qwen3-Reranker-0.6B: instruction-aware causal-LM reranker.
     \end{enumerate}
   \column{0.43\textwidth}
     \textbf{GPU-safe execution}
@@ -129,7 +129,7 @@ The in-memory loader, builder, traversal, expansion, overlay, and context module
 \end{columns}
 \vspace{0.2cm}
 \begin{alertblock}{Why rerank?}
-Unlike separate bi-encoder vectors, a cross-encoder jointly attends to the complete query and candidate passage.
+Rerankers jointly score each query–candidate pair, capturing richer interactions than comparing separately encoded query and document vectors.
 \end{alertblock}
 \end{frame}
 
