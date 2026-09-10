@@ -13,17 +13,24 @@ not change recognition of the saved unanswerable set (98.00% for both). It
 reduced template-detected false refusals from 21.25% to 19.50%; this is a
 format-level decision diagnostic, not semantic refusal quality.
 
-The refreshed artifacts complete the GLM-5 Base/CoT pair and the Qwen3-8B Base
-run. The directory `qwen3-8b-CoT` is not a Qwen run according to its manifest:
-it declares `deepseek-v3.1-thinking`, with 334/500 successful cases. The
-current source therefore contains two incomplete/partial DeepSeek CoT
-directories and no manifest-backed Qwen3-8B CoT run. This mismatch is flagged
-in [`results/report.md`](results/report.md), and those rows remain descriptive.
+The refreshed artifacts now complete the DeepSeek-V3.1-Thinking, GLM-5, and
+Qwen3-8B Base/CoT pairs. DeepSeek Base is recorded under the normalized
+`deepseekv3.1-thinking-base` directory, and its repaired CoT run evaluates all
+500 questions. The Qwen Base/CoT pair is complete, but its manifests use
+different code snapshots, timeout values, and retry limits, so its latency and
+failure behavior remain descriptive.
+
+DeepSeek CoT is 22.25% exact match, 16.51% Token F1, 14.12% ROUGE-L, and
+92.20% template-based decision accuracy. Its Base/CoT retrieved top-10
+chunk-ID sequences differ in four of 500 shared cases, so that comparison
+remains descriptive.
 
 The complete GLM pair is also descriptive: CoT minus Base is -0.68 pp Token
 F1, -0.63 pp ROUGE-L, -0.25 pp exact match, and +1.60 pp template decision
-accuracy; total-latency p50 rises from 14.29 s to 15.96 s. The derived results
-were regenerated from the frozen artifacts with 10,000 paired-bootstrap
-replicates (seed 42). Semantic legal correctness, claim faithfulness, citation
-entailment, and faithful latent reasoning are not recoverable from the saved
-outputs.
+accuracy; total-latency p50 rises from 14.29 s to 15.96 s. The complete Qwen
+pair has a descriptive CoT-minus-Base change of -1.92 pp Token F1, -1.75 pp
+ROUGE-L, -2.00 pp exact match, and -0.60 pp template decision accuracy; total
+latency p50 rises from 14.15 s to 14.58 s. The derived results were regenerated
+from the frozen artifacts with 10,000 paired-bootstrap replicates (seed 42).
+Semantic legal correctness, claim faithfulness, citation entailment, and
+faithful latent reasoning are not recoverable from the saved outputs.

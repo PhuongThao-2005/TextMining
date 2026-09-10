@@ -26,8 +26,9 @@ faithful latent reasoning.
   output tokens
 - Primary paired comparison: GPT-4o-mini Base versus CoT, both completed on
   all 500 cases
-- Other models: DeepSeek-V3.1-Thinking, GLM-5, and Qwen3-8B; incomplete cells
-  remain descriptive only
+- Other models: DeepSeek-V3.1-Thinking, GLM-5, and Qwen3-8B; complete pairs
+  remain descriptive only because GPT-4o-mini is the pre-specified primary
+  comparison
 
 ## Analysis protocol
 

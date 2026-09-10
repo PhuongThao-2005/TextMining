@@ -44,14 +44,21 @@ It cannot currently establish that one condition *reasons* better:
 - The saved prediction records contain final answers and citation metadata but
   no raw CoT, structured rationale, reasoning-token count, or judge output.
   Reasoning quality cannot be reconstructed reliably from those historical runs.
-- Only the GPT-4o-mini Base/CoT pair is complete. Provider-failed or partial
-  cells must remain descriptive until all paired cells are rerun.
+- GPT-4o-mini is the pre-specified primary complete Base/CoT pair. The
+  DeepSeek-V3.1-Thinking, GLM-5, and Qwen3-8B Base/CoT pairs are also complete,
+  but remain descriptive cross-model checks. DeepSeek Base/CoT retrieved
+  top-10 chunk-ID sequences differ in four of 500 shared cases.
+- The Qwen Base/CoT manifests use different code snapshots, timeouts, and
+  retry limits, so its latency and failure comparisons are not strict
+  apples-to-apples measurements. DeepSeek has four exact top-10 chunk-ID
+  sequence differences among its 500 shared successful cases; the GPT pair has
+  none.
 
-The existing outputs are still useful for a retrospective appendix: report
-paired lexical deltas, response-completion rate, answerability confusion matrix,
-structural citation coverage, and latency percentiles for the complete GPT pair.
-They cannot be relabeled as claim faithfulness, legal reasoning quality, or
-refusal quality.
+The existing outputs are useful for a retrospective appendix: report paired
+lexical deltas, response-completion rate, answerability confusion matrix,
+structural citation coverage, and latency percentiles for the complete GPT pair,
+with the complete GLM and Qwen pairs shown as descriptive checks. They cannot
+be relabeled as claim faithfulness, legal reasoning quality, or refusal quality.
 
 ## What related evaluations measure
 

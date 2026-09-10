@@ -1,9 +1,9 @@
 run,model,display_model,prompt,scheduled_answerable,valid_answerable,citation_presence_rate,citation_presence_count,structural_coverage_mean,structural_coverage_n,mean_unique_cited_sources,invalid_marker_count,total_marker_count,invalid_marker_rate,cases_with_invalid_citations,cases_with_no_valid_citation,claim_entailment_available
 4o-mini-base,gpt-4o-mini,GPT-4o-mini,Base,400,400,0.7825,313,0.8942284508740206,316,1.4575,0,599,0.0,0,87,False
 4o-mini-CoT,gpt-4o-mini,GPT-4o-mini,CoT,400,400,0.81,324,0.8791482951205173,324,1.675,0,714,0.0,0,76,False
-deepseekv3.1-thinking-basereasoning,deepseek-v3.1-thinking,DeepSeek-V3.1-Thinking,Base,400,400,0.9,360,0.8238268743783449,360,2.5725,0,1307,0.0,0,40,False
-deepseekv3.1-thinking-CoT,deepseek-v3.1-thinking,DeepSeek-V3.1-Thinking,CoT,400,393,0.9083969465648855,357,0.7514638274033857,356,2.7099236641221376,0,1365,0.0,0,36,False
-qwen3-8b-CoT,deepseek-v3.1-thinking,DeepSeek-V3.1-Thinking,CoT,400,255,0.8745098039215686,223,0.8167711710312607,223,2.631372549019608,0,859,0.0,0,32,False
+deepseekv3.1-thinking-base,deepseek-v3.1-thinking,DeepSeek-V3.1-Thinking,Base,400,400,0.9,360,0.8238268743783449,360,2.5725,0,1307,0.0,0,40,False
+deepseekv3.1-thinking-CoT,deepseek-v3.1-thinking,DeepSeek-V3.1-Thinking,CoT,400,400,0.9075,363,0.7521301728055395,362,2.71,0,1388,0.0,0,37,False
 glm5-base,glm-5,GLM-5,Base,400,400,0.9175,367,0.8025902714440184,365,2.7175,0,1555,0.0,0,33,False
 glm5-CoT,glm-5,GLM-5,CoT,400,400,0.9375,375,0.7811614781534567,374,3.045,0,1754,0.0,0,25,False
 qwen3-8b-base,qwen3-8b,Qwen3-8B,Base,400,400,0.9775,391,0.6578295778295777,390,1.7925,5,877,0.005701254275940707,3,9,False
+qwen-8b-CoT,qwen3-8b,Qwen3-8B,CoT,400,400,0.9825,393,0.5815420655115312,393,1.8125,4,901,0.004439511653718091,2,7,False
