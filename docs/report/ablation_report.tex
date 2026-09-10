@@ -42,23 +42,25 @@ Retrieval-Augmented Generation}
 \maketitle
 
 \begin{abstract}
-Legal question answering requires evidence that is semantically relevant,
-structurally complete, temporally appropriate, and traceable to an
-authoritative source. We present L\_RAG, a Vietnamese legal
-Retrieval-Augmented Generation pipeline that combines dense E5 retrieval,
+Legal question answering must retrieve evidence that is relevant, complete in
+its statutory context, valid at the relevant time, and traceable to an
+authoritative source. We evaluate L\_RAG, a Vietnamese legal
+Retrieval-Augmented Generation pipeline that combines E5 dense retrieval,
 BM25, a knowledge-graph overlay, rank fusion, cross-encoder reranking, and
-citation-grounded generation. On a 500-question benchmark, we find that
-metadata-enriched embeddings improve document-level success but not exact
-chunk ranking; the tested hybrid and graph variants reduce retrieval coverage;
-and cross-encoder reranking consistently improves ranking at a measurable
-latency cost. Jina gives the strongest fixed-candidate retrieval result,
-whereas BGE gives the highest lexical answer-overlap scores and mMiniLM is the
-fastest reranker. In a completed generator-reasoning comparison, GPT-4o-mini
-chain-of-thought prompting lowers lexical overlap under fixed retrieved context
-while improving only template-based answerability diagnostics and adding
-latency. Human-validated legal correctness and citation faithfulness
-are not available, so the conclusions are bounded to deterministic retrieval,
-overlap, abstention, and recorded latency diagnostics.
+citation-grounded generation. Across a 500-question benchmark, the ablations
+yield three practical findings. Adding metadata to embeddings improves
+document-level coverage, but not exact-chunk ranking. The tested hybrid and
+graph configurations reduce evidence coverage, so their additional complexity
+is not justified under the current settings. In contrast, every tested
+cross-encoder improves ranking when candidate evidence is held fixed: Jina
+achieves the strongest retrieval scores, BGE the highest lexical
+answer-overlap scores, and mMiniLM the lowest reranking latency. A separate,
+fixed-context prompt comparison finds that GPT-4o-mini chain-of-thought
+prompting lowers lexical overlap, improves only template-based answerability
+diagnostics, and adds latency. Because the study has no human judgments of
+legal correctness or citation faithfulness, its conclusions are deliberately
+limited to retrieval, lexical overlap, abstention diagnostics, and recorded
+latency.
 \end{abstract}
 
 % The report body is modular so each experiment can be updated without

@@ -45,4 +45,9 @@ Following initial retrieval, cross-encoder rerankers \cite{nogueira2019passage} 
 
 Knowledge Graphs (KGs) represent domain entities and their explicit relationships as structured nodes and edges $(e_1, r, e_2)$. GraphRAG \cite{edge2024graphrag} integrates graph traversal with vector search, enabling LLMs to reason over multi-hop relationships and hierarchical structures.
 
-In the legal domain, GraphRAG approaches construct statutory graphs linking documents, provisions, definitions, and legal concepts. At query time, graph traversal algorithms (e.g., Breadth-First Search) expand seed vector hits by navigating structural edges (\texttt{HAS\_PROVISION}) and citation edges (\texttt{CITES}, \texttt{AMENDS}). This guarantees that retrieved contexts maintain statutory completeness and legal coherence.
+In the legal domain, GraphRAG approaches construct statutory graphs linking
+documents, provisions, definitions, and legal concepts. At query time,
+traversal can expand seed vector hits through structural edges
+(\texttt{HAS\_PROVISION}) and citation edges (\texttt{CITES}, \texttt{AMENDS}).
+This can restore statutory context, but its value depends on edge quality, the
+traversal policy, and the available context budget.

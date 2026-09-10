@@ -4,37 +4,36 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented a controlled ablation study of L\_RAG for Vietnamese legal QA.
-Metadata-enriched embeddings improved document-level retrieval but not exact
-chunk ranking. The tested hybrid fusion reduced exact-chunk retrieval and
-added substantial latency, while one-hop graph expansion increased context
-density at the cost of coverage. The multi-reranker study produced the most
-consistent gain: at a fixed candidate pool, Jina improved Recall@10, MRR@10,
-and nDCG@10 over RRF-only with paired confidence intervals above zero. BGE
-led lexical answer overlap and mMiniLM offered the lowest reranking cost.
-The completed generator-reasoning ablation shows that GPT-4o-mini CoT
-prompting lowers Token F1 by 1.57 pp and ROUGE-L by 1.71 pp relative to Base
-prompting under fixed retrieved context, while improving only template-based
-answerability diagnostics and adding latency.
+This controlled ablation study identifies where L\_RAG currently gains value
+and where extra machinery is not yet justified. Metadata-enriched embeddings
+improve document-level coverage but not exact-chunk ranking. The tested hybrid
+fusion and one-hop graph expansion reduce exact-evidence coverage while adding
+cost or displacing strong seed passages. Cross-encoder reranking is the
+consistent exception: with the candidate pool fixed, Jina improves Recall@10,
+MRR@10, and nDCG@10 over RRF-only with paired confidence intervals above zero.
+BGE leads the observed lexical overlap metrics, while mMiniLM has the lowest
+reranking cost.
 
-These findings support dense retrieval followed by a cross-encoder as the
-current engineering direction, with Jina as the quality--latency candidate
-for this benchmark. They do not establish legal correctness, citation
-faithfulness, or safe deployment because the available runs lack validated
-semantic legal-answer annotations.
+The fixed-context generator ablation adds an important qualification. For
+GPT-4o-mini, CoT prompting lowers Token F1 by 1.57 pp and ROUGE-L by 1.71 pp,
+improves only template-based answerability diagnostics, and increases latency.
+It is therefore not a demonstrated improvement in legal-answer quality.
 
-The refreshed reasoning inventory also
-shows why run-manifest identity and completion checks are necessary before
-cross-model prompt conclusions.
+Taken together, the results support a dense-retrieval-plus-reranker baseline,
+with Jina as the current quality--latency candidate for this benchmark. They
+do not establish legal correctness, citation faithfulness, or safe autonomous
+legal advice: the available artifacts lack human semantic evaluations.
 
 \subsection{Future Work}
 \label{sec:future-work}
 
-The next experiments should collect blinded labels for legal correctness,
-completeness, claim faithfulness, citation precision, and citation recall;
-measure full-online p95 latency, GPU memory, and throughput; and validate
-relationship direction against authoritative document pairs. Additional work
-includes a candidate-pool sweep, RRF and graph-budget tuning, seed-preserving
-graph expansion, investigation of the four DeepSeek context-order mismatches,
-provenance-aligned reruns for the Qwen3-8B pair, and evaluation on a larger and
-more diverse Vietnamese legal benchmark.
+The next phase should add blinded expert labels for legal correctness,
+completeness, claim faithfulness, citation precision, and citation recall. It
+should also measure full-online p95 latency, GPU memory, and throughput;
+tune candidate-pool size, RRF, and graph budget; and validate graph relation
+direction against authoritative document pairs. The most promising technical
+change is seed-preserving graph expansion, which can add surrounding context
+without discarding high-confidence retrieved evidence. Future prompt studies
+should rerun all conditions with provenance-aligned manifests and evaluate
+answers, citations, and abstentions semantically rather than through lexical
+or template-based proxies.

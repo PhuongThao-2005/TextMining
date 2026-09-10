@@ -4,93 +4,94 @@
 \section{Discussion}
 \label{sec:discussion}
 
-\subsection{Interpretation of Findings}
+The ablations replace a broad ``more components are better'' assumption with a
+more selective conclusion. In the current benchmark and implementation,
+components that improve document context do not necessarily improve exact
+evidence retrieval, and components that are structurally appealing can still
+harm coverage when the context budget is fixed. The strongest result is not a
+larger retrieval stack; it is better ranking of a fixed candidate pool.
+
+\subsection{What the Findings Mean}
 \label{sec:interpretation}
 
-The ablations separate four effects that are often conflated in a legal RAG
-pipeline. First, metadata-enriched embeddings improve document-level
-identification without improving exact provision ranking. The representation
-therefore helps the system locate the right instrument, but the additional
-header tokens can compete with the passage text when the evaluation target is
-a specific gold chunk.
+\paragraph{Metadata changes the level of success.}
+Adding document and provision metadata helps the retriever identify the right
+legal instrument, but does not improve the rank of the first exact gold chunk.
+The header tokens likely provide useful document-level cues while competing
+with passage content when the target is a specific provision. The practical
+implication is to evaluate both document coverage and chunk ranking: reporting
+only one would hide this trade-off.
 
-Second, the current hybrid implementation does not improve exact-chunk
-retrieval over the dense baseline. BM25 and RRF may still supply context that
-is marginally useful to generation, but the paired retrieval loss and large
-latency increase make hybrid retrieval a poor default under the present
-settings. This result should not be generalized to all fusion methods: it
-identifies a limitation of this index, tokenization, fusion constant, and
-candidate budget.
+\paragraph{The current hybrid and graph policies are not default choices.}
+Hybrid retrieval underperforms dense retrieval on exact-chunk coverage and
+adds a large latency cost. This does not show that BM25 or RRF are inherently
+unsuitable for legal retrieval; it identifies a limitation of this index,
+Vietnamese tokenization, fusion constant, and candidate budget. Similarly,
+one-hop graph expansion increases context density but removes more retrieved
+gold evidence than it adds. Under a top-10 budget, the graph is behaving as a
+replacement policy, not a safe supplement to high-confidence seed passages.
 
-Third, graph expansion improves identity precision by returning fewer, denser
-contexts, but it removes more already-retrieved gold evidence than it adds.
-The likely mechanism is a fixed context budget combined with one-hop
-expansion, which replaces seed passages with structurally adjacent passages.
-Graph context can still be valuable for validity and citation reasoning, but
-that hypothesis requires semantic legal-answer annotations and a graph policy
-that preserves high-confidence seed evidence.
+\paragraph{Reranking is the clearest robust improvement.}
+With candidate evidence held fixed, every evaluated cross-encoder improves
+Recall@10, MRR@10, and nDCG@10 over RRF-only. Jina has the largest paired
+gains and retains substantially more of the available gold evidence, showing
+that its advantage comes from promotion rather than access to a larger pool.
+This is strong retrieval evidence, although it is still not evidence that the
+generator's legal claims are correct.
 
-Finally, reranking is the clearest positive result. With the candidate pool
-held fixed, every tested cross-encoder improves the three primary ranking
-metrics over RRF-only, and Jina has the largest paired gains. This is evidence
-for better ordering and candidate retention, not evidence that the generator's
-legal claims are correct. The quality--latency frontier favors Jina for the
-current benchmark, BGE when lexical answer overlap is prioritized, and mMiniLM
-when latency is the primary constraint.
-
-The generator-reasoning comparison gives a different kind of result. With the
-retrieved context fixed, GPT-4o-mini CoT lowers Token F1 and ROUGE-L relative
-to Base prompting, with paired intervals excluding zero, while exact match is
-nearly unchanged. CoT reduces template-detected false refusals and increases
-citation-marker presence, but it also increases generation and total latency
-and slightly lowers structural citation coverage. Thus explicit reasoning is
-not a demonstrated quality improvement for this prompt, model, and benchmark;
-its observed benefit is limited to output-format diagnostics that lack semantic
-legal validation. The DeepSeek, GLM, and Qwen pairs are complete but
-descriptive. The Qwen Base/CoT manifests use different code snapshots, timeout
-values, and retry limits, and four shared DeepSeek cases have different exact
-top-10 chunk-ID sequences, so cross-model and fixed-context claims outside the
-GPT primary pair should remain cautious.
+\paragraph{Reasoning prompts change output behavior, not a validated legal
+quality measure.}
+For the controlled GPT-4o-mini comparison, CoT lowers lexical overlap across
+all evidence-availability strata and increases latency. It reduces
+template-detected false refusals and increases citation-marker presence, but
+the study does not contain human evaluations of helpfulness, correctness, or
+citation entailment. The defensible conclusion is therefore operational: this
+CoT prompt has formatting-related benefits but no demonstrated legal-answer
+quality advantage.
 
 \subsection{Design Implications}
 \label{sec:design-implications}
 
-For a retrieval-focused deployment, we recommend dense retrieval with a
-reranker, using Jina as the current default candidate and mMiniLM as the
-latency-oriented fallback. BGE is a reasonable alternative when its observed
-Token F1 and ROUGE-L advantage is preferred. Hybrid retrieval should be
-revisited after measuring online BM25 cost and tuning fusion; the current
-results do not justify paying its reported latency by default. Graph
-augmentation should be gated by a validity- or relationship-aware query mode
-until seed-preserving expansion and semantic evaluation are completed.
+The results suggest a simple default path for a retrieval-focused deployment:
+use dense retrieval followed by a cross-encoder reranker. Jina is the present
+quality--latency choice; mMiniLM is the practical fallback when response time
+is the main constraint; and BGE is a reasonable alternative when lexical
+overlap is prioritized. These are engineering choices for this benchmark, not
+rankings of legal reliability.
 
-These recommendations are conditional. A production legal system should
-select evidence using validity metadata, expose citations, abstain when
-evidence is insufficient, and require human verification. No automatic metric
-reported here can certify the legal effect of an answer.
+Hybrid retrieval should be revisited only after measuring online BM25 cost and
+tuning tokenization, fusion, and candidate allocation. Graph augmentation
+should be introduced as a targeted, evidence-preserving mode for validity or
+relationship-heavy questions, rather than as unconditional expansion. A useful
+next graph policy would reserve space for high-confidence seed chunks before
+adding adjacent or related context.
+
+Regardless of configuration, a production legal system must surface source
+citations and validity metadata, abstain when evidence is insufficient, and
+direct users to verify the cited instrument's current status. None of the
+automatic metrics in this study can certify a legal answer's effect or safety.
 
 \subsection{Threats to Validity}
 \label{sec:threats}
 
-The benchmark has 500 questions and a small number of multi-hop, hard, and
-cross-document cases. Ground-truth chunk sets may not capture every passage
-that a legal expert would consider sufficient, and document-level success is
-not equivalent to provision-level correctness. All runs use one embedding
-model and one corpus/index version within each family; generator settings are
-fixed within each compared cell, while the reasoning family intentionally
-varies the prompt mode. The source artifacts also differ in candidate budget
-across families, which prevents a pooled comparison of absolute scores.
+The benchmark has 500 questions, with relatively small multi-hop, hard, and
+cross-document slices. Its gold chunk sets may omit passages that a legal
+expert would regard as sufficient, and document-level success is not the same
+as provision-level correctness. Each ablation family uses one embedding model
+and one corpus/index version, but candidate budgets differ across families;
+absolute scores should therefore not be pooled across them.
 
-The reranker and generator-reasoning safety analyses use deterministic
-refusal-marker/template classifiers, not human assessment. The reasoning
-artifacts also contain no raw CoT, reasoning-token counts, cost, or semantic
-claim annotations. The DeepSeek pair is complete, but four shared cases have
-exact retrieved-context sequence differences. The GLM and Qwen pairs are
-complete but descriptive; Qwen Base and CoT also differ in code snapshot,
-timeout, and retry configuration. The cached BM25 stage means recorded reranker latency is
-not full-online hybrid latency, and p95 latency, peak GPU memory, and controlled
-throughput are unavailable. Finally, the graph corpus contains unresolved
-relationship-direction and validity-annotation questions; these may affect
-the behavior of graph-augmented runs. We therefore present the results as
-benchmark-bounded engineering evidence rather than as a claim of legal
-reliability.
+The reranker and reasoning safety analyses rely on deterministic
+refusal-marker and template classifiers rather than human assessment. The
+reasoning artifacts lack raw CoT, token counts, cost records, semantic claim
+labels, and citation-entailment judgments. Four DeepSeek cases also have
+different saved context orders across prompts, and the Qwen Base/CoT manifests
+differ in code snapshot, timeout, and retry configuration. Those comparisons
+remain descriptive.
+
+Finally, cached BM25 candidates mean that reranker latency is not full-online
+hybrid latency; p95 latency, peak GPU memory, and controlled throughput are
+not available for every configuration. The graph corpus also has unresolved
+relationship-direction and validity-annotation questions. We therefore frame
+the results as benchmark-bounded engineering evidence, not a claim of legal
+reliability or deployment readiness.

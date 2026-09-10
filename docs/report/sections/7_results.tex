@@ -4,24 +4,24 @@
 \section{Results}
 \label{sec:results}
 
-The completed retrieval, reranking, category, and efficiency results are
-summarized in the tables below. The generator-reasoning ablation, including
-its paired results and evidence-stratified analysis, is reported in
-Section~\ref{sec:ablation-reasoning}. Retrieval metrics use answerable
-questions and are paired within each experiment family. We use percentage
-points (pp) for deltas so that the magnitude of an effect is not confused
-with a relative percentage change.
+The results tell a consistent story: better candidate ordering is more useful
+than adding retrieval stages under the current settings. The tables below
+separate document discovery, exact evidence ranking, answer-overlap diagnostics,
+and latency so that a gain in one dimension is not mistaken for a general
+quality improvement. The generator-reasoning ablation is reported separately
+in Section~\ref{sec:ablation-reasoning}. Retrieval metrics use answerable
+questions and are paired within each experiment family. Deltas are reported in
+percentage points (pp), not relative percentages.
 
 \subsection{Embedding Representation}
 \label{sec:embedding-results}
 
-Table~\ref{tab:embedding-results} shows that adding metadata to the embedded
-text changes the level at which retrieval succeeds. At top 10, exact chunk
-Recall is unchanged to one decimal place, while document success increases by
-4.5 pp. The paired MRR decrease is statistically distinguishable from zero,
-so metadata should not be described as an unqualified improvement: it favors
-document identification but does not improve the rank of the first exact gold
-chunk.
+Adding metadata changes the level at which retrieval succeeds. At top 10,
+exact chunk recall is unchanged to one decimal place, while document success
+increases by 4.5 pp. At the same time, the paired MRR decrease is reliably
+below zero. Metadata therefore helps the system locate the right legal
+instrument, but it does not improve---and may delay---the first exact
+supporting chunk.
 
 \begin{table*}[t]
 \centering
@@ -49,13 +49,13 @@ Delta & $-3.8$ & $-2.2$ & $-6.5$ & $+2.8$ & $-0.2$ & $+0.1$ & $-5.9$ & $+4.5$ \\
 \subsection{Dense, Hybrid, and Graph Retrieval}
 \label{sec:retrieval-results}
 
-The DenseOnly configuration is the strongest exact-chunk retriever in the
-second family. HybridOnly is lower on Recall@10 and nDCG@10, and its paired
-Recall loss has a 95\% interval entirely below zero. Graph expansion lowers
-Recall@10 for both seed retrievers: by 12.40 pp for DenseOnly and 11.81 pp for
-HybridOnly. The graph-only evidence counts show why: graph expansion adds a
-gold chunk for one DenseOnly query and six HybridOnly queries, but removes at
-least one previously retrieved gold chunk for 61 and 59 queries, respectively.
+DenseOnly is the strongest exact-chunk retriever in this family. HybridOnly is
+lower on Recall@10 and nDCG@10, and its paired Recall loss has a 95\% interval
+entirely below zero. Graph expansion lowers Recall@10 for both seed retrievers:
+by 12.40 pp from DenseOnly and 11.81 pp from HybridOnly. The per-query evidence
+counts explain the decline: expansion adds a gold chunk for only one DenseOnly
+query and six HybridOnly queries, while removing at least one previously
+retrieved gold chunk for 61 and 59 queries, respectively.
 
 \begin{table*}[t]
 \centering
@@ -81,23 +81,21 @@ HybridGraph & 0.3076 & 0.2012 & 0.2228 & 0.0641 & 6.305 & 27.858/27.929 & 31.180
 }
 \end{table*}
 
-The denser graph contexts improve ID precision (0.0580 to 0.0800 for Dense
-and 0.0493 to 0.0641 for Hybrid), but this should be read together with the
-large context-recall loss. Graph expansion also increases recorded
-unanswerable accuracy from 0.38 to 0.41 for Dense and from 0.38 to 0.47 for
-Hybrid, while paired Token F1 changes are small and their confidence intervals
-include zero. The graph implementation therefore produces a precision--coverage
-trade-off rather than a demonstrated overall gain.
+Graph contexts are denser: ID precision rises from 0.0580 to 0.0800 for Dense
+and from 0.0493 to 0.0641 for Hybrid. That gain must be read beside the much
+larger recall loss. Recorded unanswerable accuracy also rises (0.38 to 0.41 for
+Dense and 0.38 to 0.47 for Hybrid), but paired Token F1 changes are small and
+inconclusive. The present graph policy thus creates a precision--coverage
+trade-off, not a demonstrated overall improvement.
 
 \subsection{Reranker Comparison}
 \label{sec:reranker-results}
 
-Table~\ref{tab:reranker-results} reports the six configurations evaluated on
-the fixed \texttt{C30} candidate pool. Jina obtains the strongest retrieval
-scores, while BGE has the highest overlap scores. Qwen3 is competitive in
-quality but incurs a much larger reranker-stage cost. The recorded
-unanswerable-accuracy column is retained from the source metrics; semantic
-legal-answer evaluation is not available.
+The fixed \texttt{C30} pool makes this the most interpretable comparison:
+every reranker sees the same candidate evidence. Jina achieves the strongest
+retrieval scores, BGE the highest lexical-overlap scores, and Qwen3 competitive
+quality at a much larger reranker-stage cost. The recorded unanswerable column
+is a template-based diagnostic, not semantic legal-answer evaluation.
 
 \begin{table*}[t]
 \centering
@@ -152,12 +150,12 @@ $+11.85$ [$+8.46,+15.27$] & $-1.25$ [$-4.00,+1.25$] \\
 }
 \end{table*}
 
-All rerankers have positive paired retrieval intervals for the three primary
-ranking measures. In contrast, every false-refusal interval includes zero.
-Jina also retains 0.8850 of the gold chunks available in \texttt{C30}, versus
-0.7129 for RRF-only, confirming that its gain comes from better promotion of
-available evidence rather than a larger candidate pool. The full safety and
-win/tie/loss analysis is stored with the derived artifacts.
+All rerankers have positive paired intervals for the three primary ranking
+measures, whereas every false-refusal interval includes zero. Jina retains
+0.8850 of the gold chunks available in \texttt{C30}, compared with 0.7129 for
+RRF-only. Its advantage therefore reflects better promotion of available
+evidence, not a larger candidate pool. The full safety and win/tie/loss
+analysis is stored with the derived artifacts.
 
 \IfFileExists{../../ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v2/charts.png}{%
 \begin{figure*}[t]
@@ -209,15 +207,13 @@ Answer type & boolean & 123 & $+7.86$ [$+1.63,+14.50$] & $+14.18$ [$+7.64,+21.13
 \subsection{Generation and Efficiency}
 \label{sec:generation-quality}
 
-The deterministic answer metrics do not establish legal correctness. In the
-embedding family, metadata changes Token F1 by +0.1 pp and ROUGE-L by $-0.1$
-pp. In the dense/hybrid/graph family, graph expansion changes Token F1 by
-approximately +0.4 pp for Dense and +0.2 pp for Hybrid, with bootstrap
-intervals crossing zero. In the reranker family, BGE has the strongest
-observed overlap scores, but Jina has the best retrieval scores and a lower
-total p50 than BGE (4.158 s vs. 5.848 s). The results support a conditional
-engineering choice, not a claim that one reranker produces more legally
-correct answers.
+Automatic answer metrics do not establish legal correctness. Metadata changes
+Token F1 by +0.1 pp and ROUGE-L by $-0.1$ pp; graph expansion changes Token F1
+by approximately +0.4 pp for Dense and +0.2 pp for Hybrid, with bootstrap
+intervals crossing zero. In the reranker family, BGE has the strongest observed
+overlap scores, while Jina has the best retrieval scores and a lower total p50
+than BGE (4.158 s vs. 5.848 s). These results support a conditional engineering
+choice, not a claim that either reranker generates more legally correct answers.
 
 Efficiency differences are substantial. Hybrid retrieval raises total median
 latency from 5.483 s to 31.538 s and reports a one-time BM25 precomputation

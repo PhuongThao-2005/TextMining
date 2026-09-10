@@ -4,26 +4,27 @@
 \section*{Limitations}
 \label{sec:limitations}
 
-The corpus may contain missing body text, incomplete metadata, external
-references, and relationship-direction ambiguity. The in-memory graph also
-has a substantial memory footprint at the scale of the current corpus.
-Retrieval and generation quality are bounded by the benchmark's coverage and
-ground-truth annotations, and a fluent answer is not evidence of legal
-correctness. The system is therefore a research prototype and must not be
-used as a substitute for qualified legal review. The reasoning analysis is
-also limited to saved output records: it has no semantic claim labels, raw
-chain-of-thought, reasoning-token accounting, or cost data. The DeepSeek pair
-is complete, but four shared cases have different exact top-10 chunk-ID
-sequences between Base and CoT. The Qwen3-8B Base/CoT pair is complete, but its
-manifests use different code snapshots, timeout values, and retry limits;
-latency and failure comparisons for that pair are therefore descriptive.
+The corpus can contain missing body text, incomplete metadata, external
+references, and uncertain relationship direction. The in-memory graph also has
+a substantial memory footprint at the current corpus scale. More importantly,
+retrieval and generation results are bounded by the benchmark and its evidence
+annotations: a fluent answer, lexical overlap, or well-formed citation is not
+evidence of legal correctness.
+
+The prompt analysis is limited to saved output records. It contains no raw
+chain-of-thought, reasoning-token counts, cost data, semantic claim labels, or
+human assessment of citation entailment. Four DeepSeek Base/CoT cases have
+different ordered top-10 chunk sequences, and the Qwen3-8B Base/CoT manifests
+use different code snapshots, timeouts, and retry limits. Those model-pair
+comparisons are consequently descriptive. L\_RAG is a research prototype and
+must not substitute for qualified legal review.
 
 \section*{Ethical Considerations}
 \label{sec:ethics}
 
-Legal QA can affect access to rights, benefits, and remedies. The system
-should expose source citations, validity metadata, and abstention behavior;
-users should verify the cited instrument and its current status before taking
-action. Evaluation and deployment should also account for uneven corpus
-coverage, language variation, privacy in user queries, and the risk of
-over-trusting automated legal explanations.
+Legal QA may affect access to rights, benefits, obligations, and remedies.
+Systems built on this work should show the cited source and validity metadata,
+make abstention visible, and encourage users to verify the current legal
+instrument before acting. Evaluation and deployment must also account for
+uneven corpus coverage, language variation, privacy in user queries, and the
+risk that a confident automated explanation receives undue trust.

@@ -104,31 +104,126 @@ answerable rows; a paired Base/CoT statistic uses only IDs that satisfy these
 conditions in both runs and contain all three lexical metrics.
 
 The original evaluator normalizes text with Unicode NFC, lowercasing,
-punctuation-to-space replacement, and whitespace collapse. Exact Match is the
-binary equality of normalized prediction and reference (for boolean items, the
-first non-empty line is compared). Token F1 uses multiset token overlap, with
-$F_1=2PR/(P+R)$, where $P$ and $R$ are token precision and recall. ROUGE-L uses
-the token-level longest common subsequence in the same F-score form. For each
-paired ID we calculate $\Delta=m_{\mathrm{CoT}}-m_{\mathrm{Base}}$, average the
-deltas, count CoT wins, ties, and losses, and form a percentile paired-bootstrap
-95\% confidence interval from 10,000 resamples (seed 42). Exact Match also
-uses an exact McNemar test on discordant binary outcomes.
+punctuation-to-space replacement, and whitespace collapse. The derived metrics
+are separated below so that answer-quality outcomes are not conflated with
+retrieval, citation-structure, or operational diagnostics.
 
-Additional diagnostics are calculated as follows. Evidence availability is
-$\text{context-recall@}k=|G\cap R_k|/|G|$, where $G$ is the gold chunk-ID set
-and $R_k$ is the retrieved top-$k$ set; answerable cases are stratified as
-fully retrieved, partial, or absent. The persisted
-\texttt{unanswerable\_accuracy} detector is mapped to answer/refuse decisions:
-an answerable refusal is an error, while a refusal marker on an unanswerable
-case is correct. Scheduled decision accuracy uses all 500 rows, whereas
-valid-only accuracy excludes failed rows. Citation presence is the fraction of
-successful answerable rows with at least one marker; structural coverage is
-the mean saved share of scored factual sentences with a marker; invalid-marker
-rate is total invalid markers divided by all markers. Completion is successful
-rows divided by scheduled rows, and latency p50/p95 are the saved millisecond
-values converted to seconds. These fields are structural or operational
-diagnostics, not tests of citation entailment, legal correctness, or hidden
-reasoning.
+\paragraph{Primary metrics.}
+The primary generated-answer metrics are computed on successful answerable
+rows. For question $i$, let $y_i$ be the normalized prediction and $r_i$ the
+normalized reference. Exact Match (EM) is
+\[
+\mathrm{EM}_i =
+\begin{cases}
+1, & y_i=r_i,\\
+0, & y_i\ne r_i,
+\end{cases}
+\qquad
+\mathrm{EM}=\frac{1}{N}\sum_{i=1}^{N}\mathrm{EM}_i.
+\]
+For boolean questions, the evaluator compares the first non-empty line. Let
+$O_i$ be the multiset token overlap, $L_i^y$ and $L_i^r$ be the prediction and
+reference token counts, and $C_i$ be the token-level longest common
+subsequence (LCS) length. Token F1 is
+\[
+P_i=\frac{O_i}{L_i^y},\qquad
+R_i=\frac{O_i}{L_i^r}.
+\]
+\[
+F_{1,i}=\frac{2P_iR_i}{P_i+R_i}.
+\]
+ROUGE-L uses the same F-score form, replacing token overlap with the LCS:
+\[
+P_i^{L}=\frac{C_i}{L_i^y},\qquad
+R_i^{L}=\frac{C_i}{L_i^r}.
+\]
+\[
+\mathrm{ROUGE\mbox{-}L}_i=
+\frac{2P_i^{L}R_i^{L}}{P_i^{L}+R_i^{L}}.
+\]
+
+For a paired Base/CoT comparison, only question IDs with valid outputs and
+all three lexical metrics in both runs are retained. For any metric $m$, the
+per-question paired delta and its mean are
+\[
+\Delta_i(m)=m_{\mathrm{CoT},i}-m_{\mathrm{Base},i}.
+\]
+\[
+\overline{\Delta}(m)=\frac{1}{N_p}
+\sum_{i=1}^{N_p}\Delta_i(m).
+\]
+Positive, zero, and negative deltas are counted as CoT wins, ties, and losses,
+respectively. Deltas are reported in percentage points for percentage metrics.
+Uncertainty is a percentile paired-bootstrap 95\% confidence interval from
+10,000 resamples (seed 42); EM additionally uses an exact McNemar test on
+discordant binary outcomes.
+
+\paragraph{Additional diagnostics.}
+These measures describe evidence availability, answer/refuse behavior,
+citation structure, reliability, and efficiency. They are not direct tests of
+legal correctness, citation entailment, or hidden reasoning.
+
+\textbf{Context Recall@$k$.} Let $G_i$ be the gold chunk-ID set and $R_{i,k}$
+the retrieved top-$k$ set:
+\[
+\mathrm{ContextRecall@}k_i=
+\frac{|G_i\cap R_{i,k}|}{|G_i|}.
+\]
+Answerable cases are stratified as fully retrieved, partially retrieved, or
+absent according to whether this value is one, between zero and one, or zero.
+
+\textbf{Decision accuracy.} The persisted
+\texttt{unanswerable\_accuracy} detector is mapped to answer/refuse
+decisions. An answerable refusal is incorrect, while a refusal on an
+unanswerable question is correct. The two reported denominators are
+\[
+\begin{aligned}
+\mathrm{DecisionAccuracy}_{\mathrm{scheduled}}
+  &=\frac{C_{\mathrm{scheduled}}}{500},\\
+\mathrm{DecisionAccuracy}_{\mathrm{valid}}
+  &=\frac{C_{\mathrm{valid}}}{N_{\mathrm{valid}}}.
+\end{aligned}
+\]
+Here $C_{\mathrm{scheduled}}$ is the number of correct decisions among all
+500 scheduled rows, $C_{\mathrm{valid}}$ is the number among valid rows, and
+$N_{\mathrm{valid}}$ is the number of valid rows.
+
+\textbf{Citation and structural diagnostics.} Citation presence is the
+fraction of successful answerable answers containing at least one citation
+marker:
+\[
+\mathrm{CitationPresence}=\frac{A_{\mathrm{marker}}}{A_{\mathrm{successful}}}.
+\]
+Here $A_{\mathrm{marker}}$ is the number of successful answerable answers with
+at least one marker and $A_{\mathrm{successful}}$ is the number of successful
+answerable answers.
+If $F_i^{\mathrm{marked}}$ is the number of scored factual sentences with a
+marker and $F_i^{\mathrm{scored}}$ is the total number of scored factual
+sentences, structural coverage is
+\[
+\mathrm{StructuralCoverage}=
+\frac{1}{N}\sum_{i=1}^{N}
+\frac{F_i^{\mathrm{marked}}}{F_i^{\mathrm{scored}}}.
+\]
+Invalid-marker rate is the fraction of all markers that are invalid:
+\[
+\mathrm{InvalidMarkerRate}=
+\frac{M_{\mathrm{invalid}}}{M_{\mathrm{all}}}.
+\]
+
+\textbf{Completion and latency.} Completion rate is
+\[
+\mathrm{CompletionRate}=\frac{S}{Q}.
+\]
+Here $S$ is the number of successful rows and $Q$ is the number of scheduled
+rows.
+For each saved latency summary, conversion from milliseconds to seconds is
+\[
+\ell_{\mathrm{seconds}}=\frac{\ell_{\mathrm{milliseconds}}}{1000}.
+\]
+The report uses the saved mean, median (p50), and p95 values. Reranker runs
+used cached BM25 candidates, so their timings are not full-online hybrid
+latency.
 
 \subsection{Ablation Configurations}
 \label{sec:configurations}

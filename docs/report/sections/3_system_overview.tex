@@ -9,7 +9,11 @@ This section details the end-to-end architecture of \textbf{L\_RAG}, a Knowledge
 \subsection{Architecture}
 \label{sec:architecture}
 
-The L\_RAG pipeline unifies structured graph processing, hybrid vector-sparse search, cross-encoder candidate reranking, and citation-grounded LLM synthesis. Figure~\ref{fig:architecture} illustrates the system dataflow across four distinct operational phases: (1) Corpus Ingestion \& Graph/Vector Indexing, (2) Multi-Modal Hybrid Retrieval, (3) Knowledge Graph Overlay \& Context Expansion, (4) Sequential Candidate Reranking, and (5) LLM Prompting \& Generation.
+L\_RAG connects corpus indexing, hybrid retrieval, graph-based context
+selection, candidate reranking, and cited generation. Figure~\ref{fig:architecture}
+shows five operational phases: (1) corpus ingestion and graph/vector indexing,
+(2) multi-modal retrieval, (3) graph overlay and context expansion,
+(4) sequential candidate reranking, and (5) LLM prompting and generation.
 
 \begin{figure*}[t]
 \centering
@@ -105,9 +109,9 @@ To prevent GPU Out-Of-Memory (OOM) failures during multi-model evaluation, the l
 
 The top $N=10$ reranked chunks are formatted into a structured prompt context supplied to \texttt{gpt-4o-mini} (temperature $T=0.0$, max tokens $1024$). 
 
-The system prompt enforces three critical compliance rules:
+The system prompt specifies three evidence-oriented behaviors:
 \begin{enumerate}
     \item \textbf{Strict Citation Grounding:} Answers must explicitly cite governing statutory sources (e.g., \textit{"Theo Điều 15, Luật Đất đai 2024..."}).
-    \item \textbf{Unanswerable Abstention:} If the retrieved context lacks sufficient evidence, the LLM must output \texttt{INSUFFICIENT\_CONTEXT} rather than hallucination.
+    \item \textbf{Unanswerable Abstention:} If the retrieved context lacks sufficient evidence, the LLM should output \texttt{INSUFFICIENT\_CONTEXT} rather than inventing an answer.
     \item \textbf{Answer-Type Formatting:} Outputs are formatted according to the query type (\textit{boolean}, \textit{extractive}, \textit{abstractive}, or \textit{unanswerable}).
 \end{enumerate}

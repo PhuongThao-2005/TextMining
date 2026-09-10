@@ -4,19 +4,23 @@
 \section{Dataset and Benchmark}
 \label{sec:dataset-benchmark}
 
-This section describes the Vietnamese legal corpus, the structural design of the G-LRAG Knowledge Graph, and the 500-query legal QA benchmark dataset used to evaluate the L\_RAG system.
+This section describes the evidence base behind the experiments: a processed
+Vietnamese legal corpus, a graph that retains its structure and relationships,
+and a 500-question benchmark with explicit evidence provenance.
 
 \subsection{Corpus Description}
 \label{sec:corpus}
 
-The legal dataset comprises a massive collection of Vietnamese legal instruments, including National Assembly Laws, Government Decrees, Prime Minister Decisions, and Ministry Circulars. Raw legal documents undergo structured parsing to preserve document metadata, hierarchical provisions, and passage chunks.
-
-Table~\ref{tab:corpus-stats} summarizes the core scale and statistics of the processed corpus.
+The corpus contains Vietnamese legal instruments, including National Assembly
+Laws, Government Decrees, Prime Minister Decisions, and Ministry Circulars.
+The ingestion pipeline preserves document metadata, hierarchical provisions,
+and retrieval passages rather than treating each source as unstructured text.
+Table~\ref{tab:corpus-stats} summarizes the resulting scale.
 
 \begin{table*}[t]
 \centering
 \small
-\caption{Overall Statistics of the Vietnamese Legal Corpus.}
+\caption{Processed Vietnamese legal corpus.}
 \label{tab:corpus-stats}
 \begin{tabular}{llr}
 \toprule
@@ -24,84 +28,85 @@ Table~\ref{tab:corpus-stats} summarizes the core scale and statistics of the pro
 \midrule
 \textbf{Documents} & Full legal instruments (Laws, Decrees, etc.) & 151,624 \\
 \textbf{Provisions} & Hierarchical units (Articles, Clauses, Items) & 1,386,267 \\
-\textbf{Chunks} & Fixed/Structural text passages for retrieval & 1,513,376 \\
-\textbf{Document Edges} & Relationships (Amend, Replace, Cite, Repeal) & 883,256 \\
+\textbf{Chunks} & Fixed/structural retrieval passages & 1,513,376 \\
+\textbf{Document Edges} & Amend, replace, cite, and repeal relationships & 883,256 \\
 \textbf{External Stubs} & Referenced external entities & 19,763 \\
 \bottomrule
 \end{tabular}
 \end{table*}
 
-Each passage chunk is enriched with metadata prior to indexing:
+Before indexing, each passage receives the metadata needed to reconnect it to
+its legal source:
 \begin{equation}
     \begin{aligned}
-        \text{Chunk\_Meta} = \{&\text{chunk\_id}, \\
-        &\text{doc\_id}, \text{provision\_id}, \\
-        &\text{title}, \text{issuing\_authority}, \\
-        &\text{effective\_date}\}
+        \text{Chunk\_Meta} = \{&\text{chunk\_id}, \text{doc\_id},
+        \text{provision\_id},\\
+        &\text{title}, \text{issuing\_authority},
+        \text{effective\_date}\}.
     \end{aligned}
 \end{equation}
 
-\subsection{Knowledge Graph Structure (G-LRAG Schema)}
+\subsection{Knowledge-Graph Structure (G-LRAG Schema)}
 \label{sec:kg-schema}
 
-The G-LRAG Knowledge Graph models statutory entities as nodes and structural
-and legal dependencies as typed directed edges.
+The G-LRAG graph makes statutory structure available at query time. It has
+three node types: documents ($D$), provisions ($P$), and indexed chunks ($C$).
+Documents retain identifiers, authority rank, issuing body, effective date,
+and validity status; provisions retain their header and type; chunks retain
+their text and sequence number.
 
-\subsubsection{Node Schema}
+Two families of directed edges encode how evidence should be interpreted:
 \begin{itemize}
-    \item \textbf{Document Node ($D$):} Represents a full legal instrument. Attributes: \texttt{doc\_id}, \texttt{title}, \texttt{authority\_rank}, \texttt{issuing\_body}, \texttt{effective\_date}, \texttt{validity\_status}.
-    \item \textbf{Provision Node ($P$):} Represents a logical statutory section (Article/Clause). Attributes: \texttt{provision\_id}, \texttt{header}, \texttt{provision\_type}.
-    \item \textbf{Chunk Node ($C$):} Represents an indexed passage. Attributes: \texttt{chunk\_id}, \texttt{text}, \texttt{sequence\_num}.
+    \item \textbf{Structural edges} connect a document to its provisions, a
+    provision to its chunks, adjacent chunks in reading order
+    (\texttt{CHUNK\_NEXT}), and adjacent provisions
+    (\texttt{PROVISION\_NEXT}). They support recovery of nearby statutory
+    context.
+    \item \textbf{Legal-relation edges} record amendments, replacements, and
+    citations between legal instruments. They support validity-aware filtering
+    and relationship-aware retrieval.
 \end{itemize}
 
-\subsubsection{Edge Schema}
-Relationships are divided into structural hierarchy and inter-document legal relationships:
-\begin{itemize}
-    \item \textbf{Structural Hierarchy Edges:} 
-    \begin{itemize}
-        \item \texttt{DOCUMENT\_HAS\_PROVISION}: Connects Document $D$ to child Provision $P$.
-        \item \texttt{PROVISION\_HAS\_CHUNK}: Connects Provision $P$ to child Chunk $C$.
-        \item \texttt{CHUNK\_NEXT}: Sequentially links adjacent sibling chunks $C_i \rightarrow C_{i+1}$ within reading order.
-        \item \texttt{PROVISION\_NEXT}: Sequentially links adjacent provisions $P_j \rightarrow P_{j+1}$.
-    \end{itemize}
-    \item \textbf{Legal Relationship Edges:}
-    \begin{itemize}
-        \item \texttt{AMENDS}: Indicates document $D_A$ amends provision/document $D_B$.
-        \item \texttt{REPLACES}: Indicates document $D_A$ replaces document $D_B$.
-        \item \texttt{CITES}: Indicates document $D_A$ references document $D_B$.
-    \end{itemize}
-\end{itemize}
-
-\subsubsection{Quarantine \& Verification Integrity Gating}
-To prevent graph poisoning, G-LRAG enforces two strict integrity rules:
-\begin{enumerate}
-    \item \textbf{Quarantine Gating:} Unverified or draft records are quarantined during ingestion.
-    \item \textbf{Verified-Only Traversal:} Path traversals only traverse edges where \texttt{direction\_verified == True}.
-\end{enumerate}
+The graph is deliberately conservative. Draft or unverified records are
+quarantined at ingestion, and query-time traversal uses only edges whose
+direction has been verified. This protects retrieval from propagating a
+potentially incorrect legal relationship, although the remaining graph-quality
+limitations are discussed in Section~\ref{sec:discussion}.
 
 \subsection{QA Benchmark Dataset}
 \label{sec:qa-benchmark}
 
-To evaluate legal retrieval and answer generation, we constructed a benchmark of \textbf{500 Vietnamese legal questions} from the processed G-LRAG corpus using a grounded synthetic QA pipeline.
+The benchmark contains \textbf{500 Vietnamese legal questions}: 400 answerable
+questions and 100 deliberately unanswerable questions. Questions were created
+from bundles of approximately three to five related provisions and chunks using
+\texttt{gemini-3.1-flash-lite}. A separate verification pass checked whether a
+candidate was answerable from the supplied evidence, free of unsupported
+claims, and correctly labeled by category and difficulty. Only candidates that
+passed every check were retained.
 
-Questions were generated with \texttt{gemini-3.1-flash-lite} from context bundles containing approximately 3--5 related provisions and chunks. The model was instructed to formulate realistic Vietnamese legal questions using only the supplied evidence. Each candidate was subsequently evaluated in a separate verification pass for answer correctness, evidence sufficiency, hallucination avoidance, category correctness, and difficulty correctness. Only candidates passing all verification criteria were retained.
-
-The final generation run sampled 515 documents and 1,697 provisions and achieved a verifier pass rate of 72.41\%. After diversity filtering and deduplication, the final benchmark contains \textbf{500 questions}: 265 single-hop, 106 citation, 96 legal-validity, 21 multi-hop, and 12 cross-document questions.
-
-The dataset contains \textbf{400 answerable} and \textbf{100 unanswerable} questions. Answer types include abstractive, boolean, extractive, and unanswerable responses. Unanswerable questions are intentionally constructed without supporting corpus evidence to evaluate the system's ability to abstain from unsupported answers.
+The final generation run sampled 515 documents and 1,697 provisions, with a
+72.41\% verifier pass rate before diversity filtering and deduplication. The
+final set includes 265 single-hop, 106 citation, 96 legal-validity, 21
+multi-hop, and 12 cross-document questions. Answer types span abstractive,
+boolean, extractive, and unanswerable responses. The unanswerable cases are
+constructed without supporting corpus evidence so that abstention behavior can
+be measured separately from answer generation.
 
 \subsection{Ground Truth Construction}
 \label{sec:ground-truth}
 
-Each benchmark query contains the question, category, answer type, reference answer, and evidence provenance:
-
+Each query records its question, category, answer type, reference answer, and
+evidence provenance:
 \begin{equation}
 \begin{aligned}
-Q_i = \{&
-\mathrm{qa\_id}, \mathrm{question}, \mathrm{category}, \\
-&\mathrm{answer\_type}, \mathrm{reference\_answer}, \mathrm{ground\_truth}
-\}.
+Q_i = \{&\mathrm{qa\_id}, \mathrm{question}, \mathrm{category},\\
+&\mathrm{answer\_type}, \mathrm{reference\_answer}, \mathrm{ground\_truth}\}.
 \end{aligned}
 \end{equation}
 
-The ground-truth object contains the supporting \texttt{document\_ids}, \texttt{provision\_ids}, and \texttt{chunk\_ids}. For answerable questions, the gold chunk identifiers are used to evaluate retrieval with Recall@$k$, Hit@$k$, MRR@$k$, and nDCG@$k$. For unanswerable questions, the ground-truth evidence sets are empty by design.
+The ground-truth object identifies the supporting document, provision, and
+chunk IDs. Gold chunk IDs support Recall@$k$, Hit@$k$, MRR@$k$, and nDCG@$k$
+for answerable questions; unanswerable questions have empty evidence sets by
+design. This provenance makes the reported retrieval results auditable, but it
+does not replace expert judgment of whether an answer is legally complete or
+correct.
