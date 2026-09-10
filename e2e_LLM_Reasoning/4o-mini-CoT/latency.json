@@ -1,0 +1,74 @@
+{
+  "unit": "milliseconds",
+  "stages": {
+    "dense_retrieval": {
+      "count": 500,
+      "mean": 1304.324232217995,
+      "median": 1246.4928150000105,
+      "min": 964.4368459998987,
+      "max": 3563.197941999988,
+      "p95": 1652.975890000107
+    },
+    "sparse_retrieval": null,
+    "graph_traversal": {
+      "count": 500,
+      "mean": 14.538495999993756,
+      "median": 12.96046249990468,
+      "min": 2.5014610000653192,
+      "max": 68.06862399935198,
+      "p95": 29.00959899989175
+    },
+    "fusion": {
+      "count": 500,
+      "mean": 0.24122536598974875,
+      "median": 0.2300785001807526,
+      "min": 0.13364500000534463,
+      "max": 1.0510390002309578,
+      "p95": 0.3286179999122396
+    },
+    "reranker": {
+      "count": 500,
+      "mean": 9806.042013452021,
+      "median": 9643.809116000284,
+      "min": 4721.6935070000545,
+      "max": 17474.220479999985,
+      "p95": 11995.052863999945
+    },
+    "generation": {
+      "count": 500,
+      "mean": 3966.9101471040003,
+      "median": 3678.935526,
+      "min": 1779.491899,
+      "max": 12845.864409,
+      "p95": 6172.614445
+    },
+    "planner_decision": null,
+    "tool_retrieval": null,
+    "agent_total": null,
+    "judge": null,
+    "serialization": {
+      "count": 500,
+      "mean": 0.06087658,
+      "median": 0.060146,
+      "min": 0.027752,
+      "max": 0.273743,
+      "p95": 0.103988
+    },
+    "total": {
+      "count": 500,
+      "mean": 15094.431942726,
+      "median": 14744.6951305,
+      "min": 9121.994602,
+      "max": 23225.08727,
+      "p95": 18421.413783
+    }
+  },
+  "denominator": "Each stage uses cases with a recorded value for that stage; total includes successful, failed, and skipped cases.",
+  "counts": {
+    "total_input": 500,
+    "successful": 500,
+    "failed": 0,
+    "skipped": 0,
+    "evaluated": 500
+  }
+}
