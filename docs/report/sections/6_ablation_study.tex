@@ -101,10 +101,11 @@ to 3.68/6.17 seconds, and total p50/p95 rises from 13.99/17.21 to
 Evidence-stratified deltas do not reverse the result: CoT Token F1 is lower
 when all gold support is retrieved ($-1.98$ points, $n=138$), when support is
 partial ($-1.86$ points, $n=29$), and when support is absent ($-1.30$ points,
-$n=233$). The refreshed GLM-5 pair is complete but remains descriptive; the
-DeepSeek CoT cell is incomplete, and the directory named \texttt{qwen3-8b-CoT}
-is identified as a second DeepSeek CoT run by its manifest. No Qwen CoT result
-is inferred until its artifacts are restored with a Qwen manifest. These
+$n=233$). The GLM-5 and Qwen3-8B pairs are complete but descriptive. The
+DeepSeek CoT cell is incomplete, and four shared successful DeepSeek cases have
+different exact top-10 chunk-ID sequences between Base and CoT. The Qwen pair
+also uses different code snapshots, timeout values, and retry limits, so its
+latency and failure behavior is not a strict apples-to-apples comparison. These
 inventory rows and caveats are shown in Table~\ref{tab:llm-reasoning-runs};
 incomplete cells are not used for paired claims. The derived report and
 machine-readable artifacts are linked from the reproducibility ledger in

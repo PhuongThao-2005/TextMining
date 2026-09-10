@@ -389,7 +389,79 @@ def data_quality_warnings(runs: dict[str, dict[str, Any]]) -> list[str]:
                 f"{', '.join(sorted(names))}. The paired summary uses the lexicographically "
                 "first Base/CoT directory; all runs remain in inventory and reliability outputs."
             )
+
+    by_model: dict[str, dict[str, list[dict[str, Any]]]] = defaultdict(lambda: defaultdict(list))
+    for run in runs.values():
+        by_model[run["model"]][run["prompt"]].append(run)
+    for model, prompts in sorted(by_model.items()):
+        bases = sorted(prompts.get("Base", []), key=lambda item: item["name"])
+        cots = sorted(prompts.get("CoT", []), key=lambda item: item["name"])
+        if not bases or not cots:
+            continue
+        base, cot = bases[0], cots[0]
+
+        def generation_value(run: dict[str, Any], key: str) -> Any:
+            selected = run["manifest"].get("selected_generation_stack")
+            if isinstance(selected, dict) and key in selected:
+                return selected[key]
+            resolved = run["manifest"].get("resolved_config")
+            if isinstance(resolved, dict):
+                generation = resolved.get("generation")
+                if isinstance(generation, dict):
+                    return generation.get(key)
+            return None
+
+        differences: list[str] = []
+        for key, label in (
+            ("git_commit", "git commit"),
+            ("timeout_seconds", "timeout"),
+            ("max_retries", "max retries"),
+        ):
+            base_value = base["manifest"].get(key) if key == "git_commit" else generation_value(base, key)
+            cot_value = cot["manifest"].get(key) if key == "git_commit" else generation_value(cot, key)
+            if base_value is not None and cot_value is not None and base_value != cot_value:
+                differences.append(f"{label} Base={base_value}, CoT={cot_value}")
+        if differences:
+            warnings.append(
+                f"{display_model(model)} Base/CoT provenance differs ({'; '.join(differences)}); "
+                "latency and failure comparisons for this pair are descriptive."
+            )
     return warnings
+
+
+def retrieved_context_ids(row: dict[str, Any]) -> tuple[str, ...] | None:
+    """Return the ordered retrieved chunk IDs when the saved context is usable."""
+    context = row.get("retrieved_context")
+    if not isinstance(context, list):
+        return None
+    identifiers: list[str] = []
+    for chunk in context:
+        if isinstance(chunk, dict):
+            chunk_id = chunk.get("chunk_id")
+            if chunk_id is None:
+                return None
+            identifiers.append(str(chunk_id))
+        else:
+            identifiers.append(str(chunk))
+    return tuple(identifiers)
+
+
+def retrieval_context_id_mismatches(base: dict[str, Any], cot: dict[str, Any]) -> tuple[int, int]:
+    """Count exact ordered top-k context-ID differences among shared successes."""
+    comparable = 0
+    mismatches = 0
+    for qa_id in sorted(set(base["by_id"]) & set(cot["by_id"])):
+        left = base["by_id"][qa_id]
+        right = cot["by_id"][qa_id]
+        if not is_success(left) or not is_success(right):
+            continue
+        left_ids = retrieved_context_ids(left)
+        right_ids = retrieved_context_ids(right)
+        if left_ids is None or right_ids is None:
+            continue
+        comparable += 1
+        mismatches += left_ids != right_ids
+    return comparable, mismatches
 
 
 def pair_rows(base: dict[str, Any], cot: dict[str, Any]) -> list[dict[str, Any]]:
@@ -463,6 +535,7 @@ def paired_analysis(
     rows = pair_rows(base, cot)
     all_ids_equal = set(base["by_id"]) == set(cot["by_id"])
     fully_paired = base["fully_complete"] and cot["fully_complete"] and all_ids_equal
+    context_comparable_n, context_id_mismatches = retrieval_context_id_mismatches(base, cot)
     metrics = {
         metric: summary_for_values(rows, metric, reps=reps, seed=seed, key=f"{base['model']}:{metric}")
         for metric in METRICS
@@ -504,6 +577,8 @@ def paired_analysis(
         "shared_successful_answerable_n": len(rows),
         "all_question_ids_equal": all_ids_equal,
         "fully_paired": fully_paired,
+        "retrieval_context_comparable_n": context_comparable_n,
+        "retrieval_context_id_mismatches": context_id_mismatches,
         "interpretation": "primary paired inference" if fully_paired and base["model"] == "gpt-4o-mini" else "descriptive only",
         "metrics": metrics,
     }
@@ -931,7 +1006,7 @@ def build_report(
         "",
         "## Scope and claim boundary",
         "",
-        f"This report analyzes `{len(runs)}` saved runs under `{root}`. The primary paired inference is GPT-4o-mini Base versus CoT; other model pairs remain descriptive, with incomplete cells and identity/provenance checks exposed below. Paired bootstrap intervals use {bootstrap_reps:,} replicates (seed {seed}).",
+        f"This report analyzes `{len(runs)}` saved runs under `{root}`. The primary paired inference is GPT-4o-mini Base versus CoT; other model pairs remain descriptive, with incomplete cells and available data-quality checks exposed below. Paired bootstrap intervals use {bootstrap_reps:,} replicates (seed {seed}).",
         "",
         "The historical outputs contain final answers, retrieval context, structural citation metadata, and lexical metrics, but no claim annotations, semantic entailment labels, structured justification, raw CoT, or reasoning-token accounting. Accordingly, this report does **not** claim legal correctness, claim faithfulness, citation entailment, refusal quality, or faithful latent reasoning.",
     ]
@@ -941,7 +1016,7 @@ def build_report(
                 "",
                 "## Data-integrity notes",
                 "",
-                "The following provenance checks found naming or identity ambiguities. They are reported rather than repaired automatically:",
+                "The following provenance or control checks found issues. They are reported rather than repaired automatically:",
                 "",
                 *[f"- {warning}" for warning in quality_warnings],
             ]
@@ -1149,6 +1224,12 @@ def main() -> int:
         pair_summaries.append(pair)
         all_group_rows.extend(group_rows)
         case_rows_by_model[pair["model"]] = case_rows
+        if pair["retrieval_context_id_mismatches"]:
+            quality_warnings.append(
+                f"{pair['display_model']} Base/CoT exact retrieved top-10 chunk-ID sequences differ for "
+                f"{pair['retrieval_context_id_mismatches']} of {pair['retrieval_context_comparable_n']} "
+                "shared successful cases; treat the fixed-context comparison as descriptive for those cases."
+            )
         if pair["model"] == "gpt-4o-mini":
             strata, mismatches = evidence_analysis(case_rows, reps=args.bootstrap_reps, seed=args.seed)
             pair["evidence_strata"] = strata

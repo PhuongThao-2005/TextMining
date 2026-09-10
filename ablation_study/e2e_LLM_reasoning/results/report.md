@@ -4,16 +4,16 @@
 
 ## Scope and claim boundary
 
-This report analyzes `8` saved runs under `/Users/mac/Dev/HCMUS/Text_mining/L_RAG/ablation_work/e2e_LLM_Reasoning`. The primary paired inference is GPT-4o-mini Base versus CoT; other model pairs remain descriptive, with incomplete cells and identity/provenance checks exposed below. Paired bootstrap intervals use 10,000 replicates (seed 42).
+This report analyzes `8` saved runs under `/Users/mac/Dev/HCMUS/Text_mining/L_RAG/ablation_work/e2e_LLM_Reasoning`. The primary paired inference is GPT-4o-mini Base versus CoT; other model pairs remain descriptive, with incomplete cells and available data-quality checks exposed below. Paired bootstrap intervals use 10,000 replicates (seed 42).
 
 The historical outputs contain final answers, retrieval context, structural citation metadata, and lexical metrics, but no claim annotations, semantic entailment labels, structured justification, raw CoT, or reasoning-token accounting. Accordingly, this report does **not** claim legal correctness, claim faithfulness, citation entailment, refusal quality, or faithful latent reasoning.
 
 ## Data-integrity notes
 
-The following provenance checks found naming or identity ambiguities. They are reported rather than repaired automatically:
+The following provenance or control checks found issues. They are reported rather than repaired automatically:
 
-- qwen3-8b-CoT: directory name suggests `qwen3-8b`, but the manifest/resolved config declares `deepseek-v3.1-thinking`; manifest metadata is used for analysis.
-- Multiple run directories share the `deepseek-v3.1-thinking` / `CoT` identity: deepseekv3.1-thinking-CoT, qwen3-8b-CoT. The paired summary uses the lexicographically first Base/CoT directory; all runs remain in inventory and reliability outputs.
+- Qwen3-8B Base/CoT provenance differs (git commit Base=bce815dac051401f920934228a365d0f318694d6, CoT=32a3b70a5a8b06de0329812238e936ae138b4ca8; timeout Base=90.0, CoT=60.0; max retries Base=6, CoT=2); latency and failure comparisons for this pair are descriptive.
+- DeepSeek-V3.1-Thinking Base/CoT exact retrieved top-10 chunk-ID sequences differ for 4 of 493 shared successful cases; treat the fixed-context comparison as descriptive for those cases.
 
 ## Run inventory
 
@@ -23,10 +23,10 @@ The following provenance checks found naming or identity ambiguities. They are r
 | GPT-4o-mini / CoT | 500 / 500 | 0 | 100.00% | — |
 | DeepSeek-V3.1-Thinking / Base | 500 / 500 | 0 | 100.00% | — |
 | DeepSeek-V3.1-Thinking / CoT | 493 / 500 | 7 | 98.60% | model unavailable: 6, rate limit: 1 |
-| DeepSeek-V3.1-Thinking / CoT | 334 / 500 | 166 | 66.80% | quota: 166 |
 | GLM-5 / Base | 500 / 500 | 0 | 100.00% | — |
 | GLM-5 / CoT | 500 / 500 | 0 | 100.00% | — |
 | Qwen3-8B / Base | 500 / 500 | 0 | 100.00% | — |
+| Qwen3-8B / CoT | 500 / 500 | 0 | 100.00% | — |
 
 Failed generations are retained in scheduled-denominator reliability and decision views. Incomplete rows are not silently treated as lexical failures in the paired-quality tables; those tables use the exact successful answerable intersection and expose its `n`.
 
@@ -68,10 +68,10 @@ The saved `unanswerable_accuracy` field is relabeled here as **template-based an
 | GPT-4o-mini / CoT | 98.00% | 80.50% | 19.50% | 84.00% | 84.00% |
 | DeepSeek-V3.1-Thinking / Base | 100.00% | 90.00% | 10.00% | 92.00% | 92.00% |
 | DeepSeek-V3.1-Thinking / CoT | 100.00% | 88.75% | 9.50% | 91.00% | 92.29% |
-| DeepSeek-V3.1-Thinking / CoT | 79.00% | 55.75% | 8.00% | 60.40% | 90.42% |
 | GLM-5 / Base | 98.00% | 90.25% | 9.75% | 91.80% | 91.80% |
 | GLM-5 / CoT | 95.00% | 93.00% | 7.00% | 93.40% | 93.40% |
 | Qwen3-8B / Base | 96.00% | 95.75% | 4.25% | 95.80% | 95.80% |
+| Qwen3-8B / CoT | 98.00% | 94.50% | 5.50% | 95.20% | 95.20% |
 
 For the complete GPT pair, the answerability matrix is:
 
@@ -92,10 +92,10 @@ Citation metrics below describe marker presence and parser coverage. They do not
 | GPT-4o-mini / CoT | 400 / 400 | 81.00% | 87.91% | 1.68 | 0 / 714 |
 | DeepSeek-V3.1-Thinking / Base | 400 / 400 | 90.00% | 82.38% | 2.57 | 0 / 1307 |
 | DeepSeek-V3.1-Thinking / CoT | 393 / 400 | 90.84% | 75.15% | 2.71 | 0 / 1365 |
-| DeepSeek-V3.1-Thinking / CoT | 255 / 400 | 87.45% | 81.68% | 2.63 | 0 / 859 |
 | GLM-5 / Base | 400 / 400 | 91.75% | 80.26% | 2.72 | 0 / 1555 |
 | GLM-5 / CoT | 400 / 400 | 93.75% | 78.12% | 3.04 | 0 / 1754 |
 | Qwen3-8B / Base | 400 / 400 | 97.75% | 65.78% | 1.79 | 5 / 877 |
+| Qwen3-8B / CoT | 400 / 400 | 98.25% | 58.15% | 1.81 | 4 / 901 |
 
 ## 4. Reliability and efficiency
 
@@ -105,10 +105,10 @@ Citation metrics below describe marker presence and parser coverage. They do not
 | GPT-4o-mini / CoT | 500 / 500 | 3.68 / 6.17 | 14.74 / 18.42 | — |
 | DeepSeek-V3.1-Thinking / Base | 500 / 500 | 7.28 / 15.51 | 16.15 / 24.55 | — |
 | DeepSeek-V3.1-Thinking / CoT | 493 / 500 | 7.74 / 20.41 | 18.52 / 31.00 | generation: 7 |
-| DeepSeek-V3.1-Thinking / CoT | 334 / 500 | 17.09 / 49.65 | 19.23 / 50.24 | generation: 166 |
 | GLM-5 / Base | 500 / 500 | 4.17 / 8.79 | 14.29 / 19.09 | — |
 | GLM-5 / CoT | 500 / 500 | 4.15 / 8.73 | 15.96 / 21.23 | — |
 | Qwen3-8B / Base | 500 / 500 | 4.77 / 9.13 | 14.15 / 18.51 | — |
+| Qwen3-8B / CoT | 500 / 500 | 4.97 / 10.47 | 14.58 / 20.16 | — |
 
 Token counts, provider reasoning-token metadata, and cost are not present in the saved records. The latency artifacts include means and percentiles; p50/p95 are used here to expose the long tail.
 
@@ -121,6 +121,7 @@ The following pairs are exported in `paired_metrics.csv` and `paired_group_delta
 | GPT-4o-mini | 500/500 | 500/500 | 400 | -1.57 pp | primary paired inference |
 | DeepSeek-V3.1-Thinking | 500/500 | 493/500 | 393 | -1.35 pp | descriptive only |
 | GLM-5 | 500/500 | 500/500 | 400 | -0.68 pp | descriptive only |
+| Qwen3-8B | 500/500 | 500/500 | 400 | -1.92 pp | descriptive only |
 
 ## Figures and machine-readable outputs
 

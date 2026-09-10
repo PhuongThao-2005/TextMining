@@ -13,9 +13,11 @@ correctness. The system is therefore a research prototype and must not be
 used as a substitute for qualified legal review. The reasoning analysis is
 also limited to saved output records: it has no semantic claim labels, raw
 chain-of-thought, reasoning-token accounting, or cost data. The DeepSeek CoT
-cell is incomplete, and the current directory named \texttt{qwen3-8b-CoT} has a
-DeepSeek manifest, so a Qwen3-8B CoT comparison is unavailable until the
-artifacts are corrected.
+cell is incomplete, and four shared successful DeepSeek cases have different
+exact top-10 chunk-ID sequences between Base and CoT. The Qwen3-8B Base/CoT
+pair is complete, but its manifests use different code snapshots, timeout
+values, and retry limits; latency and failure comparisons for that pair are
+therefore descriptive.
 
 \section*{Ethical Considerations}
 \label{sec:ethics}

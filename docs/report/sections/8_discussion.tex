@@ -46,10 +46,11 @@ citation-marker presence, but it also increases generation and total latency
 and slightly lowers structural citation coverage. Thus explicit reasoning is
 not a demonstrated quality improvement for this prompt, model, and benchmark;
 its observed benefit is limited to output-format diagnostics that lack semantic
-legal validation. The GLM pair is complete but descriptive, the DeepSeek CoT
-cell remains incomplete, and the current Qwen CoT directory is manifest-labeled
-as a second DeepSeek run; these conditions should be corrected or completed
-before making cross-model conclusions.
+legal validation. The GLM and Qwen pairs are complete but descriptive, while the
+DeepSeek CoT cell remains incomplete. The Qwen Base/CoT manifests use different
+code snapshots, timeout values, and retry limits, and four shared DeepSeek cases
+have different exact top-10 chunk-ID sequences, so cross-model and fixed-context
+claims outside the GPT primary pair should remain cautious.
 
 \subsection{Design Implications}
 \label{sec:design-implications}
@@ -83,9 +84,10 @@ across families, which prevents a pooled comparison of absolute scores.
 The reranker and generator-reasoning safety analyses use deterministic
 refusal-marker/template classifiers, not human assessment. The reasoning
 artifacts also contain no raw CoT, reasoning-token counts, cost, or semantic
-claim annotations. The DeepSeek CoT cell is incomplete, and the expected Qwen
-CoT artifact is currently a second manifest-labeled DeepSeek run; the complete
-GLM pair remains descriptive. The cached BM25 stage means recorded reranker latency is
+claim annotations. The DeepSeek CoT cell is incomplete, and four shared
+successful cases have exact retrieved-context sequence differences. The GLM and
+Qwen pairs are complete but descriptive; Qwen Base and CoT also differ in code
+snapshot, timeout, and retry configuration. The cached BM25 stage means recorded reranker latency is
 not full-online hybrid latency, and p95 latency, peak GPU memory, and controlled
 throughput are unavailable. Finally, the graph corpus contains unresolved
 relationship-direction and validity-annotation questions; these may affect

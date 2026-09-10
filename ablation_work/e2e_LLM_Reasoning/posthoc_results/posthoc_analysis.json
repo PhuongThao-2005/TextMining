@@ -187,7 +187,7 @@
       "display_model": "DeepSeek-V3.1-Thinking",
       "model": "deepseek-v3.1-thinking",
       "prompt": "Base",
-      "run": "deepseekv3.1-thinking-basereasoning",
+      "run": "deepseekv3.1-thinking-base",
       "scheduled": 500,
       "scheduled_metrics": {
         "answerable_non_refusal_rate": 0.9,
@@ -303,81 +303,6 @@
     {
       "confusion": [
         {
-          "count": 223,
-          "decision": "answer",
-          "gold": "answerable"
-        },
-        {
-          "count": 32,
-          "decision": "refuse",
-          "gold": "answerable"
-        },
-        {
-          "count": 145,
-          "decision": "failed",
-          "gold": "answerable"
-        },
-        {
-          "count": 0,
-          "decision": "answer",
-          "gold": "unanswerable"
-        },
-        {
-          "count": 79,
-          "decision": "refuse",
-          "gold": "unanswerable"
-        },
-        {
-          "count": 21,
-          "decision": "failed",
-          "gold": "unanswerable"
-        }
-      ],
-      "decision_source": "persisted unanswerable_accuracy detector output",
-      "display_model": "DeepSeek-V3.1-Thinking",
-      "model": "deepseek-v3.1-thinking",
-      "prompt": "CoT",
-      "run": "qwen3-8b-CoT",
-      "scheduled": 500,
-      "scheduled_metrics": {
-        "answerable_non_refusal_rate": 0.5575,
-        "false_refusal_rate": 0.08,
-        "overall_template_decision_accuracy": 0.604,
-        "unanswerable_recognition_rate": 0.79
-      },
-      "valid": 334,
-      "valid_only_confusion": [
-        {
-          "count": 223,
-          "decision": "answer",
-          "gold": "answerable"
-        },
-        {
-          "count": 32,
-          "decision": "refuse",
-          "gold": "answerable"
-        },
-        {
-          "count": 0,
-          "decision": "answer",
-          "gold": "unanswerable"
-        },
-        {
-          "count": 79,
-          "decision": "refuse",
-          "gold": "unanswerable"
-        }
-      ],
-      "valid_only_metrics": {
-        "answerable_non_refusal_rate": 0.8745098039215686,
-        "false_refusal_rate": 0.12549019607843137,
-        "overall_template_decision_accuracy": 0.9041916167664671,
-        "unanswerable_recognition_rate": 1.0
-      }
-    },
-    {
-      "confusion": [
-        {
           "count": 361,
           "decision": "answer",
           "gold": "answerable"
@@ -598,6 +523,81 @@
         "false_refusal_rate": 0.0425,
         "overall_template_decision_accuracy": 0.958,
         "unanswerable_recognition_rate": 0.96
+      }
+    },
+    {
+      "confusion": [
+        {
+          "count": 378,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 22,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "answerable"
+        },
+        {
+          "count": 2,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 98,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "unanswerable"
+        }
+      ],
+      "decision_source": "persisted unanswerable_accuracy detector output",
+      "display_model": "Qwen3-8B",
+      "model": "qwen3-8b",
+      "prompt": "CoT",
+      "run": "qwen-8b-CoT",
+      "scheduled": 500,
+      "scheduled_metrics": {
+        "answerable_non_refusal_rate": 0.945,
+        "false_refusal_rate": 0.055,
+        "overall_template_decision_accuracy": 0.952,
+        "unanswerable_recognition_rate": 0.98
+      },
+      "valid": 500,
+      "valid_only_confusion": [
+        {
+          "count": 378,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 22,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 2,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 98,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        }
+      ],
+      "valid_only_metrics": {
+        "answerable_non_refusal_rate": 0.945,
+        "false_refusal_rate": 0.055,
+        "overall_template_decision_accuracy": 0.952,
+        "unanswerable_recognition_rate": 0.98
       }
     }
   ],
@@ -671,7 +671,7 @@
       "mean_unique_cited_sources": 2.5725,
       "model": "deepseek-v3.1-thinking",
       "prompt": "Base",
-      "run": "deepseekv3.1-thinking-basereasoning",
+      "run": "deepseekv3.1-thinking-base",
       "scheduled_answerable": 400,
       "structural_coverage_mean": 0.8238268743783449,
       "structural_coverage_n": 360,
@@ -696,25 +696,6 @@
       "structural_coverage_n": 356,
       "total_marker_count": 1365,
       "valid_answerable": 393
-    },
-    {
-      "cases_with_invalid_citations": 0,
-      "cases_with_no_valid_citation": 32,
-      "citation_presence_count": 223,
-      "citation_presence_rate": 0.8745098039215686,
-      "claim_entailment_available": false,
-      "display_model": "DeepSeek-V3.1-Thinking",
-      "invalid_marker_count": 0,
-      "invalid_marker_rate": 0.0,
-      "mean_unique_cited_sources": 2.631372549019608,
-      "model": "deepseek-v3.1-thinking",
-      "prompt": "CoT",
-      "run": "qwen3-8b-CoT",
-      "scheduled_answerable": 400,
-      "structural_coverage_mean": 0.8167711710312607,
-      "structural_coverage_n": 223,
-      "total_marker_count": 859,
-      "valid_answerable": 255
     },
     {
       "cases_with_invalid_citations": 0,
@@ -772,6 +753,25 @@
       "structural_coverage_n": 390,
       "total_marker_count": 877,
       "valid_answerable": 400
+    },
+    {
+      "cases_with_invalid_citations": 2,
+      "cases_with_no_valid_citation": 7,
+      "citation_presence_count": 393,
+      "citation_presence_rate": 0.9825,
+      "claim_entailment_available": false,
+      "display_model": "Qwen3-8B",
+      "invalid_marker_count": 4,
+      "invalid_marker_rate": 0.004439511653718091,
+      "mean_unique_cited_sources": 1.8125,
+      "model": "qwen3-8b",
+      "prompt": "CoT",
+      "run": "qwen-8b-CoT",
+      "scheduled_answerable": 400,
+      "structural_coverage_mean": 0.5815420655115312,
+      "structural_coverage_n": 393,
+      "total_marker_count": 901,
+      "valid_answerable": 400
     }
   ],
   "claim_boundary": {
@@ -784,8 +784,8 @@
     "uses_only_saved_artifacts": true
   },
   "data_quality_warnings": [
-    "qwen3-8b-CoT: directory name suggests `qwen3-8b`, but the manifest/resolved config declares `deepseek-v3.1-thinking`; manifest metadata is used for analysis.",
-    "Multiple run directories share the `deepseek-v3.1-thinking` / `CoT` identity: deepseekv3.1-thinking-CoT, qwen3-8b-CoT. The paired summary uses the lexicographically first Base/CoT directory; all runs remain in inventory and reliability outputs."
+    "Qwen3-8B Base/CoT provenance differs (git commit Base=bce815dac051401f920934228a365d0f318694d6, CoT=32a3b70a5a8b06de0329812238e936ae138b4ca8; timeout Base=90.0, CoT=60.0; max retries Base=6, CoT=2); latency and failure comparisons for this pair are descriptive.",
+    "DeepSeek-V3.1-Thinking Base/CoT exact retrieved top-10 chunk-ID sequences differ for 4 of 493 shared successful cases; treat the fixed-context comparison as descriptive for those cases."
   ],
   "evidence_context_mismatches": 0,
   "output_directory": "/Users/mac/Dev/HCMUS/Text_mining/L_RAG/ablation_work/e2e_LLM_Reasoning/posthoc_results",
@@ -998,13 +998,15 @@
         }
       },
       "model": "gpt-4o-mini",
+      "retrieval_context_comparable_n": 500,
+      "retrieval_context_id_mismatches": 0,
       "shared_successful_answerable_n": 400
     },
     {
       "all_question_ids_equal": true,
       "base_completed": 500,
       "base_failed": 0,
-      "base_run": "deepseekv3.1-thinking-basereasoning",
+      "base_run": "deepseekv3.1-thinking-base",
       "base_scheduled": 500,
       "cot_completed": 493,
       "cot_failed": 7,
@@ -1059,6 +1061,8 @@
         }
       },
       "model": "deepseek-v3.1-thinking",
+      "retrieval_context_comparable_n": 493,
+      "retrieval_context_id_mismatches": 4,
       "shared_successful_answerable_n": 393
     },
     {
@@ -1120,6 +1124,71 @@
         }
       },
       "model": "glm-5",
+      "retrieval_context_comparable_n": 500,
+      "retrieval_context_id_mismatches": 0,
+      "shared_successful_answerable_n": 400
+    },
+    {
+      "all_question_ids_equal": true,
+      "base_completed": 500,
+      "base_failed": 0,
+      "base_run": "qwen3-8b-base",
+      "base_scheduled": 500,
+      "cot_completed": 500,
+      "cot_failed": 0,
+      "cot_run": "qwen-8b-CoT",
+      "cot_scheduled": 500,
+      "display_model": "Qwen3-8B",
+      "fully_paired": true,
+      "interpretation": "descriptive only",
+      "metrics": {
+        "exact_match": {
+          "base_mean": 0.1925,
+          "cot_mean": 0.1725,
+          "delta_ci_high": -0.005,
+          "delta_ci_low": -0.0375,
+          "delta_mean": -0.02,
+          "loss_rate": 0.025,
+          "losses": 10,
+          "mcnemar_exact_p": 0.03857421875,
+          "n": 400,
+          "tie_rate": 0.97,
+          "ties": 388,
+          "win_rate": 0.005,
+          "wins": 2
+        },
+        "rouge_l": {
+          "base_mean": 0.18916911874243417,
+          "cot_mean": 0.17168988311612057,
+          "delta_ci_high": -0.009939192855823996,
+          "delta_ci_low": -0.025717889272240703,
+          "delta_mean": -0.017479235626313597,
+          "loss_rate": 0.52,
+          "losses": 208,
+          "n": 400,
+          "tie_rate": 0.2475,
+          "ties": 99,
+          "win_rate": 0.2325,
+          "wins": 93
+        },
+        "token_f1": {
+          "base_mean": 0.21977433826676154,
+          "cot_mean": 0.20054142101557773,
+          "delta_ci_high": -0.01151691781949468,
+          "delta_ci_low": -0.027703219415983332,
+          "delta_mean": -0.01923291725118379,
+          "loss_rate": 0.515,
+          "losses": 206,
+          "n": 400,
+          "tie_rate": 0.25,
+          "ties": 100,
+          "win_rate": 0.235,
+          "wins": 94
+        }
+      },
+      "model": "qwen3-8b",
+      "retrieval_context_comparable_n": 500,
+      "retrieval_context_id_mismatches": 0,
       "shared_successful_answerable_n": 400
     }
   ],
@@ -1208,7 +1277,7 @@
       },
       "model": "deepseek-v3.1-thinking",
       "prompt": "Base",
-      "run": "deepseekv3.1-thinking-basereasoning",
+      "run": "deepseekv3.1-thinking-base",
       "scheduled": 500,
       "skipped": 0
     },
@@ -1243,39 +1312,6 @@
       "model": "deepseek-v3.1-thinking",
       "prompt": "CoT",
       "run": "deepseekv3.1-thinking-CoT",
-      "scheduled": 500,
-      "skipped": 0
-    },
-    {
-      "completed": 334,
-      "completion_rate": 0.668,
-      "display_model": "DeepSeek-V3.1-Thinking",
-      "error_artifact_count": 166,
-      "failed": 166,
-      "failure_rate": 0.332,
-      "failure_reasons": {
-        "quota": 166
-      },
-      "failure_stages": {
-        "generation": 166
-      },
-      "latency": {
-        "generation": {
-          "count": 334,
-          "mean_s": 20.380438001736525,
-          "p50_s": 17.093279045,
-          "p95_s": 49.654310162
-        },
-        "total": {
-          "count": 500,
-          "mean_s": 23.284968649096,
-          "p50_s": 19.229874293,
-          "p95_s": 50.242243265999996
-        }
-      },
-      "model": "deepseek-v3.1-thinking",
-      "prompt": "CoT",
-      "run": "qwen3-8b-CoT",
       "scheduled": 500,
       "skipped": 0
     },
@@ -1363,6 +1399,35 @@
       "model": "qwen3-8b",
       "prompt": "Base",
       "run": "qwen3-8b-base",
+      "scheduled": 500,
+      "skipped": 0
+    },
+    {
+      "completed": 500,
+      "completion_rate": 1.0,
+      "display_model": "Qwen3-8B",
+      "error_artifact_count": 0,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "failure_reasons": {},
+      "failure_stages": {},
+      "latency": {
+        "generation": {
+          "count": 500,
+          "mean_s": 5.490155417052,
+          "p50_s": 4.972759142999999,
+          "p95_s": 10.466751675
+        },
+        "total": {
+          "count": 500,
+          "mean_s": 15.035993024949999,
+          "p50_s": 14.5810669635,
+          "p95_s": 20.155523724
+        }
+      },
+      "model": "qwen3-8b",
+      "prompt": "CoT",
+      "run": "qwen-8b-CoT",
       "scheduled": 500,
       "skipped": 0
     }

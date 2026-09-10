@@ -79,15 +79,17 @@ confidence interval containing zero is described as inconclusive rather than
 as evidence of an effect. The reranker candidate reconstruction agrees with
 the recorded RRF-only top-10 prefix for all 500 questions.
 
-The generator-reasoning family holds the retrieval stack and the retrieved
-top-10 context fixed for each question, and changes only the prompt mode for
-the generator. The primary paired comparison uses the complete GPT-4o-mini
-Base and CoT runs (500/500 questions, with 400 answerable pairs). The GLM-5
-pair is now complete but remains a descriptive cross-model check; the
-DeepSeek pair includes an incomplete CoT cell. The directory named
-\texttt{qwen3-8b-CoT} currently has a manifest for DeepSeek rather than Qwen,
-so no Qwen CoT comparison is inferred. These conditions are not used for the
-primary paired claim. The post-hoc analysis and frozen result ledger are available at
+The generator-reasoning family holds the retrieval stack and intended retrieved
+top-10 context fixed for each question, and changes the prompt mode for the
+generator. The primary paired comparison uses the complete GPT-4o-mini Base and
+CoT runs (500/500 questions, with 400 answerable pairs); their saved contexts
+match exactly. The GLM-5 and Qwen3-8B pairs are also complete but remain
+descriptive cross-model checks. The DeepSeek CoT cell is incomplete (493/500,
+with seven provider failures), and four of its 493 shared successful cases have
+different exact top-10 chunk-ID sequences between Base and CoT. The Qwen Base
+and CoT manifests use different code snapshots, timeouts, and retry limits, so
+their latency and failure comparisons are descriptive. These conditions are not
+used for the primary paired claim. The post-hoc analysis and frozen result ledger are available at
 \url{ablation_study/e2e_LLM_reasoning/results/report.md} and
 \url{ablation_work/e2e_LLM_Reasoning/analyze_posthoc.py}.
 

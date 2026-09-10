@@ -15,16 +15,18 @@ faithful, or that citations semantically entail claims, because neither a
 reasoning trace nor claim-level annotations were saved. This distinction is
 important: plausible free-form CoT is not necessarily faithful reasoning.[^1]
 
-The primary paired inference must be **GPT-4o-mini Base versus CoT**, the only
-complete 500/500 prompt pair. The other models are useful descriptive evidence
-only because at least one paired condition failed or is incomplete.
+The primary paired inference remains **GPT-4o-mini Base versus CoT** by
+pre-specification. The GLM-5 and Qwen3-8B pairs are now complete and can be
+reported as descriptive cross-model checks. DeepSeek remains descriptive because
+its CoT cell has seven provider failures and four exact retrieved-context
+sequence differences among shared successful cases.
 
 | Pair | Base completed | CoT completed | Allowed interpretation |
 | --- | ---: | ---: | --- |
 | GPT-4o-mini | 500 / 500 | 500 / 500 | Primary paired prompt comparison |
 | DeepSeek-V3.1-thinking | 500 / 500 | 493 / 500 | Descriptive; show seven CoT failures |
-| GLM-5 | 482 / 500 | 437 / 500 | Descriptive only; heavy differential attrition |
-| Qwen3-8B | 382 / 500 | 500 / 500 | Descriptive only; Base failures dominate |
+| GLM-5 | 500 / 500 | 500 / 500 | Descriptive only; primary inference remains GPT |
+| Qwen3-8B | 500 / 500 | 500 / 500 | Descriptive only; Base/CoT runtime provenance differs |
 
 ## Metrics to calculate now
 
