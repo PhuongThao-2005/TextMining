@@ -125,10 +125,10 @@ HybridGraph & 0.3076 & 0.2012 & 0.2228 & 0.0641 & 6.305 & 31.180 \\
 \midrule
 None & 0.4842 & 0.5375 & 0.2167 & 0.2714 & 0.2801 & 0.2453 & 0.000 & 2.925 \\
 RRF-only & 0.4382 & 0.4800 & 0.2335 & 0.2728 & 0.2750 & 0.2416 & 0.000 & 2.972 \\
-mMiniLM & 0.4973 & 0.5425 & 0.3047 & 0.3425 & 0.2901 & 0.2568 & \textbf{0.385} & 3.343 \\
+mMiniLM & 0.4973 & 0.5425 & 0.3047 & 0.3425 & 0.2901 & 0.2568 & \cellcolor{myGreen!20}\textcolor{myGreen}{\textbf{0.385}} & 3.343 \\
 Qwen3 & 0.5218 & 0.5725 & 0.3418 & 0.3688 & 0.2912 & 0.2583 & 9.695 & 13.007 \\
-BGE & 0.5188 & 0.5675 & 0.3247 & 0.3593 & \textbf{0.2955} & \textbf{0.2603} & 2.872 & 5.848 \\
-\textbf{Jina} & \textbf{0.5305} & \textbf{0.5850} & \textbf{0.3670} & \textbf{0.3914} & 0.2913 & 0.2558 & 1.278 & \textbf{4.158} \\
+BGE & 0.5188 & 0.5675 & 0.3247 & 0.3593 & \cellcolor{FusedOrange!20}\textcolor{FusedOrange}{\textbf{0.2955}} & \cellcolor{FusedOrange!20}\textcolor{FusedOrange}{\textbf{0.2603}} & 2.872 & 5.848 \\
+Jina & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.5305}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.5850}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.3670}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.3914}} & 0.2913 & 0.2558 & 1.278 & 4.158 \\
 \bottomrule
 \end{tabular}}
 \vspace{0.35cm}
@@ -143,33 +143,6 @@ BGE & 0.5188 & 0.5675 & 0.3247 & 0.3593 & \textbf{0.2955} & \textbf{0.2603} & 2.
     BGE slightly leads lexical answer overlap; mMiniLM is the fastest learned reranker.
     \end{block}
 \end{columns}
-\end{frame}
-
-\begin{frame}{Why Jina Is the Final Reranker Candidate}
-\scriptsize
-\begin{columns}[T]
-  \column{0.48\textwidth}
-    \begin{block}{Paired gain vs. RRF-only}
-      \begin{itemize}
-        \item Recall@10: \textbf{+9.23 pp}\\CI $[+5.51,+12.98]$
-        \item MRR@10: \textbf{+13.35 pp}\\CI $[+9.51,+17.24]$
-        \item nDCG@10: \textbf{+11.85 pp}\\CI $[+8.46,+15.27]$
-      \end{itemize}
-    \end{block}
-  \column{0.49\textwidth}
-    \begin{block}{Largest category gains}
-      \begin{itemize}
-        \item Legal validity ($n=91$): Recall \textbf{+14.47 pp}
-        \item Citation ($n=106$): Recall \textbf{+11.89 pp}
-        \item Abstractive ($n=199$): Recall \textbf{+13.65 pp}
-        \item Boolean ($n=123$): Recall \textbf{+7.86 pp}
-      \end{itemize}
-    \end{block}
-\end{columns}
-\vspace{0.25cm}
-\begin{alertblock}{Evidence ceiling}
-Jina retains 88.50\% of gold chunks available in the shared candidate pool, compared with 71.29\% for RRF-only. The gain is better promotion, not a larger pool.
-\end{alertblock}
 \end{frame}
 
 \begin{frame}{Ablation 4: Consolidated LLM Generator Results}
@@ -196,60 +169,5 @@ Qwen3-8B & CoT & 17.25 & 20.05 & 17.17 & 95.20\% & 98.25\% & 58.15\% & 1.81 & 4.
 \vspace{0.3cm}
 \begin{alertblock}{Reading boundary}
 EM, F1, ROUGE-L, and citation fields use 400 answerable outputs; decision accuracy uses all 500 cases. Only the GPT-4o-mini pair has fully identical saved contexts.
-\end{alertblock}
-\end{frame}
-
-\begin{frame}{Primary Pair: What GPT-4o-mini CoT Changes}
-\scriptsize
-\begin{columns}[T]
-  \column{0.49\textwidth}
-    \textbf{Paired quality and latency}
-    \begin{itemize}
-      \item EM: $-0.25$ pp; CI $[-1.50,+1.00]$.
-      \item Token F1: $-1.57$ pp; CI $[-2.24,-0.92]$.
-      \item ROUGE-L: $-1.71$ pp; CI $[-2.34,-1.10]$.
-      \item Token-F1 win/tie/loss: 79/164/157.
-      \item Generation p50: 2.92 $\rightarrow$ 3.68 s.
-      \item Total p50: 13.99 $\rightarrow$ 14.74 s.
-    \end{itemize}
-  \column{0.48\textwidth}
-    \textbf{Behavior and evidence diagnostics}
-    \begin{itemize}
-      \item False refusal: 21.25\% $\rightarrow$ 19.50\%.
-      \item Unanswerable recognition: 98.00\% for both.
-      \item Citation presence: 78.25\% $\rightarrow$ 81.00\%.
-      \item Structural coverage: 89.42\% $\rightarrow$ 87.91\%.
-      \item Token F1: full $-1.98$ pp; partial $-1.86$ pp; no gold support $-1.30$ pp.
-    \end{itemize}
-\end{columns}
-\vspace{0.15cm}
-\begin{alertblock}{Interpretation boundary}
-CoT lowers lexical overlap in every evidence stratum and adds latency. Decision and citation-marker diagnostics do not measure legal correctness, faithfulness, or citation entailment.
-\end{alertblock}
-\end{frame}
-
-\begin{frame}{Efficiency and What the Metrics Do Not Prove}
-\small
-\begin{columns}[T]
-  \column{0.48\textwidth}
-    \textbf{Measured efficiency}
-    \begin{itemize}
-      \item Dense total p50: 5.483 s.
-      \item Hybrid total p50: 31.538 s.
-      \item Reranker p50: mMiniLM 0.385 s; Jina 1.278 s; BGE 2.872 s; Qwen3 9.695 s.
-      \item Cached BM25 makes reranker latency incomplete for full-online deployment.
-    \end{itemize}
-  \column{0.49\textwidth}
-    \textbf{Missing validation}
-    \begin{itemize}
-      \item Human-rated legal correctness and completeness.
-      \item Claim faithfulness to retrieved passages.
-      \item Citation precision and citation recall.
-      \item Full-online p95 latency, throughput, and GPU memory.
-    \end{itemize}
-\end{columns}
-\vspace{0.2cm}
-\begin{alertblock}{Interpretation boundary}
-Token F1, ROUGE-L, and refusal markers are diagnostics; they cannot certify that an answer is legally correct.
 \end{alertblock}
 \end{frame}
