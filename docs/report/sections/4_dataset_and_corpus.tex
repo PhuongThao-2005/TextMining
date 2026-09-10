@@ -82,32 +82,26 @@ To prevent graph poisoning, G-LRAG enforces two strict integrity rules:
 \subsection{QA Benchmark Dataset}
 \label{sec:qa-benchmark}
 
-To rigorously evaluate legal retrieval and generation quality, we curated a benchmark dataset of \textbf{500 Vietnamese legal questions} (\texttt{qa\_final.jsonl}).
+To evaluate legal retrieval and answer generation, we constructed a benchmark of \textbf{500 Vietnamese legal questions} from the processed G-LRAG corpus using a grounded synthetic QA pipeline.
 
-\subsubsection{Dataset Composition}
-The benchmark balances real-world legal scenarios across multiple dimensions:
-\begin{itemize}
-    \item \textbf{Answerability:} 400 \textit{Answerable} questions (grounded in corpus evidence) and 100 \textit{Unanswerable} questions (designed to test hallucination resistance).
-    \item \textbf{Question Categories:}
-    \begin{enumerate}
-        \item \textit{Citation}: Questions asking for specific article/law numbers.
-        \item \textit{Cross-Document}: Questions requiring information synthesis across multiple legal documents.
-        \item \textit{Legal Validity}: Questions regarding whether a regulation is currently effective.
-        \item \textit{Multi-Hop}: Complex queries requiring step-by-step reasoning over connected provisions.
-        \item \textit{Single-Hop}: Direct factual queries over a single provision.
-    \end{enumerate}
-    \item \textbf{Answer Types:} \textit{Abstractive} (summary/explanation), \textit{Boolean} (Yes/No), \textit{Extractive} (verbatim quote), and \textit{Unanswerable}.
-\end{itemize}
+Questions were generated with \texttt{gemini-3.1-flash-lite} from context bundles containing approximately 3--5 related provisions and chunks. The model was instructed to formulate realistic Vietnamese legal questions using only the supplied evidence. Each candidate was subsequently evaluated in a separate verification pass for answer correctness, evidence sufficiency, hallucination avoidance, category correctness, and difficulty correctness. Only candidates passing all verification criteria were retained.
+
+The final generation run sampled 515 documents and 1,697 provisions and achieved a verifier pass rate of 72.41\%. After diversity filtering and deduplication, the final benchmark contains \textbf{500 questions}: 265 single-hop, 106 citation, 96 legal-validity, 21 multi-hop, and 12 cross-document questions.
+
+The dataset contains \textbf{400 answerable} and \textbf{100 unanswerable} questions. Answer types include abstractive, boolean, extractive, and unanswerable responses. Unanswerable questions are intentionally constructed without supporting corpus evidence to evaluate the system's ability to abstain from unsupported answers.
 
 \subsection{Ground Truth Construction}
 \label{sec:ground-truth}
 
-Each answerable query is annotated by legal domain experts with gold-standard metadata:
+Each benchmark query contains the question, category, answer type, reference answer, and evidence provenance:
+
 \begin{equation}
-    \begin{aligned}
-        Q_i = \{&\text{qa\_id}, \text{question}, \\
-        &\text{category}, \text{difficulty}, \text{answer\_type}, \\
-        &\text{ref\_answer}, \text{ground\_truth\_chunk\_ids}\}.
-    \end{aligned}
+\begin{aligned}
+Q_i = \{&
+\mathrm{qa\_id}, \mathrm{question}, \mathrm{category}, \\
+&\mathrm{answer\_type}, \mathrm{reference\_answer}, \mathrm{ground\_truth}
+\}.
+\end{aligned}
 \end{equation}
-The \texttt{ground\_truth\_chunk\_ids} set forms the exact retrieval baseline against which Recall@$k$, Hit@$k$, MRR@$k$, and nDCG@$k$ are evaluated.
+
+The ground-truth object contains the supporting \texttt{document\_ids}, \texttt{provision\_ids}, and \texttt{chunk\_ids}. For answerable questions, the gold chunk identifiers are used to evaluate retrieval with Recall@$k$, Hit@$k$, MRR@$k$, and nDCG@$k$. For unanswerable questions, the ground-truth evidence sets are empty by design.
