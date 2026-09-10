@@ -131,7 +131,7 @@ BGE & 0.5188 & 0.5675 & 0.3247 & 0.3593 & \cellcolor{FusedOrange!20}\textcolor{F
 Jina & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.5305}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.5850}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.3670}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.3914}} & 0.2913 & 0.2558 & 1.278 & 4.158 \\
 \bottomrule
 \end{tabular}}
-\vspace{0.35cm}
+\vspace{0.15cm}
 \small
 \begin{columns}[T]
   \column{0.48\textwidth}
@@ -143,6 +143,10 @@ Jina & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.5305}} & \cellcolor{U
     BGE slightly leads lexical answer overlap; mMiniLM is the fastest learned reranker.
     \end{block}
 \end{columns}
+\vspace{0.1cm}
+\begin{alertblock}{Mechanism}
+Rerankers jointly score each query--candidate pair, capturing richer interactions than comparing separately encoded query and document vectors.
+\end{alertblock}
 \end{frame}
 
 \begin{frame}{Ablation 4: Consolidated LLM Generator Results}

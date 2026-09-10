@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.9.7)  11 SEP 2026 00:51
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.9.7)  11 SEP 2026 00:54
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1289,10 +1289,10 @@ Package rerunfilecheck Info: File `Text_Mining.out' has not changed.
 (rerunfilecheck)             Checksum: C83345D0CE45E868DA53E86EF2AA87E8;843.
  ) 
 Here is how much of TeX's memory you used:
- 29864 strings out of 469006
- 622241 string characters out of 5454814
- 1069668 words of memory out of 5000000
- 57863 multiletter control sequences out of 15000+600000
+ 29867 strings out of 469006
+ 622383 string characters out of 5454814
+ 1073781 words of memory out of 5000000
+ 57866 multiletter control sequences out of 15000+600000
  656850 words of font info for 100 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
  101i,19n,107p,421b,1172s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -1328,10 +1328,10 @@ st/fonts/type1/public/amsfonts/cm/cmss10.pfb></usr/local/texlive/2026basic/texm
 f-dist/fonts/type1/public/amsfonts/cm/cmss8.pfb></usr/local/texlive/2026basic/t
 exmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2026bas
 ic/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
-Output written on Text_Mining.pdf (34 pages, 1924922 bytes).
+Output written on Text_Mining.pdf (34 pages, 1927709 bytes).
 PDF statistics:
- 4179 PDF objects out of 4296 (max. 8388607)
- 1847 compressed objects within 19 object streams
+ 4192 PDF objects out of 4296 (max. 8388607)
+ 1853 compressed objects within 19 object streams
  75 named destinations out of 1000 (max. 500000)
- 1532 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1568 words of extra memory for PDF output out of 10000 (max. 10000000)
 
