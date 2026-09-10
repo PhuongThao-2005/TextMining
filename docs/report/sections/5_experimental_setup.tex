@@ -9,7 +9,7 @@ legal QA benchmark. The benchmark contains 500 questions: 400 answerable and
 100 unanswerable. Runs within an ablation family use the same benchmark,
 question identifiers, generator settings, and corpus/index version; only the
 component named by the family is changed. This design is important because the
-three completed families use different candidate budgets, as summarized in
+four completed families use different candidate budgets, as summarized in
 Table~\ref{tab:configurations}.
 
 \subsection{Research Questions}
@@ -25,8 +25,9 @@ We organize the experiments around five questions:
     downstream behavior for the tested legal QA benchmark?
     \item Which reranker best trades ranking quality against inference cost
     when the candidate pool is held fixed?
-    \item Which generator reasoning strategy should be used? This final
-    question is planned and is not included in the completed results.
+    \item Which generator reasoning strategy should be used? The completed
+    generator-reasoning comparison contrasts base prompting with explicit
+    chain-of-thought (CoT) prompting under a fixed retrieved context.
 \end{enumerate}
 
 \subsection{Metrics}
@@ -42,8 +43,10 @@ ability of a reranker to promote evidence already present in the candidate
 pool.
 
 For generated answers, we report exact match, token-level F1, and ROUGE-L on
-answerable questions, together with unanswerable accuracy. These automatic
-overlap and abstention measures are diagnostics rather than legal judgments:
+answerable questions. We also report the template-based answerability
+decision matrix (including non-refusal on answerable questions) and call its
+aggregate ``decision accuracy'' rather than treating it as a legal-safety
+metric. These automatic overlap and abstention measures are diagnostics rather than legal judgments:
 the available artifacts contain no human labels for legal correctness,
 completeness, claim faithfulness, or citation-to-chunk alignment. Those
 metrics are consequently not inferred from lexical overlap.
@@ -57,8 +60,10 @@ treated as full-online hybrid latency.
 \label{sec:protocol}
 
 All completed runs use \texttt{intfloat/multilingual-e5-large} for dense
-retrieval and \texttt{gpt-4o-mini} for generation with temperature 0.0 and a
-maximum of 1,024 output tokens. The embedding-text ablation uses raw FAISS
+retrieval, temperature 0.0, and a maximum of 1,024 output tokens. The
+non-generator ablations use \texttt{gpt-4o-mini}; the reasoning family varies
+the generator model and prompt mode as listed in Table~\ref{tab:configurations}.
+The embedding-text ablation uses raw FAISS
 top-10 retrieval with no sparse, graph, fusion, or reranking module. The
 dense/hybrid/graph ablation retrieves 50 seeds and supplies at most 10 final
 chunks; graph variants expand five seeds by one hop with a maximum graph
@@ -73,6 +78,18 @@ main comparisons and 2,000 resamples for the smaller reranker slices. A
 confidence interval containing zero is described as inconclusive rather than
 as evidence of an effect. The reranker candidate reconstruction agrees with
 the recorded RRF-only top-10 prefix for all 500 questions.
+
+The generator-reasoning family holds the retrieval stack and the retrieved
+top-10 context fixed for each question, and changes only the prompt mode for
+the generator. The primary paired comparison uses the complete GPT-4o-mini
+Base and CoT runs (500/500 questions, with 400 answerable pairs). The GLM-5
+pair is now complete but remains a descriptive cross-model check; the
+DeepSeek pair includes an incomplete CoT cell. The directory named
+\texttt{qwen3-8b-CoT} currently has a manifest for DeepSeek rather than Qwen,
+so no Qwen CoT comparison is inferred. These conditions are not used for the
+primary paired claim. The post-hoc analysis and frozen result ledger are available at
+\url{ablation_study/e2e_LLM_reasoning/results/report.md} and
+\url{ablation_work/e2e_LLM_Reasoning/analyze_posthoc.py}.
 
 \subsection{Ablation Configurations}
 \label{sec:configurations}
@@ -107,6 +124,8 @@ Reranker & mMiniLM & shared RRF pool & BM25 & -- & mMiniLM CE & 30/10 \\
 Reranker & Qwen3 & shared RRF pool & BM25 & -- & Qwen3 & 30/10 \\
 Reranker & BGE & shared RRF pool & BM25 & -- & BGE-v2-m3 & 30/10 \\
 Reranker & Jina & shared RRF pool & BM25 & -- & Jina-v2 & 30/10 \\
+LLM reasoning & GPT-4o-mini Base & fixed context & -- & -- & Base prompt & fixed/10 \\
+LLM reasoning & GPT-4o-mini CoT & fixed context & -- & -- & CoT prompt & fixed/10 \\
 \bottomrule
 \end{tabular}%
 }

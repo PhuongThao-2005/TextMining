@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="390" viewBox="0 0 940 390">
+<rect width="100%" height="100%" fill="white"/>
+<text x="24.0" y="30.0" font-family="Arial, sans-serif" font-size="17px" text-anchor="start" fill="#253047" font-weight="700">Template-based decision matrices: GPT-4o-mini</text>
+<text x="245.0" y="63.0" font-family="Arial, sans-serif" font-size="13px" text-anchor="middle" fill="#253047" font-weight="700">Base</text>
+<text x="245.0" y="80.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="middle" fill="#253047" font-weight="400">Saved decision</text>
+<text x="145.0" y="95.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="middle" fill="#253047" font-weight="400">answer</text>
+<text x="245.0" y="95.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="middle" fill="#253047" font-weight="400">refuse</text>
+<text x="345.0" y="95.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="middle" fill="#253047" font-weight="400">failed</text>
+<text x="80.0" y="139.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">answerable</text>
+<rect x="95" y="100" width="97" height="67" fill="rgb(130,163,214)" stroke="white"/>
+<text x="145.0" y="140.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">315</text>
+<rect x="195" y="100" width="97" height="67" fill="rgb(184,206,235)" stroke="white"/>
+<text x="245.0" y="140.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">85</text>
+<rect x="295" y="100" width="97" height="67" fill="rgb(205,223,244)" stroke="white"/>
+<text x="345.0" y="140.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">0</text>
+<text x="80.0" y="209.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">unanswerable</text>
+<rect x="95" y="170" width="97" height="67" fill="rgb(204,222,243)" stroke="white"/>
+<text x="145.0" y="210.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">2</text>
+<rect x="195" y="170" width="97" height="67" fill="rgb(181,204,234)" stroke="white"/>
+<text x="245.0" y="210.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">98</text>
+<rect x="295" y="170" width="97" height="67" fill="rgb(205,223,244)" stroke="white"/>
+<text x="345.0" y="210.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">0</text>
+<text x="715.0" y="63.0" font-family="Arial, sans-serif" font-size="13px" text-anchor="middle" fill="#253047" font-weight="700">CoT</text>
+<text x="715.0" y="80.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="middle" fill="#253047" font-weight="400">Saved decision</text>
+<text x="615.0" y="95.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="middle" fill="#253047" font-weight="400">answer</text>
+<text x="715.0" y="95.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="middle" fill="#253047" font-weight="400">refuse</text>
+<text x="815.0" y="95.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="middle" fill="#253047" font-weight="400">failed</text>
+<text x="550.0" y="139.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">answerable</text>
+<rect x="565" y="100" width="97" height="67" fill="rgb(130,163,214)" stroke="white"/>
+<text x="615.0" y="140.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">322</text>
+<rect x="665" y="100" width="97" height="67" fill="rgb(186,208,236)" stroke="white"/>
+<text x="715.0" y="140.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">78</text>
+<rect x="765" y="100" width="97" height="67" fill="rgb(205,223,244)" stroke="white"/>
+<text x="815.0" y="140.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">0</text>
+<text x="550.0" y="209.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">unanswerable</text>
+<rect x="565" y="170" width="97" height="67" fill="rgb(204,222,243)" stroke="white"/>
+<text x="615.0" y="210.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">2</text>
+<rect x="665" y="170" width="97" height="67" fill="rgb(182,204,234)" stroke="white"/>
+<text x="715.0" y="210.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">98</text>
+<rect x="765" y="170" width="97" height="67" fill="rgb(205,223,244)" stroke="white"/>
+<text x="815.0" y="210.0" font-family="Arial, sans-serif" font-size="18px" text-anchor="middle" fill="#253047" font-weight="700">0</text>
+<text x="470.0" y="278.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="middle" fill="#4a5568" font-weight="400">Counts include failed rows; valid-only matrices are in JSON/CSV.</text>
+</svg>

@@ -85,7 +85,7 @@ Quarantined records and unverified edge directions are excluded from trusted tra
       \begin{itemize}
         \item 400 answerable questions
         \item 100 unanswerable questions
-        \item Unanswerable cases test hallucination resistance and abstention.
+        \item Unanswerable cases test abstention under insufficient evidence.
       \end{itemize}
     \end{block}
     \textbf{Answer types}
@@ -98,44 +98,67 @@ Quarantined records and unverified edge directions are excluded from trusted tra
   \column{0.49\textwidth}
     \begin{block}{Question categories}
       \begin{itemize}
-        \item Citation
-        \item Cross-document
-        \item Legal validity
-        \item Multi-hop
-        \item Single-hop
+        \item Single-hop: 265
+        \item Citation: 106
+        \item Legal validity: 96
+        \item Multi-hop: 21
+        \item Cross-document: 12
       \end{itemize}
     \end{block}
-    \textbf{Difficulty levels}: easy, medium, and hard.
+
+    \textbf{Generation model:} \texttt{gemini-3.1-flash-lite}
+
 \end{columns}
 \end{frame}
 
 \begin{frame}{Ground Truth and Evaluation Contract}
 \small
-For each answerable question, the benchmark stores:
+
+Each benchmark query stores metadata, a reference answer, and evidence provenance:
+
 \[
-Q_i = \{\mathrm{qa\_id},\ \mathrm{question},\ \mathrm{category},\ \mathrm{difficulty},
-\ \mathrm{answer\_type},\ \mathrm{ref\_answer},\ \mathrm{gold\_chunks}\}
+Q_i =
+\{
+\texttt{qa\_id},
+\texttt{question},
+\texttt{category},
+\texttt{answer\_type},
+\texttt{reference\_answer},
+\texttt{ground\_truth}
+\}
 \]
+
+\[
+G_i =
+\{
+\texttt{document\_ids},
+\texttt{provision\_ids},
+\texttt{chunk\_ids}
+\}
+\]
+\vspace{-0.5em}
 \begin{columns}[T]
   \column{0.48\textwidth}
     \begin{block}{Retrieval metrics}
       \begin{itemize}
         \item Recall@$k$ and Hit@$k$
         \item MRR@$k$ and nDCG@$k$
-        \item Precision@$k$ / chunk overlap
+        \item Precision@$k$
       \end{itemize}
     \end{block}
   \column{0.48\textwidth}
-    \begin{block}{Generation metrics}
+
+    \begin{block}{Generation diagnostics}
       \begin{itemize}
         \item Exact Match
         \item Token F1 and ROUGE-L
-        \item Unanswerable accuracy
-        \item Citation grounding and faithfulness
+        \item Answerability decision
+        \item Citation presence / source coverage
       \end{itemize}
     \end{block}
 \end{columns}
 \vspace{0.15cm}
 \centering
-\hi{Gold chunk IDs connect each benchmark answer directly to retrievable legal evidence.}
+\hi{Retrieval metrics use gold chunk IDs on the 400 answerable questions; unanswerable questions have empty evidence sets.}
+
 \end{frame}

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560">
+<rect width="100%" height="100%" fill="white"/>
+<text x="24.0" y="30.0" font-family="Arial, sans-serif" font-size="17px" text-anchor="start" fill="#253047" font-weight="700">GPT-4o-mini Token-F1 win/tie/loss by slice</text>
+<text x="40.0" y="69.0" font-family="Arial, sans-serif" font-size="12px" text-anchor="start" fill="#253047" font-weight="700">Category</text>
+<text x="248.0" y="125.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">citation</text>
+<rect x="260.0" y="112.0" width="150.6" height="20" fill="#3182ce"/>
+<rect x="410.6" y="112.0" width="145.2" height="20" fill="#a0aec0"/>
+<rect x="555.8" y="112.0" width="274.2" height="20" fill="#dd6b20"/>
+<text x="840.0" y="125.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">n=106</text>
+<text x="248.0" y="159.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">cross_document</text>
+<rect x="260.0" y="146.0" width="155.5" height="20" fill="#3182ce"/>
+<rect x="415.5" y="146.0" width="310.9" height="20" fill="#a0aec0"/>
+<rect x="726.4" y="146.0" width="103.6" height="20" fill="#dd6b20"/>
+<text x="840.0" y="159.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">n=11</text>
+<text x="248.0" y="193.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">legal_validity</text>
+<rect x="260.0" y="180.0" width="112.7" height="20" fill="#3182ce"/>
+<rect x="372.7" y="180.0" width="294.4" height="20" fill="#a0aec0"/>
+<rect x="667.1" y="180.0" width="162.9" height="20" fill="#dd6b20"/>
+<text x="840.0" y="193.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">n=91</text>
+<text x="248.0" y="227.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">multi_hop</text>
+<rect x="260.0" y="214.0" width="85.5" height="20" fill="#3182ce"/>
+<rect x="345.5" y="214.0" width="256.5" height="20" fill="#a0aec0"/>
+<rect x="602.0" y="214.0" width="228.0" height="20" fill="#dd6b20"/>
+<text x="840.0" y="227.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">n=20</text>
+<text x="248.0" y="261.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">single_hop</text>
+<rect x="260.0" y="248.0" width="89.5" height="20" fill="#3182ce"/>
+<rect x="349.5" y="248.0" width="248.5" height="20" fill="#a0aec0"/>
+<rect x="598.0" y="248.0" width="232.0" height="20" fill="#dd6b20"/>
+<text x="840.0" y="261.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">n=172</text>
+<text x="40.0" y="273.0" font-family="Arial, sans-serif" font-size="12px" text-anchor="start" fill="#253047" font-weight="700">Difficulty</text>
+<text x="248.0" y="329.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">easy</text>
+<rect x="260.0" y="316.0" width="102.0" height="20" fill="#3182ce"/>
+<rect x="362.0" y="316.0" width="224.0" height="20" fill="#a0aec0"/>
+<rect x="586.0" y="316.0" width="244.0" height="20" fill="#dd6b20"/>
+<text x="840.0" y="329.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">n=285</text>
+<text x="248.0" y="363.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">hard</text>
+<rect x="260.0" y="350.0" width="0.0" height="20" fill="#3182ce"/>
+<rect x="260.0" y="350.0" width="570.0" height="20" fill="#a0aec0"/>
+<rect x="830.0" y="350.0" width="0.0" height="20" fill="#dd6b20"/>
+<text x="840.0" y="363.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">n=1</text>
+<text x="248.0" y="397.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="end" fill="#253047" font-weight="400">medium</text>
+<rect x="260.0" y="384.0" width="140.0" height="20" fill="#3182ce"/>
+<rect x="400.0" y="384.0" width="255.0" height="20" fill="#a0aec0"/>
+<rect x="655.0" y="384.0" width="175.0" height="20" fill="#dd6b20"/>
+<text x="840.0" y="397.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">n=114</text>
+<text x="260.0" y="443.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="start" fill="#253047" font-weight="400">CoT win/tie/loss share</text>
+<rect x="260" y="470" width="12" height="12" fill="#3182ce"/>
+<text x="278.0" y="481.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="start" fill="#253047" font-weight="400">win</text>
+<rect x="340" y="470" width="12" height="12" fill="#a0aec0"/>
+<text x="358.0" y="481.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="start" fill="#253047" font-weight="400">tie</text>
+<rect x="420" y="470" width="12" height="12" fill="#dd6b20"/>
+<text x="438.0" y="481.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="start" fill="#253047" font-weight="400">loss</text>
+</svg>

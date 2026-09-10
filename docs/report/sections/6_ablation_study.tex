@@ -4,12 +4,13 @@
 \section{Ablation Study}
 \label{sec:ablation-study}
 
-We report three completed ablation families. The first isolates the text fed
+We report four completed ablation families. The first isolates the text fed
 to the dense encoder, the second compares dense, hybrid, and graph-augmented
-retrieval, and the third compares six ranking controls over a shared hybrid
-candidate pool. Because candidate construction differs between families, all
-claims are made within a family; the results are not treated as one pooled
-factorial experiment.
+retrieval, the third compares six ranking controls over a shared hybrid
+candidate pool, and the fourth compares generator prompt modes with the
+retrieved context held fixed. Because candidate construction differs between
+families, all claims are made within a family; the results are not treated as
+one pooled factorial experiment.
 
 \subsection{Embedding Text: Chunk-Only versus Chunk+Metadata}
 \label{sec:ablation-chunk-meta}
@@ -67,10 +68,44 @@ accuracy. These answer metrics are lexical/abstention diagnostics, not legal
 correctness judgments. Table~\ref{tab:reranker-results} reports the aggregate
 comparison and Table~\ref{tab:reranker-paired} reports paired effects.
 
-\subsection{Generator Reasoning (Planned)}
+\subsection{Generator Reasoning: Base versus CoT}
 \label{sec:ablation-reasoning}
 
-An ablation of base prompting, explicit reasoning, and larger generators has
-not been run. It remains future work because changing the generator would
-confound the completed retrieval comparisons and because semantic legal
-correctness labels are not yet available.
+The fourth family evaluates whether explicit chain-of-thought (CoT) prompting
+changes answer quality, abstention behavior, citations, or latency when the
+retrieved evidence is unchanged. The primary comparison uses the complete
+GPT-4o-mini Base and CoT runs: both cover all 500 benchmark questions and
+share 400 answerable question IDs. The frozen run artifacts report zero
+retrieval-context mismatches, so the paired answer deltas isolate the prompt
+mode within the limits of the lexical metrics.
+
+On the 400 paired answerable questions, CoT decreases Token F1 from 24.72\%
+to 23.15\% ($-1.57$ percentage points) and ROUGE-L from 21.60\% to 19.90\%
+($-1.71$ points). Exact match is essentially unchanged (14.00\% to 13.75\%,
+$-0.25$ points). The 95\% paired-bootstrap intervals exclude zero for both
+overlap losses; the full paired table is in Table~\ref{tab:llm-reasoning-paired}.
+The Token F1 win/tie/loss count is 79/164/157 in favor of Base, consistent
+with a broad but modest degradation rather than a universal per-question
+failure.
+
+The template-based answerability decision accuracy increases from 82.60\% to
+84.00\%. This reflects a lower false-refusal rate on answerable questions
+(21.25\% to 19.50\%) while unanswerable recognition remains 98.00\% for both
+prompts; it is not a human-validated safety or legal-correctness measure.
+CoT also raises citation presence (78.25\% to 81.00\%) and mean unique
+sources (1.46 to 1.68), but structural citation coverage falls slightly
+(89.42\% to 87.91\%). Generation p50/p95 latency rises from 2.92/5.74 seconds
+to 3.68/6.17 seconds, and total p50/p95 rises from 13.99/17.21 to
+14.74/18.42 seconds.
+
+Evidence-stratified deltas do not reverse the result: CoT Token F1 is lower
+when all gold support is retrieved ($-1.98$ points, $n=138$), when support is
+partial ($-1.86$ points, $n=29$), and when support is absent ($-1.30$ points,
+$n=233$). The refreshed GLM-5 pair is complete but remains descriptive; the
+DeepSeek CoT cell is incomplete, and the directory named \texttt{qwen3-8b-CoT}
+is identified as a second DeepSeek CoT run by its manifest. No Qwen CoT result
+is inferred until its artifacts are restored with a Qwen manifest. These
+inventory rows and caveats are shown in Table~\ref{tab:llm-reasoning-runs};
+incomplete cells are not used for paired claims. The derived report and
+machine-readable artifacts are linked from the reproducibility ledger in
+Section~\ref{sec:reproducibility}.

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560">
+<rect width="100%" height="100%" fill="white"/>
+<text x="24.0" y="30.0" font-family="Arial, sans-serif" font-size="17px" text-anchor="start" fill="#253047" font-weight="700">GPT-4o-mini paired Token-F1 deltas (CoT − Base)</text>
+<line x1="70" y1="460" x2="940" y2="460" stroke="#718096"/>
+<line x1="474.2" y1="70" x2="474.2" y2="460" stroke="#b83280" stroke-dasharray="5,4"/>
+<rect x="71.0" y="454.0" width="41.5" height="6.0" fill="#dd6b20" opacity="0.85"/>
+<rect x="114.5" y="458.5" width="41.5" height="1.5" fill="#dd6b20" opacity="0.85"/>
+<rect x="158.0" y="458.5" width="41.5" height="1.5" fill="#dd6b20" opacity="0.85"/>
+<rect x="201.5" y="455.5" width="41.5" height="4.5" fill="#dd6b20" opacity="0.85"/>
+<rect x="245.0" y="448.1" width="41.5" height="11.9" fill="#dd6b20" opacity="0.85"/>
+<rect x="288.5" y="446.6" width="41.5" height="13.4" fill="#dd6b20" opacity="0.85"/>
+<rect x="332.0" y="440.7" width="41.5" height="19.3" fill="#dd6b20" opacity="0.85"/>
+<rect x="375.5" y="421.3" width="41.5" height="38.7" fill="#dd6b20" opacity="0.85"/>
+<rect x="419.0" y="379.7" width="41.5" height="80.3" fill="#dd6b20" opacity="0.85"/>
+<rect x="462.5" y="100.0" width="41.5" height="360.0" fill="#3182ce" opacity="0.85"/>
+<rect x="506.0" y="431.7" width="41.5" height="28.3" fill="#3182ce" opacity="0.85"/>
+<rect x="549.5" y="446.6" width="41.5" height="13.4" fill="#3182ce" opacity="0.85"/>
+<rect x="593.0" y="449.6" width="41.5" height="10.4" fill="#3182ce" opacity="0.85"/>
+<rect x="636.5" y="458.5" width="41.5" height="1.5" fill="#3182ce" opacity="0.85"/>
+<rect x="680.0" y="458.5" width="41.5" height="1.5" fill="#3182ce" opacity="0.85"/>
+<rect x="723.5" y="460.0" width="41.5" height="0.0" fill="#3182ce" opacity="0.85"/>
+<rect x="767.0" y="458.5" width="41.5" height="1.5" fill="#3182ce" opacity="0.85"/>
+<rect x="810.5" y="460.0" width="41.5" height="0.0" fill="#3182ce" opacity="0.85"/>
+<rect x="854.0" y="460.0" width="41.5" height="0.0" fill="#3182ce" opacity="0.85"/>
+<rect x="897.5" y="458.5" width="41.5" height="1.5" fill="#3182ce" opacity="0.85"/>
+<text x="70.0" y="485.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">-0.348</text>
+<text x="474.2" y="485.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="middle" fill="#253047" font-weight="400">0</text>
+<text x="940.0" y="485.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="end" fill="#253047" font-weight="400">0.401</text>
+<text x="505.0" y="508.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="middle" fill="#253047" font-weight="400">Token-F1 delta</text>
+<text x="58.0" y="80.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="end" fill="#253047" font-weight="400">242</text>
+<text x="58.0" y="460.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="end" fill="#253047" font-weight="400">0</text>
+<rect x="70" y="545" width="12" height="12" fill="#3182ce"/>
+<text x="88.0" y="556.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="start" fill="#253047" font-weight="400">CoT gain</text>
+<rect x="190" y="545" width="12" height="12" fill="#dd6b20"/>
+<text x="208.0" y="556.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="start" fill="#253047" font-weight="400">CoT loss</text>
+<text x="460.0" y="556.0" font-family="Arial, sans-serif" font-size="11px" text-anchor="start" fill="#253047" font-weight="400">n=400 answerable paired cases</text>
+<text x="70.0" y="587.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">support fully retrieved: n=138, Δ=-1.98 pp</text>
+<text x="500.0" y="587.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">partial support retrieved: n=29, Δ=-1.86 pp</text>
+<text x="70.0" y="607.0" font-family="Arial, sans-serif" font-size="10px" text-anchor="start" fill="#253047" font-weight="400">no support retrieved: n=233, Δ=-1.30 pp</text>
+</svg>

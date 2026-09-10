@@ -1,0 +1,1371 @@
+{
+  "answerability": [
+    {
+      "confusion": [
+        {
+          "count": 315,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 85,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "answerable"
+        },
+        {
+          "count": 2,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 98,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "unanswerable"
+        }
+      ],
+      "decision_source": "persisted unanswerable_accuracy detector output",
+      "display_model": "GPT-4o-mini",
+      "model": "gpt-4o-mini",
+      "prompt": "Base",
+      "run": "4o-mini-base",
+      "scheduled": 500,
+      "scheduled_metrics": {
+        "answerable_non_refusal_rate": 0.7875,
+        "false_refusal_rate": 0.2125,
+        "overall_template_decision_accuracy": 0.826,
+        "unanswerable_recognition_rate": 0.98
+      },
+      "valid": 500,
+      "valid_only_confusion": [
+        {
+          "count": 315,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 85,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 2,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 98,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        }
+      ],
+      "valid_only_metrics": {
+        "answerable_non_refusal_rate": 0.7875,
+        "false_refusal_rate": 0.2125,
+        "overall_template_decision_accuracy": 0.826,
+        "unanswerable_recognition_rate": 0.98
+      }
+    },
+    {
+      "confusion": [
+        {
+          "count": 322,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 78,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "answerable"
+        },
+        {
+          "count": 2,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 98,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "unanswerable"
+        }
+      ],
+      "decision_source": "persisted unanswerable_accuracy detector output",
+      "display_model": "GPT-4o-mini",
+      "model": "gpt-4o-mini",
+      "prompt": "CoT",
+      "run": "4o-mini-CoT",
+      "scheduled": 500,
+      "scheduled_metrics": {
+        "answerable_non_refusal_rate": 0.805,
+        "false_refusal_rate": 0.195,
+        "overall_template_decision_accuracy": 0.84,
+        "unanswerable_recognition_rate": 0.98
+      },
+      "valid": 500,
+      "valid_only_confusion": [
+        {
+          "count": 322,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 78,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 2,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 98,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        }
+      ],
+      "valid_only_metrics": {
+        "answerable_non_refusal_rate": 0.805,
+        "false_refusal_rate": 0.195,
+        "overall_template_decision_accuracy": 0.84,
+        "unanswerable_recognition_rate": 0.98
+      }
+    },
+    {
+      "confusion": [
+        {
+          "count": 360,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 40,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 100,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "unanswerable"
+        }
+      ],
+      "decision_source": "persisted unanswerable_accuracy detector output",
+      "display_model": "DeepSeek-V3.1-Thinking",
+      "model": "deepseek-v3.1-thinking",
+      "prompt": "Base",
+      "run": "deepseekv3.1-thinking-basereasoning",
+      "scheduled": 500,
+      "scheduled_metrics": {
+        "answerable_non_refusal_rate": 0.9,
+        "false_refusal_rate": 0.1,
+        "overall_template_decision_accuracy": 0.92,
+        "unanswerable_recognition_rate": 1.0
+      },
+      "valid": 500,
+      "valid_only_confusion": [
+        {
+          "count": 360,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 40,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 100,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        }
+      ],
+      "valid_only_metrics": {
+        "answerable_non_refusal_rate": 0.9,
+        "false_refusal_rate": 0.1,
+        "overall_template_decision_accuracy": 0.92,
+        "unanswerable_recognition_rate": 1.0
+      }
+    },
+    {
+      "confusion": [
+        {
+          "count": 355,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 38,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 7,
+          "decision": "failed",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 100,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "unanswerable"
+        }
+      ],
+      "decision_source": "persisted unanswerable_accuracy detector output",
+      "display_model": "DeepSeek-V3.1-Thinking",
+      "model": "deepseek-v3.1-thinking",
+      "prompt": "CoT",
+      "run": "deepseekv3.1-thinking-CoT",
+      "scheduled": 500,
+      "scheduled_metrics": {
+        "answerable_non_refusal_rate": 0.8875,
+        "false_refusal_rate": 0.095,
+        "overall_template_decision_accuracy": 0.91,
+        "unanswerable_recognition_rate": 1.0
+      },
+      "valid": 493,
+      "valid_only_confusion": [
+        {
+          "count": 355,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 38,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 100,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        }
+      ],
+      "valid_only_metrics": {
+        "answerable_non_refusal_rate": 0.9033078880407125,
+        "false_refusal_rate": 0.09669211195928754,
+        "overall_template_decision_accuracy": 0.922920892494929,
+        "unanswerable_recognition_rate": 1.0
+      }
+    },
+    {
+      "confusion": [
+        {
+          "count": 223,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 32,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 145,
+          "decision": "failed",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 79,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 21,
+          "decision": "failed",
+          "gold": "unanswerable"
+        }
+      ],
+      "decision_source": "persisted unanswerable_accuracy detector output",
+      "display_model": "DeepSeek-V3.1-Thinking",
+      "model": "deepseek-v3.1-thinking",
+      "prompt": "CoT",
+      "run": "qwen3-8b-CoT",
+      "scheduled": 500,
+      "scheduled_metrics": {
+        "answerable_non_refusal_rate": 0.5575,
+        "false_refusal_rate": 0.08,
+        "overall_template_decision_accuracy": 0.604,
+        "unanswerable_recognition_rate": 0.79
+      },
+      "valid": 334,
+      "valid_only_confusion": [
+        {
+          "count": 223,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 32,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 79,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        }
+      ],
+      "valid_only_metrics": {
+        "answerable_non_refusal_rate": 0.8745098039215686,
+        "false_refusal_rate": 0.12549019607843137,
+        "overall_template_decision_accuracy": 0.9041916167664671,
+        "unanswerable_recognition_rate": 1.0
+      }
+    },
+    {
+      "confusion": [
+        {
+          "count": 361,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 39,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "answerable"
+        },
+        {
+          "count": 2,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 98,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "unanswerable"
+        }
+      ],
+      "decision_source": "persisted unanswerable_accuracy detector output",
+      "display_model": "GLM-5",
+      "model": "glm-5",
+      "prompt": "Base",
+      "run": "glm5-base",
+      "scheduled": 500,
+      "scheduled_metrics": {
+        "answerable_non_refusal_rate": 0.9025,
+        "false_refusal_rate": 0.0975,
+        "overall_template_decision_accuracy": 0.918,
+        "unanswerable_recognition_rate": 0.98
+      },
+      "valid": 500,
+      "valid_only_confusion": [
+        {
+          "count": 361,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 39,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 2,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 98,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        }
+      ],
+      "valid_only_metrics": {
+        "answerable_non_refusal_rate": 0.9025,
+        "false_refusal_rate": 0.0975,
+        "overall_template_decision_accuracy": 0.918,
+        "unanswerable_recognition_rate": 0.98
+      }
+    },
+    {
+      "confusion": [
+        {
+          "count": 372,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 28,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "answerable"
+        },
+        {
+          "count": 5,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 95,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "unanswerable"
+        }
+      ],
+      "decision_source": "persisted unanswerable_accuracy detector output",
+      "display_model": "GLM-5",
+      "model": "glm-5",
+      "prompt": "CoT",
+      "run": "glm5-CoT",
+      "scheduled": 500,
+      "scheduled_metrics": {
+        "answerable_non_refusal_rate": 0.93,
+        "false_refusal_rate": 0.07,
+        "overall_template_decision_accuracy": 0.934,
+        "unanswerable_recognition_rate": 0.95
+      },
+      "valid": 500,
+      "valid_only_confusion": [
+        {
+          "count": 372,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 28,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 5,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 95,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        }
+      ],
+      "valid_only_metrics": {
+        "answerable_non_refusal_rate": 0.93,
+        "false_refusal_rate": 0.07,
+        "overall_template_decision_accuracy": 0.934,
+        "unanswerable_recognition_rate": 0.95
+      }
+    },
+    {
+      "confusion": [
+        {
+          "count": 383,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 17,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "answerable"
+        },
+        {
+          "count": 4,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 96,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 0,
+          "decision": "failed",
+          "gold": "unanswerable"
+        }
+      ],
+      "decision_source": "persisted unanswerable_accuracy detector output",
+      "display_model": "Qwen3-8B",
+      "model": "qwen3-8b",
+      "prompt": "Base",
+      "run": "qwen3-8b-base",
+      "scheduled": 500,
+      "scheduled_metrics": {
+        "answerable_non_refusal_rate": 0.9575,
+        "false_refusal_rate": 0.0425,
+        "overall_template_decision_accuracy": 0.958,
+        "unanswerable_recognition_rate": 0.96
+      },
+      "valid": 500,
+      "valid_only_confusion": [
+        {
+          "count": 383,
+          "decision": "answer",
+          "gold": "answerable"
+        },
+        {
+          "count": 17,
+          "decision": "refuse",
+          "gold": "answerable"
+        },
+        {
+          "count": 4,
+          "decision": "answer",
+          "gold": "unanswerable"
+        },
+        {
+          "count": 96,
+          "decision": "refuse",
+          "gold": "unanswerable"
+        }
+      ],
+      "valid_only_metrics": {
+        "answerable_non_refusal_rate": 0.9575,
+        "false_refusal_rate": 0.0425,
+        "overall_template_decision_accuracy": 0.958,
+        "unanswerable_recognition_rate": 0.96
+      }
+    }
+  ],
+  "artifacts": {
+    "answerability_decisions": "answerability_decisions.csv",
+    "citation_metrics": "citation_metrics.csv",
+    "evidence_strata": "evidence_strata.csv",
+    "figures": [
+      "paired_token_f1_delta.svg",
+      "win_tie_loss.svg",
+      "refusal_confusion.svg"
+    ],
+    "paired_case_deltas": "paired_case_deltas.csv",
+    "paired_group_deltas": "paired_group_deltas.csv",
+    "paired_metrics": "paired_metrics.csv",
+    "run_reliability": "run_reliability.csv"
+  },
+  "bootstrap": {
+    "ci": "percentile 95%",
+    "replicates": 10000,
+    "seed": 42
+  },
+  "citations": [
+    {
+      "cases_with_invalid_citations": 0,
+      "cases_with_no_valid_citation": 87,
+      "citation_presence_count": 313,
+      "citation_presence_rate": 0.7825,
+      "claim_entailment_available": false,
+      "display_model": "GPT-4o-mini",
+      "invalid_marker_count": 0,
+      "invalid_marker_rate": 0.0,
+      "mean_unique_cited_sources": 1.4575,
+      "model": "gpt-4o-mini",
+      "prompt": "Base",
+      "run": "4o-mini-base",
+      "scheduled_answerable": 400,
+      "structural_coverage_mean": 0.8942284508740206,
+      "structural_coverage_n": 316,
+      "total_marker_count": 599,
+      "valid_answerable": 400
+    },
+    {
+      "cases_with_invalid_citations": 0,
+      "cases_with_no_valid_citation": 76,
+      "citation_presence_count": 324,
+      "citation_presence_rate": 0.81,
+      "claim_entailment_available": false,
+      "display_model": "GPT-4o-mini",
+      "invalid_marker_count": 0,
+      "invalid_marker_rate": 0.0,
+      "mean_unique_cited_sources": 1.675,
+      "model": "gpt-4o-mini",
+      "prompt": "CoT",
+      "run": "4o-mini-CoT",
+      "scheduled_answerable": 400,
+      "structural_coverage_mean": 0.8791482951205173,
+      "structural_coverage_n": 324,
+      "total_marker_count": 714,
+      "valid_answerable": 400
+    },
+    {
+      "cases_with_invalid_citations": 0,
+      "cases_with_no_valid_citation": 40,
+      "citation_presence_count": 360,
+      "citation_presence_rate": 0.9,
+      "claim_entailment_available": false,
+      "display_model": "DeepSeek-V3.1-Thinking",
+      "invalid_marker_count": 0,
+      "invalid_marker_rate": 0.0,
+      "mean_unique_cited_sources": 2.5725,
+      "model": "deepseek-v3.1-thinking",
+      "prompt": "Base",
+      "run": "deepseekv3.1-thinking-basereasoning",
+      "scheduled_answerable": 400,
+      "structural_coverage_mean": 0.8238268743783449,
+      "structural_coverage_n": 360,
+      "total_marker_count": 1307,
+      "valid_answerable": 400
+    },
+    {
+      "cases_with_invalid_citations": 0,
+      "cases_with_no_valid_citation": 36,
+      "citation_presence_count": 357,
+      "citation_presence_rate": 0.9083969465648855,
+      "claim_entailment_available": false,
+      "display_model": "DeepSeek-V3.1-Thinking",
+      "invalid_marker_count": 0,
+      "invalid_marker_rate": 0.0,
+      "mean_unique_cited_sources": 2.7099236641221376,
+      "model": "deepseek-v3.1-thinking",
+      "prompt": "CoT",
+      "run": "deepseekv3.1-thinking-CoT",
+      "scheduled_answerable": 400,
+      "structural_coverage_mean": 0.7514638274033857,
+      "structural_coverage_n": 356,
+      "total_marker_count": 1365,
+      "valid_answerable": 393
+    },
+    {
+      "cases_with_invalid_citations": 0,
+      "cases_with_no_valid_citation": 32,
+      "citation_presence_count": 223,
+      "citation_presence_rate": 0.8745098039215686,
+      "claim_entailment_available": false,
+      "display_model": "DeepSeek-V3.1-Thinking",
+      "invalid_marker_count": 0,
+      "invalid_marker_rate": 0.0,
+      "mean_unique_cited_sources": 2.631372549019608,
+      "model": "deepseek-v3.1-thinking",
+      "prompt": "CoT",
+      "run": "qwen3-8b-CoT",
+      "scheduled_answerable": 400,
+      "structural_coverage_mean": 0.8167711710312607,
+      "structural_coverage_n": 223,
+      "total_marker_count": 859,
+      "valid_answerable": 255
+    },
+    {
+      "cases_with_invalid_citations": 0,
+      "cases_with_no_valid_citation": 33,
+      "citation_presence_count": 367,
+      "citation_presence_rate": 0.9175,
+      "claim_entailment_available": false,
+      "display_model": "GLM-5",
+      "invalid_marker_count": 0,
+      "invalid_marker_rate": 0.0,
+      "mean_unique_cited_sources": 2.7175,
+      "model": "glm-5",
+      "prompt": "Base",
+      "run": "glm5-base",
+      "scheduled_answerable": 400,
+      "structural_coverage_mean": 0.8025902714440184,
+      "structural_coverage_n": 365,
+      "total_marker_count": 1555,
+      "valid_answerable": 400
+    },
+    {
+      "cases_with_invalid_citations": 0,
+      "cases_with_no_valid_citation": 25,
+      "citation_presence_count": 375,
+      "citation_presence_rate": 0.9375,
+      "claim_entailment_available": false,
+      "display_model": "GLM-5",
+      "invalid_marker_count": 0,
+      "invalid_marker_rate": 0.0,
+      "mean_unique_cited_sources": 3.045,
+      "model": "glm-5",
+      "prompt": "CoT",
+      "run": "glm5-CoT",
+      "scheduled_answerable": 400,
+      "structural_coverage_mean": 0.7811614781534567,
+      "structural_coverage_n": 374,
+      "total_marker_count": 1754,
+      "valid_answerable": 400
+    },
+    {
+      "cases_with_invalid_citations": 3,
+      "cases_with_no_valid_citation": 9,
+      "citation_presence_count": 391,
+      "citation_presence_rate": 0.9775,
+      "claim_entailment_available": false,
+      "display_model": "Qwen3-8B",
+      "invalid_marker_count": 5,
+      "invalid_marker_rate": 0.005701254275940707,
+      "mean_unique_cited_sources": 1.7925,
+      "model": "qwen3-8b",
+      "prompt": "Base",
+      "run": "qwen3-8b-base",
+      "scheduled_answerable": 400,
+      "structural_coverage_mean": 0.6578295778295777,
+      "structural_coverage_n": 390,
+      "total_marker_count": 877,
+      "valid_answerable": 400
+    }
+  ],
+  "claim_boundary": {
+    "citation_entailment_available": false,
+    "legal_correctness_annotation_available": false,
+    "primary_pair": "gpt-4o-mini Base vs CoT",
+    "reasoning_token_accounting_available": false,
+    "semantic_claim_faithfulness_available": false,
+    "structured_justification_available": false,
+    "uses_only_saved_artifacts": true
+  },
+  "data_quality_warnings": [
+    "qwen3-8b-CoT: directory name suggests `qwen3-8b`, but the manifest/resolved config declares `deepseek-v3.1-thinking`; manifest metadata is used for analysis.",
+    "Multiple run directories share the `deepseek-v3.1-thinking` / `CoT` identity: deepseekv3.1-thinking-CoT, qwen3-8b-CoT. The paired summary uses the lexicographically first Base/CoT directory; all runs remain in inventory and reliability outputs."
+  ],
+  "evidence_context_mismatches": 0,
+  "output_directory": "/Users/mac/Dev/HCMUS/Text_mining/L_RAG/ablation_work/e2e_LLM_Reasoning/posthoc_results",
+  "pairs": [
+    {
+      "all_question_ids_equal": true,
+      "base_completed": 500,
+      "base_failed": 0,
+      "base_run": "4o-mini-base",
+      "base_scheduled": 500,
+      "cot_completed": 500,
+      "cot_failed": 0,
+      "cot_run": "4o-mini-CoT",
+      "cot_scheduled": 500,
+      "display_model": "GPT-4o-mini",
+      "evidence_strata": [
+        {
+          "metrics": {
+            "exact_match": {
+              "base_mean": 0.17391304347826086,
+              "cot_mean": 0.18115942028985507,
+              "delta_ci_high": 0.036231884057971016,
+              "delta_ci_low": -0.014492753623188406,
+              "delta_mean": 0.007246376811594203,
+              "loss_rate": 0.007246376811594203,
+              "losses": 1,
+              "mcnemar_exact_p": 1.0,
+              "n": 138,
+              "tie_rate": 0.9782608695652174,
+              "ties": 135,
+              "win_rate": 0.014492753623188406,
+              "wins": 2
+            },
+            "rouge_l": {
+              "base_mean": 0.25638058546785497,
+              "cot_mean": 0.23339851730922723,
+              "delta_ci_high": -0.010878066506269964,
+              "delta_ci_low": -0.035408154609342185,
+              "delta_mean": -0.02298206815862773,
+              "loss_rate": 0.45652173913043476,
+              "losses": 63,
+              "n": 138,
+              "tie_rate": 0.3695652173913043,
+              "ties": 51,
+              "win_rate": 0.17391304347826086,
+              "wins": 24
+            },
+            "token_f1": {
+              "base_mean": 0.28240817343735236,
+              "cot_mean": 0.2625601859318385,
+              "delta_ci_high": -0.006660409134518659,
+              "delta_ci_low": -0.03304249932450324,
+              "delta_mean": -0.019847987505513878,
+              "loss_rate": 0.4492753623188406,
+              "losses": 62,
+              "n": 138,
+              "tie_rate": 0.3695652173913043,
+              "ties": 51,
+              "win_rate": 0.18115942028985507,
+              "wins": 25
+            }
+          },
+          "n": 138,
+          "stratum": "support fully retrieved"
+        },
+        {
+          "metrics": {
+            "exact_match": {
+              "base_mean": 0.10344827586206896,
+              "cot_mean": 0.06896551724137931,
+              "delta_ci_high": 0.0,
+              "delta_ci_low": -0.10344827586206896,
+              "delta_mean": -0.034482758620689655,
+              "loss_rate": 0.034482758620689655,
+              "losses": 1,
+              "mcnemar_exact_p": 1.0,
+              "n": 29,
+              "tie_rate": 0.9655172413793104,
+              "ties": 28,
+              "win_rate": 0.0,
+              "wins": 0
+            },
+            "rouge_l": {
+              "base_mean": 0.2104116645193489,
+              "cot_mean": 0.1945150015102932,
+              "delta_ci_high": -0.00188817826091619,
+              "delta_ci_low": -0.03233121476869134,
+              "delta_mean": -0.015896663009055727,
+              "loss_rate": 0.3793103448275862,
+              "losses": 11,
+              "n": 29,
+              "tie_rate": 0.5172413793103449,
+              "ties": 15,
+              "win_rate": 0.10344827586206896,
+              "wins": 3
+            },
+            "token_f1": {
+              "base_mean": 0.2562106829927909,
+              "cot_mean": 0.23763626760488163,
+              "delta_ci_high": 7.611399426931954e-05,
+              "delta_ci_low": -0.03872587746453863,
+              "delta_mean": -0.01857441538790925,
+              "loss_rate": 0.3793103448275862,
+              "losses": 11,
+              "n": 29,
+              "tie_rate": 0.5172413793103449,
+              "ties": 15,
+              "win_rate": 0.10344827586206896,
+              "wins": 3
+            }
+          },
+          "n": 29,
+          "stratum": "partial support retrieved"
+        },
+        {
+          "metrics": {
+            "exact_match": {
+              "base_mean": 0.12446351931330472,
+              "cot_mean": 0.12017167381974249,
+              "delta_ci_high": 0.008583690987124463,
+              "delta_ci_low": -0.02145922746781116,
+              "delta_mean": -0.004291845493562232,
+              "loss_rate": 0.008583690987124463,
+              "losses": 2,
+              "mcnemar_exact_p": 1.0,
+              "n": 233,
+              "tie_rate": 0.9871244635193133,
+              "ties": 230,
+              "win_rate": 0.004291845493562232,
+              "wins": 1
+            },
+            "rouge_l": {
+              "base_mean": 0.1928517559850608,
+              "cot_mean": 0.17917092184807906,
+              "delta_ci_high": -0.006459863742743581,
+              "delta_ci_low": -0.02171209934386621,
+              "delta_mean": -0.013680834136981726,
+              "loss_rate": 0.3562231759656652,
+              "losses": 83,
+              "n": 233,
+              "tie_rate": 0.41630901287553645,
+              "ties": 97,
+              "win_rate": 0.22746781115879827,
+              "wins": 53
+            },
+            "token_f1": {
+              "base_mean": 0.2252989938780373,
+              "cot_mean": 0.212343957072634,
+              "delta_ci_high": -0.005127105747784805,
+              "delta_ci_low": -0.02134187032159378,
+              "delta_mean": -0.012955036805403292,
+              "loss_rate": 0.3605150214592275,
+              "losses": 84,
+              "n": 233,
+              "tie_rate": 0.4206008583690987,
+              "ties": 98,
+              "win_rate": 0.21888412017167383,
+              "wins": 51
+            }
+          },
+          "n": 233,
+          "stratum": "no support retrieved"
+        }
+      ],
+      "fully_paired": true,
+      "interpretation": "primary paired inference",
+      "metrics": {
+        "exact_match": {
+          "base_mean": 0.14,
+          "cot_mean": 0.1375,
+          "delta_ci_high": 0.01,
+          "delta_ci_low": -0.015,
+          "delta_mean": -0.0025,
+          "loss_rate": 0.01,
+          "losses": 4,
+          "mcnemar_exact_p": 1.0,
+          "n": 400,
+          "tie_rate": 0.9825,
+          "ties": 393,
+          "win_rate": 0.0075,
+          "wins": 3
+        },
+        "rouge_l": {
+          "base_mean": 0.2160422955253607,
+          "cot_mean": 0.1989918880576857,
+          "delta_ci_high": -0.010997506194498874,
+          "delta_ci_low": -0.02336071372685277,
+          "delta_mean": -0.01705040746767496,
+          "loss_rate": 0.3925,
+          "losses": 157,
+          "n": 400,
+          "tie_rate": 0.4075,
+          "ties": 163,
+          "win_rate": 0.2,
+          "wins": 80
+        },
+        "token_f1": {
+          "base_mean": 0.24724275828682063,
+          "cot_mean": 0.23150224854264753,
+          "delta_ci_high": -0.009236190133735871,
+          "delta_ci_low": -0.02241472967879113,
+          "delta_mean": -0.01574050974417313,
+          "loss_rate": 0.3925,
+          "losses": 157,
+          "n": 400,
+          "tie_rate": 0.41,
+          "ties": 164,
+          "win_rate": 0.1975,
+          "wins": 79
+        }
+      },
+      "model": "gpt-4o-mini",
+      "shared_successful_answerable_n": 400
+    },
+    {
+      "all_question_ids_equal": true,
+      "base_completed": 500,
+      "base_failed": 0,
+      "base_run": "deepseekv3.1-thinking-basereasoning",
+      "base_scheduled": 500,
+      "cot_completed": 493,
+      "cot_failed": 7,
+      "cot_run": "deepseekv3.1-thinking-CoT",
+      "cot_scheduled": 500,
+      "display_model": "DeepSeek-V3.1-Thinking",
+      "fully_paired": false,
+      "interpretation": "descriptive only",
+      "metrics": {
+        "exact_match": {
+          "base_mean": 0.22137404580152673,
+          "cot_mean": 0.22391857506361323,
+          "delta_ci_high": 0.022900763358778626,
+          "delta_ci_low": -0.017811704834605598,
+          "delta_mean": 0.002544529262086514,
+          "loss_rate": 0.020356234096692113,
+          "losses": 8,
+          "mcnemar_exact_p": 1.0,
+          "n": 393,
+          "tie_rate": 0.9567430025445293,
+          "ties": 376,
+          "win_rate": 0.022900763358778626,
+          "wins": 9
+        },
+        "rouge_l": {
+          "base_mean": 0.1532161111724738,
+          "cot_mean": 0.1414769088038723,
+          "delta_ci_high": -0.006110104203003644,
+          "delta_ci_low": -0.017793832417879477,
+          "delta_mean": -0.01173920236860149,
+          "loss_rate": 0.5877862595419847,
+          "losses": 231,
+          "n": 393,
+          "tie_rate": 0.11450381679389313,
+          "ties": 45,
+          "win_rate": 0.29770992366412213,
+          "wins": 117
+        },
+        "token_f1": {
+          "base_mean": 0.17848930542192373,
+          "cot_mean": 0.16496340192658726,
+          "delta_ci_high": -0.007540782377586828,
+          "delta_ci_low": -0.019842324867074525,
+          "delta_mean": -0.013525903495336486,
+          "loss_rate": 0.5776081424936387,
+          "losses": 227,
+          "n": 393,
+          "tie_rate": 0.11704834605597965,
+          "ties": 46,
+          "win_rate": 0.3053435114503817,
+          "wins": 120
+        }
+      },
+      "model": "deepseek-v3.1-thinking",
+      "shared_successful_answerable_n": 393
+    },
+    {
+      "all_question_ids_equal": true,
+      "base_completed": 500,
+      "base_failed": 0,
+      "base_run": "glm5-base",
+      "base_scheduled": 500,
+      "cot_completed": 500,
+      "cot_failed": 0,
+      "cot_run": "glm5-CoT",
+      "cot_scheduled": 500,
+      "display_model": "GLM-5",
+      "fully_paired": true,
+      "interpretation": "descriptive only",
+      "metrics": {
+        "exact_match": {
+          "base_mean": 0.2525,
+          "cot_mean": 0.25,
+          "delta_ci_high": 0.01,
+          "delta_ci_low": -0.015,
+          "delta_mean": -0.0025,
+          "loss_rate": 0.01,
+          "losses": 4,
+          "mcnemar_exact_p": 1.0,
+          "n": 400,
+          "tie_rate": 0.9825,
+          "ties": 393,
+          "win_rate": 0.0075,
+          "wins": 3
+        },
+        "rouge_l": {
+          "base_mean": 0.14903167361005795,
+          "cot_mean": 0.14272936070094663,
+          "delta_ci_high": -0.001135021140091771,
+          "delta_ci_low": -0.011309659262679949,
+          "delta_mean": -0.006302312909111331,
+          "loss_rate": 0.5075,
+          "losses": 203,
+          "n": 400,
+          "tie_rate": 0.1425,
+          "ties": 57,
+          "win_rate": 0.35,
+          "wins": 140
+        },
+        "token_f1": {
+          "base_mean": 0.1691063641064569,
+          "cot_mean": 0.16234737948948233,
+          "delta_ci_high": -0.001111405045598869,
+          "delta_ci_low": -0.012286798420016102,
+          "delta_mean": -0.006758984616974593,
+          "loss_rate": 0.5175,
+          "losses": 207,
+          "n": 400,
+          "tie_rate": 0.1425,
+          "ties": 57,
+          "win_rate": 0.34,
+          "wins": 136
+        }
+      },
+      "model": "glm-5",
+      "shared_successful_answerable_n": 400
+    }
+  ],
+  "root": "/Users/mac/Dev/HCMUS/Text_mining/L_RAG/ablation_work/e2e_LLM_Reasoning",
+  "runs": [
+    {
+      "completed": 500,
+      "completion_rate": 1.0,
+      "display_model": "GPT-4o-mini",
+      "error_artifact_count": 0,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "failure_reasons": {},
+      "failure_stages": {},
+      "latency": {
+        "generation": {
+          "count": 500,
+          "mean_s": 3.19332572858,
+          "p50_s": 2.9156833335,
+          "p95_s": 5.735040501
+        },
+        "total": {
+          "count": 500,
+          "mean_s": 14.189579944235998,
+          "p50_s": 13.98566533,
+          "p95_s": 17.208296791000002
+        }
+      },
+      "model": "gpt-4o-mini",
+      "prompt": "Base",
+      "run": "4o-mini-base",
+      "scheduled": 500,
+      "skipped": 0
+    },
+    {
+      "completed": 500,
+      "completion_rate": 1.0,
+      "display_model": "GPT-4o-mini",
+      "error_artifact_count": 0,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "failure_reasons": {},
+      "failure_stages": {},
+      "latency": {
+        "generation": {
+          "count": 500,
+          "mean_s": 3.9669101471040005,
+          "p50_s": 3.678935526,
+          "p95_s": 6.172614445
+        },
+        "total": {
+          "count": 500,
+          "mean_s": 15.094431942726,
+          "p50_s": 14.7446951305,
+          "p95_s": 18.421413783
+        }
+      },
+      "model": "gpt-4o-mini",
+      "prompt": "CoT",
+      "run": "4o-mini-CoT",
+      "scheduled": 500,
+      "skipped": 0
+    },
+    {
+      "completed": 500,
+      "completion_rate": 1.0,
+      "display_model": "DeepSeek-V3.1-Thinking",
+      "error_artifact_count": 0,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "failure_reasons": {},
+      "failure_stages": {},
+      "latency": {
+        "generation": {
+          "count": 500,
+          "mean_s": 7.975781357098,
+          "p50_s": 7.279412425,
+          "p95_s": 15.508172420000001
+        },
+        "total": {
+          "count": 500,
+          "mean_s": 16.997470707702,
+          "p50_s": 16.149323415999998,
+          "p95_s": 24.55142463
+        }
+      },
+      "model": "deepseek-v3.1-thinking",
+      "prompt": "Base",
+      "run": "deepseekv3.1-thinking-basereasoning",
+      "scheduled": 500,
+      "skipped": 0
+    },
+    {
+      "completed": 493,
+      "completion_rate": 0.986,
+      "display_model": "DeepSeek-V3.1-Thinking",
+      "error_artifact_count": 7,
+      "failed": 7,
+      "failure_rate": 0.014,
+      "failure_reasons": {
+        "model unavailable": 6,
+        "rate limit": 1
+      },
+      "failure_stages": {
+        "generation": 7
+      },
+      "latency": {
+        "generation": {
+          "count": 493,
+          "mean_s": 9.54689937992495,
+          "p50_s": 7.741607426,
+          "p95_s": 20.409258682
+        },
+        "total": {
+          "count": 500,
+          "mean_s": 20.199686443786,
+          "p50_s": 18.522674158,
+          "p95_s": 30.997684736
+        }
+      },
+      "model": "deepseek-v3.1-thinking",
+      "prompt": "CoT",
+      "run": "deepseekv3.1-thinking-CoT",
+      "scheduled": 500,
+      "skipped": 0
+    },
+    {
+      "completed": 334,
+      "completion_rate": 0.668,
+      "display_model": "DeepSeek-V3.1-Thinking",
+      "error_artifact_count": 166,
+      "failed": 166,
+      "failure_rate": 0.332,
+      "failure_reasons": {
+        "quota": 166
+      },
+      "failure_stages": {
+        "generation": 166
+      },
+      "latency": {
+        "generation": {
+          "count": 334,
+          "mean_s": 20.380438001736525,
+          "p50_s": 17.093279045,
+          "p95_s": 49.654310162
+        },
+        "total": {
+          "count": 500,
+          "mean_s": 23.284968649096,
+          "p50_s": 19.229874293,
+          "p95_s": 50.242243265999996
+        }
+      },
+      "model": "deepseek-v3.1-thinking",
+      "prompt": "CoT",
+      "run": "qwen3-8b-CoT",
+      "scheduled": 500,
+      "skipped": 0
+    },
+    {
+      "completed": 500,
+      "completion_rate": 1.0,
+      "display_model": "GLM-5",
+      "error_artifact_count": 0,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "failure_reasons": {},
+      "failure_stages": {},
+      "latency": {
+        "generation": {
+          "count": 500,
+          "mean_s": 4.81790865717,
+          "p50_s": 4.1691917,
+          "p95_s": 8.79222241
+        },
+        "total": {
+          "count": 500,
+          "mean_s": 14.823793940542,
+          "p50_s": 14.287233269,
+          "p95_s": 19.094346558
+        }
+      },
+      "model": "glm-5",
+      "prompt": "Base",
+      "run": "glm5-base",
+      "scheduled": 500,
+      "skipped": 0
+    },
+    {
+      "completed": 500,
+      "completion_rate": 1.0,
+      "display_model": "GLM-5",
+      "error_artifact_count": 0,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "failure_reasons": {},
+      "failure_stages": {},
+      "latency": {
+        "generation": {
+          "count": 500,
+          "mean_s": 4.723903115825999,
+          "p50_s": 4.1518958415,
+          "p95_s": 8.729003757000001
+        },
+        "total": {
+          "count": 500,
+          "mean_s": 16.509170977600004,
+          "p50_s": 15.961041036,
+          "p95_s": 21.225006113
+        }
+      },
+      "model": "glm-5",
+      "prompt": "CoT",
+      "run": "glm5-CoT",
+      "scheduled": 500,
+      "skipped": 0
+    },
+    {
+      "completed": 500,
+      "completion_rate": 1.0,
+      "display_model": "Qwen3-8B",
+      "error_artifact_count": 0,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "failure_reasons": {},
+      "failure_stages": {},
+      "latency": {
+        "generation": {
+          "count": 500,
+          "mean_s": 5.439290028738001,
+          "p50_s": 4.767430435500001,
+          "p95_s": 9.134310503999998
+        },
+        "total": {
+          "count": 500,
+          "mean_s": 14.765741374296,
+          "p50_s": 14.148017540500001,
+          "p95_s": 18.512000204
+        }
+      },
+      "model": "qwen3-8b",
+      "prompt": "Base",
+      "run": "qwen3-8b-base",
+      "scheduled": 500,
+      "skipped": 0
+    }
+  ],
+  "schema_version": "e2e-reasoning-posthoc-v1"
+}
