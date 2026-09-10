@@ -12,13 +12,13 @@
 \usepackage{multirow}
 \usepackage{float}
 \usepackage{colortbl}
-\usepackage{soul}
-\usepackage{silence}
-\WarningFilter{biblatex}{'babel/polyglossia' detected but 'csquotes' missing.}
+% \usepackage{soul}
+% \usepackage{silence}
+% \WarningFilter{biblatex}{'babel/polyglossia' detected but 'csquotes' missing.}
 \usepackage{tikz}
 \usetikzlibrary{arrows, arrows.meta, positioning, shapes, shapes.geometric, shadows, calc}
-\usepackage{pgfplots}
-\pgfplotsset{compat=1.18}
+% \usepackage{pgfplots}
+% \pgfplotsset{compat=1.18}
 % --- Theme colors ---
 \definecolor{UniBlue}{HTML}{111C88}
 \definecolor{GrayText}{HTML}{666666}
@@ -129,8 +129,35 @@
 \end{frame}
 
 %--- TOC ---
-\begin{frame}{Outline}
+\begin{frame}{Presentation Outline \& Primary Focus}
+\small
+\begin{columns}[T]
+  \column{0.48\textwidth}
+    \vspace{0.1cm}
+    \begingroup
+    \setbeamertemplate{section in toc}{\inserttocsectionnumber.~~\inserttocsection\par\vspace{0.25cm}}
     \tableofcontents
+    \endgroup
+
+  \column{0.49\textwidth}
+    \begin{alertblock}{Core Presentation Focus}
+      This presentation centers on two primary technical pillars:
+    \end{alertblock}
+    \vspace{0.15cm}
+    \centering
+    \resizebox{0.95\linewidth}{!}{%
+    \begin{tikzpicture}[
+      node distance=0.55cm,
+      box/.style={draw=your_color, rounded corners, align=center, minimum width=3.4cm, minimum height=1.0cm, font=\bfseries\small, fill=your_color!10, thick},
+      ablation/.style={box, fill=FusedOrange!15, draw=FusedOrange, thick},
+      arrow/.style={-{Latex[length=3mm]}, ultra thick, your_color}
+    ]
+    \node[box] (sys) {1. System Overview\\[0.04cm]\tiny\normalfont 5-Stage Pipeline, KG Overlay \& Reranking};
+    \node[ablation, below=0.65cm of sys] (abl) {2. Ablation Studies\\[0.04cm]\tiny\normalfont 3 Controlled Families (500 Benchmark Cases)};
+    \draw[arrow] (sys) -- node[right, font=\tiny\bfseries, text=your_color] {Empirical Evaluation} (abl);
+    \end{tikzpicture}%
+    }
+\end{columns}
 \end{frame}
 
 % \AtBeginSection[]{
