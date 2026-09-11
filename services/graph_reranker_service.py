@@ -1,7 +1,6 @@
 """Authenticated Graph and Reranker APIs for RunPod."""
 from __future__ import annotations
 
-import math
 import os
 import secrets
 import sys
@@ -23,6 +22,9 @@ for import_path in (PROJECT_ROOT, PROJECT_ROOT / "src"):
 from knowledge_graph.expansion import GraphExpansion  # noqa: E402
 from knowledge_graph.persist import load_knowledge_graph  # noqa: E402
 from retrieval.remote_stages import SQLiteChunkLoader  # noqa: E402
+from services.reranker_adapters import (  # noqa: E402
+    RerankerError, RerankerRegistry, SUPPORTED_MODELS, normalize_model_name,
+)
 
 Text = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=16000)
@@ -43,6 +45,10 @@ class RerankRequest(BaseModel):
         str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4000)
     ]
     texts: list[Text] = Field(min_length=1, max_length=100)
+    model: Annotated[
+        str | None, StringConstraints(strip_whitespace=True, min_length=1, max_length=180)
+    ] = None
+    top_k: int | None = Field(default=None, ge=1, le=100)
 
 
 def create_app(kind: Literal["graph", "reranker"], load_engine):
@@ -77,9 +83,11 @@ def create_app(kind: Literal["graph", "reranker"], load_engine):
         with lock:
             try:
                 return app.state.engine.run(payload)
-            except ValueError:
+            except RerankerError as exc:
+                raise HTTPException(exc.status_code, exc.detail()) from None
+            except ValueError as exc:
                 raise HTTPException(
-                    422, "Input or graph/payload artifacts are incompatible"
+                    422, {"error": "invalid_runtime_input", "message": str(exc)}
                 ) from None
 
     if kind == "graph":
@@ -133,30 +141,40 @@ class GraphEngine:
 
 class RerankerEngine:
     def __init__(self):
-        from sentence_transformers import CrossEncoder
+        self.registry = RerankerRegistry.from_env()
 
-        name = os.environ.get(
-            "RERANKER_MODEL", "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
-        )
-        device = os.environ.get("RERANKER_DEVICE", "cuda")
-        self.model = CrossEncoder(name, device=device, max_length=512)
-        self.batch_size = int(os.environ.get("RERANKER_BATCH_SIZE", "2"))
-        if self.batch_size < 1:
-            raise ValueError("RERANKER_BATCH_SIZE must be positive")
-        self.identity = {"model": name, "device": device, "max_length": 512}
+    @property
+    def identity(self):
+        return {
+            "model": self.registry.default_model,
+            "default_model": self.registry.default_model,
+            "supported_models": list(SUPPORTED_MODELS),
+            "loaded_models": self.registry.loaded_models,
+            "device": self.registry.device,
+            "max_length": self.registry.max_length,
+            "model_cache_size": self.registry.cache_size,
+            "allow_experimental": self.registry.allow_experimental,
+            "trust_remote_code": self.registry.trust_remote_code,
+        }
 
     def run(self, request):
-        scores = self.model.predict(
-            [(request.query, text) for text in request.texts],
-            batch_size=self.batch_size,
-            show_progress_bar=False,
-        )
-        values = [float(score) for score in scores]
-        if len(values) != len(request.texts) or not all(
-            math.isfinite(value) for value in values
-        ):
-            raise ValueError("Invalid model output")
-        return {"scores": values, **self.identity}
+        model_name = normalize_model_name(request.model or self.registry.default_model)
+        adapter = self.registry.get(model_name)
+        ranked = adapter.rerank(request.query, list(request.texts), top_k=request.top_k)
+        score_by_index = {int(item["index"]): float(item["score"]) for item in ranked}
+        if request.top_k is None:
+            scores = [score_by_index[index] for index in range(len(request.texts))]
+        else:
+            scores = [score_by_index.get(index) for index in range(len(request.texts))]
+        return {
+            "scores": scores,
+            "rankings": ranked,
+            "model": model_name,
+            "default_model": self.registry.default_model,
+            "loaded_models": self.registry.loaded_models,
+            "device": self.registry.device,
+            "max_length": self.registry.max_length,
+        }
 
 
 graph_app = create_app("graph", GraphEngine)

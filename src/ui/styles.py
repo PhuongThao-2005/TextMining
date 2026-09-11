@@ -379,7 +379,7 @@ code, pre { font-family:var(--legal-mono); }
 [class*="st-key-answer-card-"] [data-testid="stMarkdownContainer"] h2 { font-size:20px; line-height:1.4; padding-top:12px; }
 [class*="st-key-answer-card-"] [data-testid="stMarkdownContainer"] h3 { font-size:17px; line-height:1.5; padding-top:10px; }
 .ga-answer-marker { display:none; }
-.ga-answer-scroll-anchor { scroll-margin-top:22px; height:1px; }
+.ga-turn-scroll-anchor { scroll-margin-top:22px; height:1px; }
 .ga-answer-space { height:4px; }
 [class*="st-key-citation-line-"] { flex-wrap:wrap; align-items:baseline !important; column-gap:4px !important; row-gap:3px !important; }
 [class*="st-key-citation-line-"] [data-testid="stMarkdownContainer"] p { margin:0; }

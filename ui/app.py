@@ -74,6 +74,15 @@ BASE_RETRIEVAL_MODES = ("dense_only", "dense_sparse")
 FILTER_PROFILE_CHOICES = ("current_law", "broad", "historical")
 MODEL_CHOICES = ("gpt-4o-mini", "gpt-4.1-mini", "gpt-4o")
 PROMPT_STRATEGIES = ("base", "reasoning")
+STABLE_RERANKER_MODEL_CHOICES = ("mMiniLM", "BGE")
+EXPERIMENTAL_RERANKER_MODEL_CHOICES = ("Qwen3", "Jina")
+RERANKER_MODEL_CHOICES = (*STABLE_RERANKER_MODEL_CHOICES, *EXPERIMENTAL_RERANKER_MODEL_CHOICES)
+RERANKER_MODEL_VALUES = {
+    "mMiniLM": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+    "Qwen3": "Qwen/Qwen3-Reranker-0.6B",
+    "BGE": "BAAI/bge-reranker-v2-m3",
+    "Jina": "jinaai/jina-reranker-v2-base-multilingual",
+}
 
 
 def _demo_examples(lang: str) -> tuple[tuple[str, str], ...]:
@@ -315,6 +324,7 @@ def _render_user_settings(lang: str) -> None:
         _render_bool_toggle("Graph", "graph_enabled", False)
     with columns[1]:
         _render_bool_toggle("Reranker", "reranker_enabled", False)
+    _render_reranker_model_control(lang)
     _render_generation_controls(lang)
     if st.button(t(lang, "clear_resource_cache"), key="clear-resource-cache", use_container_width=True):
         _cached_registry.clear()
@@ -335,6 +345,7 @@ def _render_settings(registry: dict[str, dict[str, Any]], lang: str) -> dict[str
     generation_settings = {
         "generation_model": _model_choice_value(st.session_state["model_choice"]),
         "prompt_strategy": str(st.session_state["prompt_strategy"]),
+        "reranker_model": _reranker_model_value(st.session_state["reranker_model_choice"]),
     }
     sparse_requested = base_retrieval_mode == "dense_sparse"
     sparse_available = _sparse_runtime_available()
@@ -404,7 +415,7 @@ def _render_settings(registry: dict[str, dict[str, Any]], lang: str) -> dict[str
         **generation_settings,
         "settings_signature": "|".join((
             config_name, retrieval_mode, generation_settings["generation_model"],
-            generation_settings["prompt_strategy"],
+            generation_settings["prompt_strategy"], generation_settings["reranker_model"],
         )),
         "registry": registry, "readiness": readiness, "lang": lang,
     }
@@ -542,6 +553,28 @@ def _render_generation_controls(lang: str) -> dict[str, str]:
     }
 
 
+def _render_reranker_model_control(lang: str) -> str:
+    st.caption(t(lang, "reranker_model"))
+    choices = _available_reranker_model_choices()
+    if st.session_state.get("reranker_model_choice") not in choices:
+        st.session_state["reranker_model_choice"] = choices[0]
+    st.session_state["developer-reranker-model-choice"] = st.session_state["reranker_model_choice"]
+    model_choice = st.selectbox(
+        t(lang, "reranker_model"),
+        choices,
+        key="developer-reranker-model-choice",
+        label_visibility="collapsed",
+        help=t(lang, "reranker_model_help"),
+        on_change=_copy_preference, args=("developer-reranker-model-choice", "reranker_model_choice"),
+    )
+    selected = str(model_choice or choices[0])
+    if selected in EXPERIMENTAL_RERANKER_MODEL_CHOICES:
+        st.warning(t(lang, "reranker_model_experimental_warning"), icon=None)
+    elif _experimental_rerankers_enabled():
+        st.caption(t(lang, "reranker_model_experimental_available"))
+    return _reranker_model_value(selected)
+
+
 def _build_question_request(
     question: str, config_name: str, top_k: int, sparse: bool, graph: bool,
     fusion: bool, reranker: bool, filter_profile: str, settings: dict[str, Any],
@@ -554,6 +587,7 @@ def _build_question_request(
         graph_enabled_override=graph,
         fusion_enabled_override=fusion,
         reranker_enabled_override=reranker,
+        reranker_model_override=settings.get("reranker_model"),
         filter_profile=filter_profile,
         generation_model_override=settings.get("generation_model"),
         prompt_strategy_override=settings.get("prompt_strategy"),
@@ -680,6 +714,22 @@ def _model_choice_value(value: str) -> str:
     return value if value in MODEL_CHOICES else MODEL_CHOICES[0]
 
 
+def _reranker_model_value(value: str) -> str:
+    return RERANKER_MODEL_VALUES.get(value, RERANKER_MODEL_VALUES[STABLE_RERANKER_MODEL_CHOICES[0]])
+
+
+def _available_reranker_model_choices() -> tuple[str, ...]:
+    if _experimental_rerankers_enabled():
+        return RERANKER_MODEL_CHOICES
+    return STABLE_RERANKER_MODEL_CHOICES
+
+
+def _experimental_rerankers_enabled() -> bool:
+    return bool(st.session_state.get("show_developer_ui", False)) or os.environ.get(
+        "RERANKER_ALLOW_EXPERIMENTAL", ""
+    ).strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _prompt_mode_label(value: str) -> str:
     return "CoT" if value == "reasoning" else "Base"
 
@@ -706,6 +756,9 @@ def _initialize_state() -> None:
     st.session_state.setdefault("model_choice", MODEL_CHOICES[0])
     if st.session_state["model_choice"] not in MODEL_CHOICES:
         st.session_state["model_choice"] = MODEL_CHOICES[0]
+    st.session_state.setdefault("reranker_model_choice", STABLE_RERANKER_MODEL_CHOICES[0])
+    if st.session_state["reranker_model_choice"] not in _available_reranker_model_choices():
+        st.session_state["reranker_model_choice"] = STABLE_RERANKER_MODEL_CHOICES[0]
     st.session_state.setdefault("prompt_strategy", "base")
     if st.session_state["prompt_strategy"] not in PROMPT_STRATEGIES:
         st.session_state["prompt_strategy"] = "base"

@@ -165,9 +165,14 @@ GRAPH_API_KEY=<SECRET>
 RERANKER_API_KEY=<SECRET>
 GRAPH_PICKLE_PATH=/workspace/artifacts/graph/knowledge_graph.gpickle
 GRAPH_PAYLOAD_CACHE=/workspace/artifacts/dense/payload_cache.sqlite
+RERANKER_DEFAULT_MODEL=cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+# Backward-compatible fallback; RERANKER_DEFAULT_MODEL is preferred.
 RERANKER_MODEL=cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
-RERANKER_DEVICE=cuda
+RERANKER_DEVICE=auto
 RERANKER_BATCH_SIZE=2
+RERANKER_MODEL_CACHE_SIZE=2
+RERANKER_ALLOW_EXPERIMENTAL=false
+ALLOW_TRUST_REMOTE_CODE=false
 HF_HUB_OFFLINE=0
 ```
 
@@ -182,3 +187,22 @@ RERANKER_API_KEY=<SECRET>
 
 Sau khi đổi biến, restart Pod và bấm `Clear resource cache` trong UI. Thử lần
 lượt Dense-Sparse, thêm Reranker, thêm Graph, rồi bật cả Graph + Reranker.
+
+Reranker remote hỗ trợ chọn model từ UI. UI gửi `model` trong request `/rerank`;
+service sẽ lazy-load adapter tương ứng và giữ cache theo `RERANKER_MODEL_CACHE_SIZE`.
+`RERANKER_DEFAULT_MODEL` là model mặc định dùng khi request không truyền model;
+`RERANKER_MODEL` chỉ còn là fallback tương thích cũ.
+
+Theo mặc định chỉ bật mMiniLM và BGE. Qwen3/Jina là experimental:
+
+```env
+RERANKER_ALLOW_EXPERIMENTAL=true
+```
+
+Jina cần remote code theo model card Hugging Face, nên phải bật rõ ràng nếu muốn dùng:
+
+```env
+ALLOW_TRUST_REMOTE_CODE=true
+```
+
+Nếu chọn model mới lần đầu, để `HF_HUB_OFFLINE=0` để service tải model từ Hugging Face.

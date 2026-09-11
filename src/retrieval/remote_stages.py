@@ -89,9 +89,10 @@ class RemoteCrossEncoder:
         query = pairs[0][0]
         if any(other_query != query for other_query, _ in pairs):
             raise ValueError("Reranker pairs must contain one query.")
-        data = self.client.request(
-            "/rerank", {"query": query, "texts": [text for _, text in pairs]}
-        )
+        payload = {"query": query, "texts": [text for _, text in pairs]}
+        if self.expected_model:
+            payload["model"] = self.expected_model
+        data = self.client.request("/rerank", payload)
         if self.expected_model and data.get("model") != self.expected_model:
             raise ValueError("Remote reranker model does not match configuration.")
         scores = data.get("scores")

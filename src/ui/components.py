@@ -178,10 +178,11 @@ def render_turn(
     if turn_number > 1:
         st.markdown('<div class="ga-turn-divider"></div>', unsafe_allow_html=True)
     with st.container(key=f"answer-thread-{turn_number}"):
+        anchor_id = "ga-latest-turn-anchor" if is_latest else f"turn-{turn_number}"
         st.markdown(f'<div id="turn-{turn_number}" class="ga-turn-anchor"></div>', unsafe_allow_html=True)
-        render_user_message(question)
         if is_latest:
-            st.markdown('<div id="ga-latest-answer-anchor" class="ga-answer-scroll-anchor"></div>', unsafe_allow_html=True)
+            st.markdown(f'<div id="{anchor_id}" class="ga-turn-scroll-anchor"></div>', unsafe_allow_html=True)
+        render_user_message(question)
         with st.container(border=False, key=f"answer-card-{turn_number}"):
             if response.status == "completed":
                 if response.citation_sources:
@@ -351,16 +352,16 @@ def render_followup_composer(lang: str = "en") -> str | None:
 
 
 def scroll_to_latest_turn() -> None:
-    """Move the viewport to the newly rendered conversation turn after submit."""
+    """Move the viewport to the latest submitted question after its answer renders."""
     script = """
         <script>
-        const scrollToLatestAnswer = () => {
-          const target = window.parent.document.getElementById("ga-latest-answer-anchor");
+        const scrollToLatestTurn = () => {
+          const target = window.parent.document.getElementById("ga-latest-turn-anchor");
           target?.scrollIntoView({ behavior: "smooth", block: "start" });
         };
-        requestAnimationFrame(scrollToLatestAnswer);
-        window.setTimeout(scrollToLatestAnswer, 250);
-        window.setTimeout(scrollToLatestAnswer, 650);
+        requestAnimationFrame(scrollToLatestTurn);
+        window.setTimeout(scrollToLatestTurn, 250);
+        window.setTimeout(scrollToLatestTurn, 650);
         </script>
     """
     iframe = getattr(st, "iframe", None)

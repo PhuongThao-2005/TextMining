@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
+import logging
+import sys
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,6 +13,11 @@ from retrieval.remote_stages import RemoteCrossEncoder, RemoteGraph
 from retrieval.schema import RetrievalResult, RetrievedChunk
 from retrieval.stores import SearchHit
 from services.graph_reranker_service import create_app
+from services.reranker_adapters import (
+    BGE_MODEL, MMINILM_MODEL, QWEN3_MODEL, JINA_MODEL, RerankerModelLoadError,
+    RerankerRegistry, TrustRemoteCodeDisabledError, UnsupportedRerankerModelError,
+    ExperimentalRerankerDisabledError, Qwen3RerankerAdapter,
+)
 
 
 def _chunk(chunk_id: str, text: str, score: float) -> RetrievedChunk:
@@ -119,23 +126,31 @@ def test_remote_graph_hydrates_without_local_store() -> None:
     assert graph.load_chunks(["c3"])[0].citation_anchor == "c3"
 
 
-def test_remote_reranker_validates_model_and_score_count() -> None:
+def test_remote_reranker_validates_model_and_sends_requested_model() -> None:
     class Client:
-        def request(self, path, payload):
-            return {"model": "fixture", "scores": [0.7]}
+        def __init__(self):
+            self.payload = None
 
-    reranker = RemoteCrossEncoder(Client(), expected_model="fixture")
+        def request(self, path, payload):
+            assert path == "/rerank"
+            self.payload = payload
+            return {"model": payload["model"], "scores": [0.7]}
+
+    client = Client()
+    reranker = RemoteCrossEncoder(client, expected_model="fixture")
     assert reranker.predict([("question", "answer")]) == [0.7]
+    assert client.payload == {"query": "question", "texts": ["answer"], "model": "fixture"}
     with pytest.raises(ValueError, match="one query"):
         reranker.predict([("q1", "a1"), ("q2", "a2")])
 
 
-def test_reranker_api_requires_auth_and_preserves_order(monkeypatch) -> None:
+def test_reranker_api_requires_auth_preserves_order_and_accepts_model(monkeypatch) -> None:
     class Engine:
-        identity = {"model": "fixture"}
+        identity = {"model": "fixture", "loaded_models": []}
 
         def run(self, request):
-            return {"model": "fixture", "scores": list(range(len(request.texts)))}
+            model = request.model or "fixture"
+            return {"model": model, "scores": list(range(len(request.texts)))}
 
     monkeypatch.setenv("RERANKER_API_KEY", "secret")
     with TestClient(create_app("reranker", Engine)) as client:
@@ -143,9 +158,142 @@ def test_reranker_api_requires_auth_and_preserves_order(monkeypatch) -> None:
         response = client.post(
             "/rerank",
             headers={"Authorization": "Bearer secret"},
-            json={"query": "q", "texts": ["a", "b"]},
+            json={"query": "q", "texts": ["a", "b"], "model": "BAAI/bge-reranker-v2-m3"},
         )
-    assert response.json()["scores"] == [0, 1]
+    body = response.json()
+    assert body["scores"] == [0, 1]
+    assert body["model"] == "BAAI/bge-reranker-v2-m3"
+
+
+def test_reranker_engine_lazy_loads_requested_models(monkeypatch) -> None:
+    from services.graph_reranker_service import RerankerEngine, RerankRequest
+
+    loaded: list[str] = []
+
+    class FakeCrossEncoder:
+        def __init__(self, name, *, device, max_length):
+            loaded.append(name)
+            self.name = name
+
+        def predict(self, pairs, *, batch_size, show_progress_bar):
+            return [float(index) for index, _ in enumerate(pairs)]
+
+    fake_module = ModuleType("sentence_transformers")
+    fake_module.CrossEncoder = FakeCrossEncoder
+    monkeypatch.setitem(sys.modules, "sentence_transformers", fake_module)
+    monkeypatch.setenv("RERANKER_DEFAULT_MODEL", MMINILM_MODEL)
+    monkeypatch.setenv("RERANKER_MODEL_CACHE_SIZE", "2")
+    monkeypatch.setenv("RERANKER_DEVICE", "cpu")
+
+    engine = RerankerEngine()
+    first = engine.run(RerankRequest(query="q", texts=["a"], model=MMINILM_MODEL))
+    second = engine.run(RerankRequest(query="q", texts=["a", "b"], model=MMINILM_MODEL))
+    third = engine.run(RerankRequest(query="q", texts=["a"], model=BGE_MODEL))
+
+    assert first["model"] == second["model"] == MMINILM_MODEL
+    assert third["model"] == BGE_MODEL
+    assert second["scores"] == [0.0, 1.0]
+    assert loaded == [MMINILM_MODEL, BGE_MODEL]
+    assert engine.identity["loaded_models"] == [MMINILM_MODEL, BGE_MODEL]
+
+
+def test_reranker_registry_rejects_unsupported_and_disabled_experimental_models() -> None:
+    registry = RerankerRegistry(
+        default_model=MMINILM_MODEL, device="cpu", batch_size=1, max_length=32, cache_size=2,
+        allow_experimental=False, trust_remote_code=False,
+        factories={MMINILM_MODEL: lambda: SimpleNamespace(rerank=lambda *args, **kwargs: [])},
+    )
+
+    assert registry.get(MMINILM_MODEL) is registry.get("mMiniLM")
+    with pytest.raises(UnsupportedRerankerModelError):
+        registry.get("unknown-model")
+    with pytest.raises(ExperimentalRerankerDisabledError):
+        registry.get(QWEN3_MODEL)
+
+
+def test_reranker_registry_allows_mocked_experimental_adapter() -> None:
+    adapter = SimpleNamespace(rerank=lambda query, documents, top_k=None: [
+        {"index": 0, "score": 1.0, "text": documents[0]}
+    ])
+    registry = RerankerRegistry(
+        default_model=MMINILM_MODEL, device="cpu", batch_size=1, max_length=32, cache_size=2,
+        allow_experimental=True, trust_remote_code=False, factories={QWEN3_MODEL: lambda: adapter},
+    )
+
+    assert registry.get(QWEN3_MODEL) is adapter
+
+
+def test_jina_requires_explicit_trust_remote_code() -> None:
+    registry = RerankerRegistry(
+        default_model=MMINILM_MODEL, device="cpu", batch_size=1, max_length=32, cache_size=2,
+        allow_experimental=True, trust_remote_code=False,
+    )
+
+    with pytest.raises(TrustRemoteCodeDisabledError):
+        registry.get(JINA_MODEL)
+
+
+def test_qwen_adapter_rejects_random_score_weight_warning(monkeypatch) -> None:
+    class FakeCrossEncoder:
+        def __init__(self, *args, **kwargs):
+            logging.getLogger("transformers.modeling_utils").warning(
+                "Some weights of Qwen3ForSequenceClassification were not initialized from "
+                "the model checkpoint and are newly initialized: ['score.weight']"
+            )
+
+        def predict(self, pairs, *, batch_size, show_progress_bar):
+            return [0.1 for _ in pairs]
+
+    fake_module = ModuleType("sentence_transformers")
+    fake_module.CrossEncoder = FakeCrossEncoder
+    monkeypatch.setitem(sys.modules, "sentence_transformers", fake_module)
+
+    with pytest.raises(RerankerModelLoadError) as exc_info:
+        Qwen3RerankerAdapter(QWEN3_MODEL, device="cpu", max_length=32, batch_size=1)
+    assert "score.weight" in str(exc_info.value.root_cause)
+
+
+def test_reranker_api_returns_structured_model_errors(monkeypatch) -> None:
+    class Engine:
+        identity = {"model": "fixture", "loaded_models": []}
+
+        def run(self, request):
+            raise RerankerModelLoadError(request.model or JINA_MODEL, "missing dependency")
+
+    monkeypatch.setenv("RERANKER_API_KEY", "secret")
+    with TestClient(create_app("reranker", Engine)) as client:
+        response = client.post(
+            "/rerank",
+            headers={"Authorization": "Bearer secret"},
+            json={"query": "q", "texts": ["a"], "model": JINA_MODEL},
+        )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == {
+        "error": "model_load_failed",
+        "message": f"Failed to load reranker model {JINA_MODEL!r}.",
+        "model": JINA_MODEL,
+        "root_cause": "missing dependency",
+    }
+
+
+def test_reranker_api_returns_400_for_unsupported_model(monkeypatch) -> None:
+    from services.graph_reranker_service import RerankerEngine
+
+    monkeypatch.setenv("RERANKER_API_KEY", "secret")
+    monkeypatch.setenv("RERANKER_DEFAULT_MODEL", MMINILM_MODEL)
+    with TestClient(create_app("reranker", RerankerEngine)) as client:
+        response = client.post(
+            "/rerank",
+            headers={"Authorization": "Bearer secret"},
+            json={"query": "q", "texts": ["a"], "model": "unknown-model"},
+        )
+
+    assert response.status_code == 400
+    detail = response.json()["detail"]
+    assert detail["error"] == "unsupported_model"
+    assert detail["model"] == "unknown-model"
+    assert MMINILM_MODEL in detail["supported_models"]
 
 
 def test_runner_builds_remote_graph_and_reranker_without_local_models(

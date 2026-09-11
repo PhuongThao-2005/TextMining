@@ -199,23 +199,40 @@ def test_user_settings_stay_visible_and_backend_overrides_apply_without_develope
     click(app, "choice_reranker_enabled_option")
     click(app, "choice_prompt_strategy_reasoning_option")
     app.selectbox(key="developer-model-choice").select("gpt-4o").run()
+    app.selectbox(key="developer-reranker-model-choice").select("BGE").run()
     expected = {
         "retrieval_base_mode": "dense_only", "graph_enabled": "on",
         "reranker_enabled": "on", "prompt_strategy": "reasoning", "model_choice": "gpt-4o",
+        "reranker_model_choice": "BGE",
     }
     app.run()
     app.run()  # A second rerun exercises Streamlit cleanup of widgets that disappeared.
     assert not app.exception, [item.message for item in app.exception]
     assert {key: app.session_state[key] for key in expected} == expected
-    assert all(label in visible_text(app.sidebar) for label in ("Dense Only", "Graph", "Reranker", "gpt-4o"))
+    assert all(label in visible_text(app.sidebar) for label in ("Dense Only", "Graph", "Reranker", "gpt-4o", "BGE"))
     assert "fixture-check" not in visible_text(app.sidebar)
     submit_landing(app)
     request = product_app.runtime.requests[-1]
     assert request.sparse_enabled_override is False
     assert request.graph_enabled_override is True and request.fusion_enabled_override is True
     assert request.reranker_enabled_override is True
+    assert request.reranker_model_override == "BAAI/bge-reranker-v2-m3"
     assert request.generation_model_override == "gpt-4o"
     assert request.prompt_strategy_override == "reasoning"
+
+
+def test_experimental_reranker_models_only_show_in_developer_mode(product_app, monkeypatch):
+    monkeypatch.setenv("SHOW_DEVELOPER_UI", "false")
+    app = product_app.start()
+    options = tuple(app.selectbox(key="developer-reranker-model-choice").options)
+    assert options == ("mMiniLM", "BGE")
+
+    monkeypatch.setenv("SHOW_DEVELOPER_UI", "true")
+    app = product_app.start()
+    options = tuple(app.selectbox(key="developer-reranker-model-choice").options)
+    assert options == ("mMiniLM", "BGE", "Qwen3", "Jina")
+    app.selectbox(key="developer-reranker-model-choice").select("Qwen3").run()
+    assert "Reranker thử nghiệm" in visible_text(app.sidebar)
 
 
 def test_citations_actions_and_cards_share_one_viewer_without_losing_state(product_app):

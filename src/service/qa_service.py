@@ -67,6 +67,7 @@ class QuestionRequest:
     graph_enabled_override: bool | None = None
     fusion_enabled_override: bool | None = None
     reranker_enabled_override: bool | None = None
+    reranker_model_override: str | None = None
     filter_profile: str | None = None
     generation_model_override: str | None = None
     prompt_strategy_override: str | None = None
@@ -222,6 +223,14 @@ def apply_safe_overrides(config: Mapping[str, Any], request: QuestionRequest) ->
             fusion_enabled=request.fusion_enabled_override,
             reranker_enabled=request.reranker_enabled_override,
         )
+    if request.reranker_model_override is not None:
+        model = request.reranker_model_override.strip()
+        if not model or len(model) > 180:
+            raise UIConfigError("Reranker model must be a non-empty string up to 180 characters.")
+        reranker = retrieval.setdefault("reranker", {})
+        if not isinstance(reranker, dict):
+            raise UIConfigError("Reranker section must be a mapping.")
+        reranker["model"] = model
     if request.generation_model_override is not None:
         model = request.generation_model_override.strip()
         if not model or len(model) > 160:

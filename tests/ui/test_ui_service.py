@@ -467,6 +467,14 @@ def test_generation_overrides_are_bounded_and_non_mutating(tmp_path: Path) -> No
         apply_safe_overrides(source, QuestionRequest("q", "fixture", prompt_strategy_override="unsupported"))
     with pytest.raises(UIConfigError, match="temperature"):
         apply_safe_overrides(source, QuestionRequest("q", "fixture", temperature_override=2.5))
+    valid_reranker = apply_safe_overrides(
+        source, QuestionRequest("q", "fixture", reranker_model_override="BAAI/bge-reranker-v2-m3")
+    )
+    assert valid_reranker["retrieval"]["reranker"]["model"] == "BAAI/bge-reranker-v2-m3"
+    with pytest.raises(UIConfigError, match="Reranker model"):
+        apply_safe_overrides(source, QuestionRequest("q", "fixture", reranker_model_override=""))
+    with pytest.raises(UIConfigError, match="Reranker model"):
+        apply_safe_overrides(source, QuestionRequest("q", "fixture", reranker_model_override="x" * 181))
 
 
 def test_graph_and_reranker_enable_the_complete_stack(tmp_path: Path) -> None:
@@ -480,10 +488,17 @@ def test_graph_and_reranker_enable_the_complete_stack(tmp_path: Path) -> None:
     assert graph_only["retrieval"]["graph"]["enabled"] is True
     assert graph_only["retrieval"]["fusion"]["enabled"] is False
     assert graph_only["retrieval"]["reranker"]["enabled"] is False
-    reranker_only = apply_safe_overrides(config, QuestionRequest("q", "fixture", reranker_enabled_override=True))
+    reranker_only = apply_safe_overrides(
+        config,
+        QuestionRequest(
+            "q", "fixture", reranker_enabled_override=True,
+            reranker_model_override="BAAI/bge-reranker-v2-m3",
+        ),
+    )
     assert reranker_only["retrieval"]["graph"]["enabled"] is False
     assert reranker_only["retrieval"]["fusion"]["enabled"] is False
     assert reranker_only["retrieval"]["reranker"]["enabled"] is True
+    assert reranker_only["retrieval"]["reranker"]["model"] == "BAAI/bge-reranker-v2-m3"
     effective = apply_safe_overrides(
         config,
         QuestionRequest("q", "fixture", graph_enabled_override=True, reranker_enabled_override=True),
