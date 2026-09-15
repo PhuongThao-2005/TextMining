@@ -1,112 +1,521 @@
 % ============================================================================
-% Section 6: Ablation Study
+% Section 6: Ablation Studies
 % ============================================================================
-\section{Ablation Study}
+\section{Ablation Studies}
 \label{sec:ablation-study}
 
-We report four completed ablation families. The first isolates the text fed
-to the dense encoder, the second compares dense, hybrid, and graph-augmented
-retrieval, the third compares six ranking controls over a shared hybrid
-candidate pool, and the fourth compares generator prompt modes with the
-retrieved context held fixed. Because candidate construction differs between
-families, all claims are made within a family; the results are not treated as
-one pooled factorial experiment.
+This chapter follows the ablation plan in
+\texttt{report\_structure.md}. We report five completed experiment families
+and retain the deterministic evidence available for each one. Comparisons are
+made within a family because candidate construction and context budgets differ;
+the results are not treated as one pooled factorial experiment.
 
-\subsection{Embedding Text: Chunk-Only versus Chunk+Metadata}
+\subsection{Embedding Text Ablation: Chunk-Only versus Chunk+Metadata}
 \label{sec:ablation-chunk-meta}
 
-This comparison uses the same dense encoder, generator, benchmark, seed, and
-raw FAISS evaluation path. Only the indexed text changes from the chunk body
+This comparison holds the dense encoder, generator, benchmark, seed, and raw
+FAISS evaluation path fixed. Only the indexed text changes from the chunk body
 to a header-plus-chunk representation. On 400 paired answerable questions,
 metadata leaves exact chunk Recall@10 effectively unchanged (48.5\% versus
 48.5\%) but increases document-level success from 65.8\% to 70.2\%. The
 paired document-success gain is +4.5 percentage points (95\% CI
 [+0.5,+8.8]), whereas the MRR@10 change is $-5.9$ points (95\% CI
-[$-9.1,-2.7$]). Metadata therefore improves identification of the correct
-document while making the first exact gold chunk appear later. This
-document--provision divergence motivates reporting both views of retrieval;
-the full comparison is in Table~\ref{tab:embedding-results}.
+[$-9.1,-2.7$]). Metadata therefore improves document identification while
+making the first exact gold chunk appear later; the complete scores are in
+\hyperref[tab:embedding-results]{Table~\ref*{tab:embedding-results}} and the
+retrieval curves and paired outcomes are shown in
+\hyperref[fig:embedding-ablation]{Figure~\ref*{fig:embedding-ablation}}.
 
-\subsection{Retrieval Mode and Graph Expansion}
-\label{sec:ablation-retrieval-mode}
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.48\textwidth]{../../ablation_study/chunkOnly_vs_chunkMetadata/results/success_at_k_curve.png}
+\hfill
+\includegraphics[width=0.48\textwidth]{../../ablation_study/chunkOnly_vs_chunkMetadata/results/paired_win_tie_loss.png}
+\caption{Embedding-text ablation diagnostics. The left panel shows success
+curves by retrieval depth; the right panel shows paired win, tie, and loss
+counts. Both plots use the shared answerable-question comparison.}
+\label{fig:embedding-ablation}
+\end{figure*}
 
-The second family evaluates DenseOnly, HybridOnly, DenseGraph, and
-HybridGraph. Hybrid retrieval adds BM25 and RRF to the same dense index;
-graph variants expand five seed chunks by one hop and retain at most 10
-chunks. Without graph expansion, DenseOnly outperforms HybridOnly on
-Recall@10 (48.55\% vs. 42.57\%) and nDCG@10 (0.2813 vs. 0.2638). The paired
-Recall@10 difference is $-5.98$ points (95\% CI [$-9.71,-2.21$]).
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Embedding-text ablation on 400 paired answerable questions. Values
+are percentages; document success means that a retrieved chunk from the gold
+document is present in the indicated context. Deltas are chunk+metadata minus
+chunk-only.}
+\label{tab:embedding-results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrrrr}
+\toprule
+\textbf{Variant} & \textbf{Hit@5} & \textbf{Recall@5} & \textbf{MRR@5} &
+\textbf{Doc.@5} & \textbf{Hit@10} & \textbf{Recall@10} &
+\textbf{MRR@10} & \textbf{Doc.@10} \\
+\midrule
+Chunk-only & 44.0 & 39.0 & 27.4 & 59.0 & 53.5 & 48.5 & 28.6 & 65.8 \\
+Chunk+metadata & 40.2 & 36.8 & 20.9 & 61.8 & 53.2 & 48.5 & 22.7 & 70.2 \\
+Delta & $-3.8$ & $-2.2$ & $-6.5$ & $+2.8$ & $-0.2$ & $+0.1$ & $-5.9$ & $+4.5$ \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+\subsection{Retrieval Ablation: Dense versus Hybrid Retrieval}
+\label{sec:ablation-retrieval}
 
-Graph expansion currently displaces more evidence than it adds. Relative to
-DenseOnly, DenseGraph changes Recall@10 by $-12.40$ points and loses at least
-one previously retrieved gold chunk for 61 questions while adding a graph-only
-gold chunk for only one question. The corresponding HybridOnly to HybridGraph
-change is $-11.81$ points, with 59 questions losing a gold chunk and six
-gaining one. Graph contexts are denser because they contain fewer chunks on
-average (5.605 for DenseGraph and 6.305 for HybridGraph), but their context
-recall is lower. The tested graph overlay is thus not yet evidence of a
+The dense/hybrid comparison uses the same header-plus-chunk dense index,
+50-seed retrieval budget, 10-chunk final context, benchmark, and generator.
+Hybrid retrieval adds BM25 and reciprocal rank fusion. DenseOnly outperforms
+HybridOnly on Recall@10 (48.55\% versus 42.57\%) and nDCG@10 (0.2813 versus
+0.2638); the full comparison is in
+\hyperref[tab:dense-hybrid-results]{Table~\ref*{tab:dense-hybrid-results}}.
+The paired Recall@10 difference is $-5.98$ points with a 95\% CI of
+[$-9.71,-2.21$]. Hybrid retrieval also raises recorded total median latency
+from 5.483 seconds to 31.538 seconds; paired uncertainty is reported in
+\hyperref[tab:dense-hybrid-paired]{Table~\ref*{tab:dense-hybrid-paired}}.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Dense versus hybrid retrieval. Retrieval values use 400 answerable
+questions; latency percentiles use all 500 cases.}
+\label{tab:dense-hybrid-results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Method} & \textbf{Recall@5} & \textbf{Recall@10} &
+\textbf{MRR@10} & \textbf{nDCG@10} & \textbf{Retrieval p50/p95} &
+\textbf{Total p50/p95} \\
+\midrule
+DenseOnly & 0.3678 & 0.4855 & 0.2267 & 0.2813 & 0.797/0.856 & 5.483/9.946 \\
+HybridOnly & 0.3140 & 0.4257 & 0.2252 & 0.2638 & 27.855/27.924 & 31.538/33.623 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Paired hybrid-minus-dense differences.}
+\label{tab:dense-hybrid-paired}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Metric} & \textbf{Mean delta} & \textbf{95\% CI} \\
+\midrule
+Recall@10 & $-0.0598$ & $[-0.0971,-0.0221]$ \\
+MRR@10 & $-0.0015$ & $[-0.0299,+0.0271]$ \\
+nDCG@10 & $-0.0175$ & $[-0.0437,+0.0085]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Graph Ablation: With versus Without Graph Expansion}
+\label{sec:ablation-graph}
+
+Graph variants expand five seed chunks by one hop and retain at most 10
+chunks. Graph expansion currently displaces more evidence than it adds.
+Relative to DenseOnly, DenseGraph changes Recall@10 by $-12.40$ points and
+loses at least one previously retrieved gold chunk for 61 questions while
+adding a graph-only gold chunk for only one question. The HybridOnly to
+HybridGraph change is $-11.81$ points, with 59 questions losing a gold chunk
+and six gaining one; the displacement counts and rank deltas are summarized in
+\hyperref[tab:graph-effect]{Table~\ref*{tab:graph-effect}}.
+
+Graph contexts are denser because they contain fewer chunks on average (5.605
+for DenseGraph and 6.305 for HybridGraph), and their identity precision is
+higher. This is a precision--coverage trade-off, not evidence of an overall
 retrieval-quality improvement.
 
-\subsection{Reranker Choice at a Fixed Candidate Pool}
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Effect of graph expansion on top-10 gold evidence. Counts are over
+400 answerable questions; graph-only gold is introduced by expansion and
+graph-missed gold was present before expansion but absent afterward.}
+\label{tab:graph-effect}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrrr}
+\toprule
+\textbf{Base} & \textbf{$\Delta$ Recall@10} & \textbf{$\Delta$ MRR@10} &
+\textbf{$\Delta$ nDCG@10} & \textbf{Graph-only gold} &
+\textbf{Graph-missed gold} & \textbf{Avg. chunks} & \textbf{ID precision} \\
+\midrule
+DenseOnly $\rightarrow$ DenseGraph & $-0.1240$ & $-0.0222$ & $-0.0439$ &
+1 query (0.25\%) & 61 queries (15.25\%) & 5.605 & 0.0800 \\
+HybridOnly $\rightarrow$ HybridGraph & $-0.1181$ & $-0.0240$ & $-0.0411$ &
+6 queries (1.50\%) & 59 queries (14.75\%) & 6.305 & 0.0641 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\subsection{Reranker Ablation}
 \label{sec:ablation-reranking}
 
-The third family compares no reranking, RRF-only, mMiniLM, Qwen3, BGE, and
-Jina over a reconstructed shared RRF pool of 30 candidates and a final top 10.
-All six runs cover the same 500 questions without retrieval or generation
-errors, and the reconstruction matches the recorded RRF-only top-10 prefix
-for 500/500 questions. Candidate Recall@30 is 0.5995 and Candidate Hit@30 is
-0.6450 for every configuration, so the comparison measures ranking and
-retention within a fixed evidence ceiling.
+The reranker family compares no reranking, RRF-only, mMiniLM, Qwen3, BGE,
+and Jina over a reconstructed shared RRF pool of 30 candidates and a final
+top 10. All six runs cover the same 500 questions without retrieval or
+generation errors, and the reconstruction matches the recorded RRF-only
+top-10 prefix for 500/500 questions. Candidate Recall@30 is 0.5995 and
+Candidate Hit@30 is 0.6450 for every configuration, so the comparison measures
+ranking and retention within a fixed evidence ceiling.
 
 Jina is the strongest retrieval configuration: relative to RRF-only, it
 improves Recall@10 by +9.23 points, MRR@10 by +13.35 points, and nDCG@10 by
 +11.85 points; all three 95\% paired-bootstrap intervals exclude zero. Qwen3
-and BGE also have positive intervals, while mMiniLM supplies a smaller but
-statistically positive gain at the lowest reranker cost. BGE has the highest
-token F1 and ROUGE-L, whereas Jina has the highest observed unanswerable
-accuracy. These answer metrics are lexical/abstention diagnostics, not legal
-correctness judgments. Table~\ref{tab:reranker-results} reports the aggregate
-comparison and Table~\ref{tab:reranker-paired} reports paired effects.
+and BGE also have positive intervals, while mMiniLM supplies a smaller
+positive gain at the lowest reranker cost. BGE has the highest token F1 and
+ROUGE-L, whereas Jina has the highest observed unanswerable accuracy. These
+answer metrics are lexical and abstention diagnostics, not legal correctness
+judgments. Aggregate scores and latency are linked in
+\hyperref[tab:reranker-results]{Table~\ref*{tab:reranker-results}}, with
+paired effects in \hyperref[tab:reranker-paired]{Table~\ref*{tab:reranker-paired}}
+and diagnostic curves in \hyperref[fig:reranker-curves]{Figure~\ref*{fig:reranker-curves}}.
 
-\subsection{Generator Reasoning: Base versus CoT}
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Multi-reranker ablation over a shared 30-candidate pool and final
+top-10 context. Retrieval and overlap values are means over 400 answerable
+questions; recorded unanswerable accuracy and p50 latency use the complete
+500-case runs.}
+\label{tab:reranker-results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+\textbf{Model} & \textbf{Recall@10} & \textbf{Hit@10} & \textbf{MRR@10} &
+\textbf{nDCG@10} & \textbf{Token F1} & \textbf{ROUGE-L} &
+\textbf{Unans. acc.} & \textbf{Rerank p50} & \textbf{Total p50} \\
+\midrule
+None & 0.4842 & 0.5375 & 0.2167 & 0.2714 & 0.2801 & 0.2453 & 0.856 & 0.000 & 2.925 \\
+RRF-only & 0.4382 & 0.4800 & 0.2335 & 0.2728 & 0.2750 & 0.2416 & 0.874 & 0.000 & 2.972 \\
+mMiniLM & 0.4973 & 0.5425 & 0.3047 & 0.3425 & 0.2901 & 0.2568 & 0.872 & 0.385 & 3.343 \\
+Qwen3 & 0.5218 & 0.5725 & 0.3418 & 0.3688 & 0.2912 & 0.2583 & 0.876 & 9.695 & 13.007 \\
+BGE & 0.5188 & 0.5675 & 0.3247 & 0.3593 & \textbf{0.2955} & \textbf{0.2603} & 0.868 & 2.872 & 5.848 \\
+Jina & \textbf{0.5305} & \textbf{0.5850} & \textbf{0.3670} &
+\textbf{0.3914} & 0.2913 & 0.2558 & \textbf{0.884} & 1.278 & \textbf{4.158} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Paired effects of each reranker relative to RRF-only. Deltas are in
+percentage points; intervals are 95\% percentile bootstrap CIs from 10,000
+question-level resamples over the 400 answerable cases. A negative false
+refusal delta indicates fewer refusals on answerable questions.}
+\label{tab:reranker-paired}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Reranker} & \textbf{$\Delta$ Recall@10} & \textbf{$\Delta$ MRR@10} &
+\textbf{$\Delta$ nDCG@10} & \textbf{$\Delta$ false refusal} \\
+\midrule
+mMiniLM & $+5.91$ [$+1.85,+9.96$] & $+7.12$ [$+3.55,+10.68$] &
+$+6.96$ [$+3.77,+10.26$] & $+0.25$ [$-3.00,+3.50$] \\
+Qwen3 & $+8.37$ [$+4.57,+12.25$] & $+10.84$ [$+7.24,+14.36$] &
+$+9.60$ [$+6.52,+12.73$] & $-0.25$ [$-3.25,+2.75$] \\
+BGE & $+8.07$ [$+4.29,+11.80$] & $+9.12$ [$+5.50,+12.70$] &
+$+8.65$ [$+5.47,+11.84$] & $+0.75$ [$-2.25,+3.75$] \\
+Jina & $+9.23$ [$+5.51,+12.98$] & $+13.35$ [$+9.51,+17.24$] &
+$+11.85$ [$+8.46,+15.27$] & $-1.25$ [$-4.00,+1.25$] \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{../../ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v2/charts.png}
+\caption{Reranker curves, answer-overlap diagnostics, latency breakdown, and
+headline metrics from the six-configuration run. The paired confidence
+intervals in Table~\ref{tab:reranker-paired} are the primary uncertainty
+analysis.}
+\label{fig:reranker-curves}
+\end{figure*}
+
+\subsection{Generator Ablation: Base Prompt versus Chain-of-Thought Prompt}
 \label{sec:ablation-reasoning}
 
-The fourth family evaluates whether explicit chain-of-thought (CoT) prompting
-changes answer quality, abstention behavior, citations, or latency when the
-retrieved evidence is unchanged. The primary comparison uses the complete
-GPT-4o-mini Base and CoT runs: both cover all 500 benchmark questions and
-share 400 answerable question IDs. The frozen run artifacts report zero
-retrieval-context mismatches, so the paired answer deltas isolate the prompt
-mode within the limits of the lexical metrics.
+The generator-reasoning family keeps the intended retrieved top-10 context
+fixed for each question and changes the prompt mode. The primary comparison
+uses complete GPT-4o-mini Base and CoT runs: both cover all 500 benchmark
+questions and share 400 answerable question IDs. The frozen artifacts report
+zero retrieval-context mismatches. The DeepSeek-V3.1-Thinking, GLM-5, and
+Qwen3-8B pairs are complete but descriptive; four shared DeepSeek cases have
+different exact top-10 chunk-ID sequences, and the Qwen pair uses different
+code snapshots, timeout values, and retry limits.
 
-On the 400 paired answerable questions, CoT decreases Token F1 from 24.72\%
-to 23.15\% ($-1.57$ percentage points) and ROUGE-L from 21.60\% to 19.90\%
-($-1.71$ points). Exact match is essentially unchanged (14.00\% to 13.75\%,
-$-0.25$ points). The 95\% paired-bootstrap intervals exclude zero for both
-overlap losses; the full paired table is in Table~\ref{tab:llm-reasoning-paired}.
-The Token F1 win/tie/loss count is 79/164/157 in favor of Base, consistent
-with a broad but modest degradation rather than a universal per-question
-failure.
+On the 400 paired answerable questions, CoT decreases Token F1 from 24.72\% to
+23.15\% ($-1.57$ points) and ROUGE-L from 21.60\% to 19.90\% ($-1.71$
+points). Exact match is essentially unchanged (14.00\% to 13.75\%,
+$-0.25$ points). The Token F1 win/tie/loss count is 79/164/157 in favor of
+Base. The run inventory is in
+\hyperref[tab:llm-reasoning-runs]{Table~\ref*{tab:llm-reasoning-runs}} and the
+paired GPT-4o-mini result is linked in
+\hyperref[tab:llm-reasoning-paired]{Table~\ref*{tab:llm-reasoning-paired}}.
 
-The template-based answerability decision accuracy increases from 82.60\% to
-84.00\%. This reflects a lower false-refusal rate on answerable questions
-(21.25\% to 19.50\%) while unanswerable recognition remains 98.00\% for both
-prompts; it is not a human-validated safety or legal-correctness measure.
-CoT also raises citation presence (78.25\% to 81.00\%) and mean unique
-sources (1.46 to 1.68), but structural citation coverage falls slightly
-(89.42\% to 87.91\%). Generation p50/p95 latency rises from 2.92/5.74 seconds
-to 3.68/6.17 seconds, and total p50/p95 rises from 13.99/17.21 to
-14.74/18.42 seconds.
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{End-to-end generator-reasoning run inventory. Lexical metrics are
+means over successful answerable cases; decision accuracy is the saved
+template-based answerability diagnostic.}
+\label{tab:llm-reasoning-runs}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lllrrrrr}
+\toprule
+\textbf{Model} & \textbf{Prompt} & \textbf{Run directory} & \textbf{Valid/500} &
+\textbf{EM (\%)} & \textbf{Token F1 (\%)} & \textbf{ROUGE-L (\%)} &
+\textbf{Decision acc. (\%)} \\
+\midrule
+GPT-4o-mini & Base & \texttt{4o-mini-base} & 500/500 & 14.00 & 24.72 & 21.60 & 82.60 \\
+GPT-4o-mini & CoT & \texttt{4o-mini-CoT} & 500/500 & 13.75 & 23.15 & 19.90 & 84.00 \\
+DeepSeek-V3.1-Thinking & Base & \texttt{deepseek-base} & 500/500 & 22.25 & 17.84 & 15.28 & 92.00 \\
+DeepSeek-V3.1-Thinking & CoT & \texttt{deepseek-CoT} & 500/500 & 22.25 & 16.51 & 14.12 & 92.20 \\
+GLM-5 & Base & \texttt{glm5-base} & 500/500 & 25.25 & 16.91 & 14.90 & 91.80 \\
+GLM-5 & CoT & \texttt{glm5-CoT} & 500/500 & 25.00 & 16.23 & 14.27 & 93.40 \\
+Qwen3-8B & Base & \texttt{qwen3-8b-base} & 500/500 & 19.25 & 21.98 & 18.92 & 95.80 \\
+Qwen3-8B & CoT & \texttt{qwen3-8b-CoT} & 500/500 & 17.25 & 20.05 & 17.17 & 95.20 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Primary paired GPT-4o-mini Base-versus-CoT comparison on 400
+answerable questions. Deltas are CoT minus Base in percentage points; CIs
+are percentile bootstrap intervals from 10,000 paired resamples.}
+\label{tab:llm-reasoning-paired}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Metric} & \textbf{Base (\%)} & \textbf{CoT (\%)} &
+\textbf{$\Delta$ (pp)} & \textbf{95\% paired CI (pp)} \\
+\midrule
+Exact Match & 14.00 & 13.75 & $-0.25$ & $[-1.50,+1.00]$ \\
+Token F1 & 24.72 & 23.15 & $-1.57$ & $[-2.24,-0.92]$ \\
+ROUGE-L & 21.60 & 19.90 & $-1.71$ & $[-2.34,-1.10]$ \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\subsection{Performance by Question Category and Answer Type}
+\label{sec:breakdown-analysis}
+
+The largest Jina gains occur for legal-validity and citation questions, while
+the smaller extractive slice is inconclusive. The multi-hop slice has only 20
+questions and is exploratory; hard and cross-document slices are too small for
+a main conclusion. The table reports Jina versus RRF-only deltas on answerable
+cases with 2,000 paired-bootstrap resamples; see
+\hyperref[tab:jina-slices]{Table~\ref*{tab:jina-slices}}.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Jina versus RRF-only on selected category and answer-type slices.
+Deltas are percentage points with 95\% paired-bootstrap CIs.}
+\label{tab:jina-slices}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrlll}
+\toprule
+\textbf{Dimension} & \textbf{Slice} & \textbf{$n$} &
+\textbf{$\Delta$ Recall@10} & \textbf{$\Delta$ MRR@10} &
+\textbf{$\Delta$ nDCG@10} \\
+\midrule
+Category & citation & 106 & $+11.89$ [$+2.82,+21.70$] &
+$+16.22$ [$+7.86,+24.51$] & $+15.82$ [$+7.51,+23.82$] \\
+Category & legal validity & 91 & $+14.47$ [$+6.96,+21.43$] &
+$+18.90$ [$+10.28,+27.26$] & $+15.22$ [$+9.13,+21.50$] \\
+Category & single hop & 172 & $+5.04$ [$-0.00,+10.37$] &
+$+9.63$ [$+4.34,+14.69$] & $+8.41$ [$+3.81,+13.05$] \\
+Category & multi hop & 20 & $+7.50$ [$-0.83,+17.50$] &
+$+10.12$ [$-3.42,+24.33$] & $+7.95$ [$-0.77,+17.98$] \\
+Answer type & extractive & 78 & $+0.13$ [$-8.85,+9.74$] &
+$+8.53$ [$-0.90,+17.39$] & $+7.14$ [$-1.33,+16.23$] \\
+Answer type & abstractive & 199 & $+13.65$ [$+8.50,+18.80$] &
+$+14.74$ [$+9.61,+20.14$] & $+13.81$ [$+9.56,+18.71$] \\
+Answer type & boolean & 123 & $+7.86$ [$+1.63,+14.50$] &
+$+14.18$ [$+7.64,+21.13$] & $+11.68$ [$+6.27,+17.95$] \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\subsection{Evidence Coverage, Abstention, and Citation Analysis}
+\label{sec:evidence-analysis}
+
+The GPT-4o-mini pair provides structural diagnostics for evidence availability,
+answerability decisions, and citations. These fields describe observable
+output format and saved parser coverage; they do not establish citation
+entailment, semantic refusal quality, or legal correctness. CoT lowers the
+false-refusal rate on answerable questions from 21.25\% to 19.50\%, while
+unanswerable recognition remains 98.00\% for both prompts. Citation presence
+rises from 78.25\% to 81.00\% and mean unique sources from 1.46 to 1.68, but
+structural citation coverage falls from 89.42\% to 87.91\%; the detailed
+diagnostics are in \hyperref[tab:evidence-diagnostics]{Table~\ref*{tab:evidence-diagnostics}}.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Structural evidence, abstention, and citation diagnostics for the
+paired GPT-4o-mini runs.}
+\label{tab:evidence-diagnostics}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrl}
+\toprule
+\textbf{Diagnostic} & \textbf{Base} & \textbf{CoT} & \textbf{Interpretation} \\
+\midrule
+Citation presence & 78.25\% & 81.00\% & at least one marker on answerable output \\
+Structural coverage & 89.42\% & 87.91\% & saved factual-sentence marker share \\
+Mean unique sources & 1.46 & 1.68 & structural source count \\
+False refusal (answerable) & 21.25\% & 19.50\% & refusal-marker diagnostic \\
+Unanswerable recognition & 98.00\% & 98.00\% & refusal-marker diagnostic \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
 
 Evidence-stratified deltas do not reverse the result: CoT Token F1 is lower
 when all gold support is retrieved ($-1.98$ points, $n=138$), when support is
 partial ($-1.86$ points, $n=29$), and when support is absent ($-1.30$ points,
-$n=233$). The DeepSeek-V3.1-Thinking, GLM-5, and Qwen3-8B pairs are complete
-but descriptive. Four shared DeepSeek cases have different exact top-10
-chunk-ID sequences between Base and CoT. The Qwen pair also uses different code
-snapshots, timeout values, and retry limits, so its latency and failure behavior
-is not a strict apples-to-apples comparison. These inventory rows and caveats
-are shown in Table~\ref{tab:llm-reasoning-runs}; non-primary cells are not used
-for the primary paired claim. The derived report and
-machine-readable artifacts are linked from the reproducibility ledger in
-Section~\ref{sec:reproducibility}.
+$n=233$). The saved records cannot support claim-level faithfulness.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Evidence-availability strata for the paired GPT-4o-mini reasoning
+comparison. Values are lexical means on the 400 paired answerable cases.}
+\label{tab:llm-reasoning-evidence}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrrrr}
+\toprule
+\textbf{Evidence stratum} & \textbf{$n$} & \textbf{Base F1} &
+\textbf{CoT F1} & \textbf{$\Delta$ F1} & \textbf{Base ROUGE-L} &
+\textbf{CoT ROUGE-L} & \textbf{$\Delta$ ROUGE-L} \\
+\midrule
+Support fully retrieved & 138 & 28.24 & 26.26 & $-1.98$ & 25.64 & 23.34 & $-2.30$ \\
+Partial support retrieved & 29 & 25.62 & 23.76 & $-1.86$ & 21.04 & 19.45 & $-1.59$ \\
+No support retrieved & 233 & 22.53 & 21.23 & $-1.30$ & 19.29 & 17.92 & $-1.37$ \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\subsection{Latency and Efficiency Comparison}
+\label{sec:ablation-efficiency}
+
+Efficiency differences are substantial. Hybrid retrieval reports a one-time
+BM25 precomputation cost of about 13,495 seconds and a much larger per-query
+retrieval cost. Among rerankers, mMiniLM is fastest, Jina is intermediate,
+BGE is slower, and Qwen3 is much slower. The generator CoT prompt raises
+generation p50/p95 from 2.92/5.74 seconds to 3.68/6.17 seconds, and total
+p50/p95 from 13.99/17.21 to 14.74/18.42 seconds. Reranker p95, peak GPU
+memory, and controlled full-online throughput are unavailable. The complete
+stage and end-to-end comparison is linked in
+\hyperref[tab:latency-results]{Table~\ref*{tab:latency-results}}.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Recorded latency comparisons. Values are p50/p95 seconds unless
+noted; reranker p95 was not recorded. Cached BM25 means reranker rows are not
+full-online sparse-latency measurements.}
+\label{tab:latency-results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrl}
+\toprule
+\textbf{Configuration} & \textbf{Stage p50/p95} & \textbf{Total p50/p95} &
+\textbf{Stage} \\
+\midrule
+DenseOnly & 0.797/0.856 & 5.483/9.946 & retrieval \\
+HybridOnly & 27.855/27.924 & 31.538/33.623 & retrieval \\
+DenseGraph & 0.798/0.860 & 4.998/9.750 & retrieval + graph \\
+HybridGraph & 27.858/27.929 & 31.180/33.312 & retrieval + graph \\
+GPT-4o-mini Base & 2.92/5.74 & 13.99/17.21 & generation \\
+GPT-4o-mini CoT & 3.68/6.17 & 14.74/18.42 & generation \\
+mMiniLM & 0.385/N/A & 3.343/N/A & reranker \\
+Qwen3 & 9.695/N/A & 13.007/N/A & reranker \\
+BGE & 2.872/N/A & 5.848/N/A & reranker \\
+Jina & 1.278/N/A & 4.158/N/A & reranker \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\subsection{Qualitative Ablation Examples and Failure Cases}
+\label{sec:qualitative-ablation}
+
+The saved aggregate artifacts support a precise failure taxonomy even without
+hand-labelled legal case studies. Metadata has a document--provision trade-off:
+document-level success increases at top 10 while exact chunk MRR falls, so a
+retrieved document title is not proof that the governing provision is ranked
+early. Hybrid fusion can add lexical context while lowering exact gold-chunk
+coverage; a generation-overlap gain is not evidence that RRF preserved the
+gold ranked list. Graph expansion has a direct seed-displacement failure: it
+introduces a new top-10 gold chunk for only 1/400 Dense and 6/400 Hybrid
+questions, but removes at least one seed-retrieved gold chunk for 61 and 59
+questions respectively. Finally, a fluent response with a structural citation
+marker is not a verified legally correct or entailed answer.
+
+Future case studies should preserve the \texttt{qa\_id}, gold chunk IDs,
+ordered candidate IDs before and after the changed component, serialized
+context, final answer, and citation parser output. A case must label whether
+its diagnosis is an automatic rank fact or a human legal judgement; this keeps
+illustrative examples auditable rather than anecdotal.
+
+\subsection{Summary of Ablation Findings}
+\label{sec:ablation-summary}
+
+The completed evidence supports conditional engineering decisions. Metadata
+helps document-level retrieval but not exact chunk ranking. The tested hybrid
+configuration reduces exact-chunk coverage and adds latency. One-hop graph
+expansion increases context density while displacing more gold evidence than
+it adds. Cross-encoder reranking is the clearest positive retrieval result:
+Jina gives the strongest ranking scores, BGE gives the strongest lexical
+overlap, and mMiniLM gives the lowest recorded reranking cost. For the primary
+generator pair, CoT lowers lexical overlap under fixed context while improving
+only template-based decision diagnostics and adding latency. The consolidated
+recommendations are linked in
+\hyperref[tab:ablation-decision-summary]{Table~\ref*{tab:ablation-decision-summary}}.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Decision summary for the completed ablation families. Quality claims
+are limited to the deterministic metrics available in the saved artifacts.}
+\label{tab:ablation-decision-summary}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lllll}
+\toprule
+\textbf{Family} & \textbf{Changed component} & \textbf{Quality effect} &
+\textbf{Latency effect} & \textbf{Decision} \\
+\midrule
+Embedding & chunk text + metadata &
+document success +4.5 pp; MRR@10 $-5.9$ pp &
+not material in headline table & use when document identity is primary \\
+Dense/hybrid & add BM25 + RRF &
+Recall@10 $-5.98$ pp &
+total p50 5.483 s $\rightarrow$ 31.538 s &
+do not use as default under current settings \\
+Graph & one-hop expansion &
+Recall@10 $-12.40$ pp (Dense), $-11.81$ pp (Hybrid) &
+graph stage near dense retrieval cost &
+gate until seed-preserving expansion is tested \\
+Reranker & reorder shared C30 pool &
+Jina: Recall +9.23 pp, MRR +13.35 pp, nDCG +11.85 pp &
+mMiniLM fastest; Jina p50 1.278 s &
+prefer Jina for retrieval quality; mMiniLM for latency \\
+Generator & Base prompt $\rightarrow$ CoT &
+Token F1 $-1.57$ pp; ROUGE-L $-1.71$ pp &
+total p50 13.99 s $\rightarrow$ 14.74 s &
+retain Base for this lexical benchmark \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}

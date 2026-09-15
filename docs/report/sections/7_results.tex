@@ -1,328 +1,89 @@
-% ============================================================================
-% Section 7: Results and Analysis
-% ============================================================================
-\section{Results}
-\label{sec:results}
+% ==========================================================================
+% Section 7: Discussion, Limitations, and Ethical Considerations
+% ==========================================================================
+\section{Discussion, Limitations, and Ethical Considerations}
+\label{sec:discussion-limitations-ethics}
 
-The completed results are summarized in the tables below, including
-Tables~\ref{tab:embedding-results}--\ref{tab:llm-reasoning-evidence} and
-Table~\ref{tab:jina-slices}. Retrieval metrics use answerable questions and
-are paired within each experiment family. We use percentage points (pp) for
-deltas so that the magnitude of an effect is not confused with a relative
-percentage change.
+\subsection{Interpretation of the Main Findings}
+\label{sec:interpretation-main-findings}
 
-\subsection{Embedding Representation}
-\label{sec:embedding-results}
+The ablations yield one clear positive retrieval intervention and several
+conditional or negative findings. Cross-encoder reranking improves the rank of
+evidence already admitted to the shared C30 pool; Jina has the strongest
+retrieval result, while BGE has the strongest lexical answer overlap. By
+contrast, the tested hybrid and graph configurations reduce exact gold-chunk
+coverage. These statements concern a finite benchmark and its gold evidence,
+not legal advice quality in deployment.
 
-Table~\ref{tab:embedding-results} shows that adding metadata to the embedded
-text changes the level at which retrieval succeeds. At top 10, exact chunk
-Recall is unchanged to one decimal place, while document success increases by
-4.5 pp. The paired MRR decrease is statistically distinguishable from zero,
-so metadata should not be described as an unqualified improvement: it favors
-document identification but does not improve the rank of the first exact gold
-chunk.
+\subsection{Retrieval Quality, Context Coverage, and Latency Trade-offs}
+\label{sec:retrieval-quality-tradeoffs}
 
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Embedding-text ablation on 400 paired answerable questions. Values
-are percentages; ``document success'' means that a retrieved chunk from the
-gold document is present in the indicated context. Deltas are chunk+metadata
-minus chunk-only.}
-\label{tab:embedding-results}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrrrrrr}
-\toprule
-\textbf{Variant} & \textbf{Hit@5} & \textbf{Recall@5} & \textbf{MRR@5} &
-\textbf{Doc.@5} & \textbf{Hit@10} & \textbf{Recall@10} &
-\textbf{MRR@10} & \textbf{Doc.@10} \\
-\midrule
-Chunk-only & 44.0 & 39.0 & 27.4 & 59.0 & 53.5 & 48.5 & 28.6 & 65.8 \\
-Chunk+metadata & 40.2 & 36.8 & 20.9 & 61.8 & 53.2 & 48.5 & 22.7 & 70.2 \\
-Delta & $-3.8$ & $-2.2$ & $-6.5$ & $+2.8$ & $-0.2$ & $+0.1$ & $-5.9$ & $+4.5$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
+DenseOnly is the preferred retrieval baseline in the dense/hybrid study: it
+achieves Recall@10 of 0.4855 at 0.797-second retrieval p50. HybridOnly falls
+to 0.4257 and takes 27.855 seconds when amortized BM25 time is included. Graph
+contexts appear more identity-precise because they contain only 5.605--6.305
+chunks on average, but their reduced context size also removes gold coverage.
+The reranker result has a different interpretation: it operates after a fixed
+candidate ceiling, so Jina's gain is a ranking gain rather than proof that the
+underlying candidate retriever finds more evidence.
 
-\subsection{Dense, Hybrid, and Graph Retrieval}
-\label{sec:retrieval-results}
+\subsection{Implications for Legal RAG Design}
+\label{sec:legal-rag-implications}
 
-The DenseOnly configuration is the strongest exact-chunk retriever in the
-second family. HybridOnly is lower on Recall@10 and nDCG@10, and its paired
-Recall loss has a 95\% interval entirely below zero. Graph expansion lowers
-Recall@10 for both seed retrievers: by 12.40 pp for DenseOnly and 11.81 pp for
-HybridOnly. The graph-only evidence counts show why: graph expansion adds a
-gold chunk for one DenseOnly query and six HybridOnly queries, but removes at
-least one previously retrieved gold chunk for 61 and 59 queries, respectively.
+For this benchmark, use header-plus-chunk embeddings when correct document
+identification is more valuable than the rank of an exact chunk; otherwise
+prefer the chunk-only representation. Do not deploy the current BM25+RRF or
+one-hop graph setup as the default retrieval path without retuning. Prefer
+Jina when retrieval quality justifies its 1.278-second reranking p50, or
+mMiniLM when its lower 0.385-second cost is more important. Retain the Base
+prompt for lexical answer overlap. In all cases, present citations as sources
+to inspect and retain human review for legal interpretation.
 
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Dense/hybrid retrieval and graph results. Retrieval values use 400
-answerable questions. ``ID precision'' divides the number of gold chunks by
-the actual number of returned chunks; p50/p95 latency is in seconds over all
-500 questions.}
-\label{tab:retrieval-graph-results}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrrrrr}
-\toprule
-\textbf{Method} & \textbf{Recall@10} & \textbf{MRR@10} & \textbf{nDCG@10} &
-\textbf{ID precision} & \textbf{Avg. chunks} & \textbf{Retrieval p50/p95} &
-\textbf{Total p50/p95} \\
-\midrule
-DenseOnly & 0.4855 & 0.2267 & 0.2813 & 0.0580 & 10.000 & 0.797/0.856 & 5.483/9.946 \\
-HybridOnly & 0.4257 & 0.2252 & 0.2638 & 0.0493 & 10.000 & 27.855/27.924 & 31.538/33.623 \\
-DenseGraph & 0.3615 & 0.2045 & 0.2374 & 0.0800 & 5.605 & 0.798/0.860 & 4.998/9.750 \\
-HybridGraph & 0.3076 & 0.2012 & 0.2228 & 0.0641 & 6.305 & 27.858/27.929 & 31.180/33.312 \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
+\subsection{Dataset and Coverage Limitations}
+\label{sec:dataset-coverage-limitations}
 
-The denser graph contexts improve ID precision (0.0580 to 0.0800 for Dense
-and 0.0493 to 0.0641 for Hybrid), but this should be read together with the
-large context-recall loss. Graph expansion also increases recorded
-unanswerable accuracy from 0.38 to 0.41 for Dense and from 0.38 to 0.47 for
-Hybrid, while paired Token F1 changes are small and their confidence intervals
-include zero. The graph implementation therefore produces a precision--coverage
-trade-off rather than a demonstrated overall gain.
+The benchmark has 500 questions, of which only 400 are answerable by stored
+gold chunks. The hard stratum has one answerable item, while multi-hop has 20;
+those slices are descriptive and cannot establish stable subgroup effects.
+Gold chunk IDs are an evidence target, not necessarily the full set of legally
+acceptable authorities. Corpus coverage, language variation, temporal validity,
+and external legal references may all limit transfer beyond the data snapshot.
 
-\subsection{Reranker Comparison}
-\label{sec:reranker-results}
+\subsection{Knowledge Graph and Validity Limitations}
+\label{sec:graph-validity-limitations}
 
-Table~\ref{tab:reranker-results} reports the six configurations evaluated on
-the fixed \texttt{C30} candidate pool. Jina obtains the strongest retrieval
-scores, while BGE has the highest overlap scores. Qwen3 is competitive in
-quality but incurs a much larger reranker-stage cost. The recorded
-unanswerable-accuracy column is retained from the source metrics; semantic
-legal-answer evaluation is not available.
+The graph study evaluates a specific policy--five seeds, one hop, and ten
+retained chunks--rather than graph information in general. Its failures point
+to an engineering hypothesis: expansion substitutes for seeds too early.
+Future graph experiments should preserve high-ranked seeds, separately budget
+neighbors, verify relationship direction and validity semantics, and measure
+whether graph-only evidence is legally useful rather than merely novel.
 
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Multi-reranker ablation over a shared 30-candidate pool and final
-top-10 context. Retrieval and overlap values are means over 400 answerable
-questions; recorded unanswerable accuracy and p50 latency use the complete
-500-case runs.}
-\label{tab:reranker-results}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrrrrrrr}
-\toprule
-\textbf{Model} & \textbf{Recall@10} & \textbf{Hit@10} & \textbf{MRR@10} &
-\textbf{nDCG@10} & \textbf{Token F1} & \textbf{ROUGE-L} &
-\textbf{Rec. unans. acc.} & \textbf{Rerank p50} & \textbf{Total p50} \\
-\midrule
-None & 0.4842 & 0.5375 & 0.2167 & 0.2714 & 0.2801 & 0.2453 & 0.856 & 0.000 & 2.925 \\
-RRF-only & 0.4382 & 0.4800 & 0.2335 & 0.2728 & 0.2750 & 0.2416 & 0.874 & 0.000 & 2.972 \\
-mMiniLM & 0.4973 & 0.5425 & 0.3047 & 0.3425 & 0.2901 & 0.2568 & 0.872 & 0.385 & 3.343 \\
-Qwen3 & 0.5218 & 0.5725 & 0.3418 & 0.3688 & 0.2912 & 0.2583 & 0.876 & 9.695 & 13.007 \\
-BGE & 0.5188 & 0.5675 & 0.3247 & 0.3593 & \textbf{0.2955} & \textbf{0.2603} & 0.868 & 2.872 & 5.848 \\
-Jina & \textbf{0.5305} & \textbf{0.5850} & \textbf{0.3670} & \textbf{0.3914} & 0.2913 & 0.2558 & \textbf{0.884} & 1.278 & \textbf{4.158} \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
+\subsection{Retrieval and Generation Limitations}
+\label{sec:retrieval-generation-limitations}
 
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Paired effects of each reranker relative to RRF-only. Deltas are in
-percentage points; intervals are 95\% percentile bootstrap CIs from 10,000
-question-level resamples over the 400 answerable cases. A negative
-false-refusal delta indicates fewer refusals on answerable questions.}
-\label{tab:reranker-paired}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrr}
-\toprule
-\textbf{Reranker} & \textbf{$\Delta$ Recall@10} & \textbf{$\Delta$ MRR@10} &
-\textbf{$\Delta$ nDCG@10} & \textbf{$\Delta$ false refusal} \\
-\midrule
-mMiniLM & $+5.91$ [$+1.85,+9.96$] & $+7.12$ [$+3.55,+10.68$] &
-$+6.96$ [$+3.77,+10.26$] & $+0.25$ [$-3.00,+3.50$] \\
-Qwen3 & $+8.37$ [$+4.57,+12.25$] & $+10.84$ [$+7.24,+14.36$] &
-$+9.60$ [$+6.52,+12.73$] & $-0.25$ [$-3.25,+2.75$] \\
-BGE & $+8.07$ [$+4.29,+11.80$] & $+9.12$ [$+5.50,+12.70$] &
-$+8.65$ [$+5.47,+11.84$] & $+0.75$ [$-2.25,+3.75$] \\
-Jina & $+9.23$ [$+5.51,+12.98$] & $+13.35$ [$+9.51,+17.24$] &
-$+11.85$ [$+8.46,+15.27$] & $-1.25$ [$-4.00,+1.25$] \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
+The index, BM25 tokenization, RRF parameter, candidate budgets, rerankers,
+generator, prompt, and final context size are fixed settings, not optimized
+universally. Reranker timings use cached BM25 candidates and omit full-online
+sparse retrieval. Lexical overlap may reward reference phrasing rather than
+legal adequacy. Structural citations measure marker presence or parser coverage,
+not the relationship between a claim and the cited authority.
 
-All rerankers have positive paired retrieval intervals for the three primary
-ranking measures. In contrast, every false-refusal interval includes zero.
-Jina also retains 0.8850 of the gold chunks available in \texttt{C30}, versus
-0.7129 for RRF-only, confirming that its gain comes from better promotion of
-available evidence rather than a larger candidate pool. The full safety and
-win/tie/loss analysis is stored with the derived artifacts.
+\subsection{Evaluation Limitations}
+\label{sec:evaluation-limitations}
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=\textwidth]{../../ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v2/charts.png}
-\caption{Reranker curves, answer-overlap diagnostics, latency breakdown, and
-headline metrics from the six-config run. These plots are descriptive; the
-paired confidence intervals in Table~\ref{tab:reranker-paired} are the primary
-uncertainty analysis.}
-\label{fig:reranker-curves}
-\end{figure*}
+No blinded legal-correctness labels, claim-level faithfulness labels, or
+validated semantic judge are available. The report therefore does not claim
+that any configuration is legally more correct, safer, or more faithful solely
+because it improves F1, ROUGE-L, citation count, or refusal markers. Full-online
+p95 reranker latency, peak memory, and throughput are also absent. Non-GPT
+prompt pairs have provenance or control differences and remain descriptive.
 
-\subsection{Generator Reasoning}
-\label{sec:llm-reasoning-results}
+\subsection{Ethical Considerations and Safe Use}
+\label{sec:ethical-safe-use}
 
-The generator-reasoning runs keep the intended retrieval stack fixed and vary
-the prompt mode. Table~\ref{tab:llm-reasoning-runs} gives the refreshed run
-inventory. GPT-4o-mini is the pre-specified primary pair; the DeepSeek-V3.1-
-Thinking, GLM-5, and Qwen3-8B pairs are complete but descriptive. Four shared
-DeepSeek cases have different exact top-10 chunk-ID sequences between Base and CoT.
-The Qwen Base/CoT manifests use different code snapshots, timeout values, and
-retry limits, so its latency and failure behavior is not a strict
-apples-to-apples comparison. Percentages in this subsection are reported on the
-scheduled denominator for decision behavior and on the successful answerable
-cases for lexical answer metrics. The row-level denominators, pairing rule, and
-additional diagnostic calculations are defined in Section~\ref{sec:evaluation-metrics}.
-
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{End-to-end generator-reasoning run inventory. Lexical metrics are
-means over successful answerable cases; ``decision acc.'' is the saved
-template-based answerability decision diagnostic.}
-\label{tab:llm-reasoning-runs}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lllrrrrr}
-\toprule
-\textbf{Model} & \textbf{Prompt} & \textbf{Run directory} & \textbf{Valid/500} & \textbf{EM (\%)} &
-\textbf{Token F1 (\%)} & \textbf{ROUGE-L (\%)} & \textbf{Decision acc. (\%)} \\
-\midrule
-GPT-4o-mini & Base & \texttt{4o-mini-base} & 500/500 & 14.00 & 24.72 & 21.60 & 82.60 \\
-GPT-4o-mini & CoT & \texttt{4o-mini-CoT} & 500/500 & 13.75 & 23.15 & 19.90 & 84.00 \\
-DeepSeek-V3.1-Thinking & Base & \texttt{deepseekv3.1-thinking-base} & 500/500 & 22.25 & 17.84 & 15.28 & 92.00 \\
-DeepSeek-V3.1-Thinking & CoT & \texttt{deepseekv3.1-thinking-CoT} & 500/500 & 22.25 & 16.51 & 14.12 & 92.20 \\
-GLM-5 & Base & \texttt{glm5-base} & 500/500 & 25.25 & 16.91 & 14.90 & 91.80 \\
-GLM-5 & CoT & \texttt{glm5-CoT} & 500/500 & 25.00 & 16.23 & 14.27 & 93.40 \\
-Qwen3-8B & Base & \texttt{qwen3-8b-base} & 500/500 & 19.25 & 21.98 & 18.92 & 95.80 \\
-Qwen3-8B & CoT & \texttt{qwen-8b-CoT} & 500/500 & 17.25 & 20.05 & 17.17 & 95.20 \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-For the complete GPT-4o-mini pair, CoT lowers Token F1 by 1.57 pp and
-ROUGE-L by 1.71 pp, while exact match changes by only -0.25 pp. The paired
-95\% bootstrap intervals for the two overlap losses exclude zero. CoT wins,
-ties, and loses on Token F1 in 79, 164, and 157 cases, respectively. The
-template-based decision accuracy rises from 82.60\% to 84.00\% because false
-refusals on answerable questions fall from 21.25\% to 19.50\%; unanswerable
-recognition is 98.00\% for both prompts. These are observable output-format
-diagnostics, not semantic refusal quality or legal correctness. CoT increases
-citation presence (78.25\% to 81.00\%) and mean unique sources (1.46 to
-1.68), but structural citation coverage decreases from 89.42\% to 87.91\%.
-Generation p50/p95 latency increases from 2.92/5.74 s to 3.68/6.17 s, and
-total p50/p95 from 13.99/17.21 s to 14.74/18.42 s.
-
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Primary paired GPT-4o-mini Base-versus-CoT comparison on 400
-answerable questions. Deltas are CoT minus Base in percentage points; CIs are
-percentile bootstrap intervals from 10,000 paired resamples.}
-\label{tab:llm-reasoning-paired}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrr}
-\toprule
-\textbf{Metric} & \textbf{Base (\%)} & \textbf{CoT (\%)} &
-\textbf{$\Delta$ (pp)} & \textbf{95\% paired CI (pp)} \\
-\midrule
-Exact Match & 14.00 & 13.75 & $-0.25$ & $[-1.50,+1.00]$ \\
-Token F1 & 24.72 & 23.15 & $-1.57$ & $[-2.24,-0.92]$ \\
-ROUGE-L & 21.60 & 19.90 & $-1.71$ & $[-2.34,-1.10]$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-The fixed-context evidence strata show the same direction for Token F1:
-$-1.98$ pp with full support ($n=138$), $-1.86$ pp with partial support
-($n=29$), and $-1.30$ pp with no retrieved support ($n=233$). Table~\ref{tab:llm-reasoning-evidence}
-reports these conditional diagnostics; they describe output behavior given
-the retrieved context and do not measure claim-level faithfulness.
-
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Evidence-availability strata for the paired GPT-4o-mini reasoning
-comparison. Values are lexical means on the 400 paired answerable cases;
-deltas are CoT minus Base in percentage points.}
-\label{tab:llm-reasoning-evidence}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrrrrr}
-\toprule
-\textbf{Evidence stratum} & \textbf{$n$} & \textbf{Base F1} &
-\textbf{CoT F1} & \textbf{$\Delta$ F1} & \textbf{Base ROUGE-L} &
-\textbf{CoT ROUGE-L} & \textbf{$\Delta$ ROUGE-L} \\
-\midrule
-Support fully retrieved & 138 & 28.24 & 26.26 & $-1.98$ & 25.64 & 23.34 & $-2.30$ \\
-Partial support retrieved & 29 & 25.62 & 23.76 & $-1.86$ & 21.04 & 19.45 & $-1.59$ \\
-No support retrieved & 233 & 22.53 & 21.23 & $-1.30$ & 19.29 & 17.92 & $-1.37$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-\subsection{Category and Answer-Type Analysis}
-\label{sec:breakdown-analysis}
-
-The largest Jina gains occur for legal-validity and citation questions, while
-the smaller extractive slice is inconclusive. Table~\ref{tab:jina-slices}
-reports the requested Jina-versus-RRF comparison; all slices are answerable
-cases, and intervals use 2,000 paired bootstrap resamples. The multi-hop slice
-has only 20 questions and is exploratory. The hard difficulty and
-cross-document slices are also too small to support a main conclusion.
-
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Jina versus RRF-only on selected category and answer-type slices.
-Deltas are percentage points with 95\% paired-bootstrap CIs.}
-\label{tab:jina-slices}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{llrlll}
-\toprule
-\textbf{Dimension} & \textbf{Slice} & \textbf{$n$} &
-\textbf{$\Delta$ Recall@10} & \textbf{$\Delta$ MRR@10} &
-\textbf{$\Delta$ nDCG@10} \\
-\midrule
-Category & citation & 106 & $+11.89$ [$+2.82,+21.70$] & $+16.22$ [$+7.86,+24.51$] & $+15.82$ [$+7.51,+23.82$] \\
-Category & legal validity & 91 & $+14.47$ [$+6.96,+21.43$] & $+18.90$ [$+10.28,+27.26$] & $+15.22$ [$+9.13,+21.50$] \\
-Category & single hop & 172 & $+5.04$ [$-0.00,+10.37$] & $+9.63$ [$+4.34,+14.69$] & $+8.41$ [$+3.81,+13.05$] \\
-Category & multi hop & 20 & $+7.50$ [$-0.83,+17.50$] & $+10.12$ [$-3.42,+24.33$] & $+7.95$ [$-0.77,+17.98$] \\
-Answer type & extractive & 78 & $+0.13$ [$-8.85,+9.74$] & $+8.53$ [$-0.90,+17.39$] & $+7.14$ [$-1.33,+16.23$] \\
-Answer type & abstractive & 199 & $+13.65$ [$+8.50,+18.80$] & $+14.74$ [$+9.61,+20.14$] & $+13.81$ [$+9.56,+18.71$] \\
-Answer type & boolean & 123 & $+7.86$ [$+1.63,+14.50$] & $+14.18$ [$+7.64,+21.13$] & $+11.68$ [$+6.27,+17.95$] \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-\subsection{Generation and Efficiency}
-\label{sec:generation-quality}
-
-The deterministic answer metrics do not establish legal correctness. In the
-embedding family, metadata changes Token F1 by +0.1 pp and ROUGE-L by $-0.1$
-pp. In the dense/hybrid/graph family, graph expansion changes Token F1 by
-approximately +0.4 pp for Dense and +0.2 pp for Hybrid, with bootstrap
-intervals crossing zero. In the reranker family, BGE has the strongest
-observed overlap scores, but Jina has the best retrieval scores and a lower
-total p50 than BGE (4.158 s vs. 5.848 s). The results support a conditional
-engineering choice, not a claim that one reranker produces more legally
-correct answers.
-
-Efficiency differences are substantial. Hybrid retrieval raises total median
-latency from 5.483 s to 31.538 s and reports a one-time BM25 precomputation
-cost of about 13,495 s. Among rerankers, mMiniLM is fastest (0.385 s
-reranker-stage p50), Jina is intermediate (1.278 s), BGE is slower (2.872 s),
-and Qwen3 is much slower (9.695 s). The reranker artifacts do not record p95,
-peak GPU memory, or full-online sparse latency, so those deployment quantities
-remain open.
+L\_RAG should support research and source discovery, not replace a qualified
+legal professional. Users should inspect the retrieved authority, its date and
+validity, and the uncertainty of an answer. Systems should avoid unnecessary
+personal query data, should not obscure abstentions, and should treat
+well-cited generated text as a review cue rather than a legal conclusion.
