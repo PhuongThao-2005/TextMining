@@ -4,12 +4,13 @@
 \section{Discussion and Conclusion}
 
 \begin{frame}{Interpretation and Design Implications}
-\small
+\scriptsize
 \begin{enumerate}
   \item \textbf{Metadata changes the level of success:} it improves document identification, but can push the exact gold chunk lower in the ranking.
   \item \textbf{Current hybrid retrieval is not a good default:} its paired recall loss and large latency cost outweigh the observed benefit under the tested settings.
   \item \textbf{Current graph expansion trades coverage for density:} adjacent passages can replace high-confidence seed evidence within a fixed context budget.
   \item \textbf{Reranking is the clearest positive result:} every tested cross-encoder improves Recall, MRR, and nDCG over RRF-only at a fixed candidate pool.
+  \item \textbf{Explicit CoT is not automatically better:} under identical retrieved context, GPT-4o-mini CoT lowers lexical overlap, adds latency, and improves only template-based output diagnostics.
 \end{enumerate}
 \vspace{0.2cm}
 \begin{block}{What can still change?}
@@ -67,8 +68,9 @@ These findings apply to the tested index, tokenization, fusion constant, candida
       \item Only 500 questions; multi-hop, hard, and cross-document slices are small.
       \item Gold chunks may omit legally sufficient alternatives.
       \item Candidate budgets differ across experiment families.
-      \item One encoder, generator, prompt, and corpus version were tested.
+      \item Retrieval families use one encoder and one corpus/index version.
       \item Graph relationships still contain direction and validity uncertainty.
+      \item Reasoning runs lack semantic claim labels, raw CoT, token accounting, and cost data.
     \end{itemize}
   \column{0.48\textwidth}
     \textbf{Responsible use}
@@ -83,9 +85,9 @@ These findings apply to the tested index, tokenization, fusion constant, candida
 \end{frame}
 
 \begin{frame}{Conclusion and Future Work}
-\small
+\scriptsize
 \begin{block}{Final conclusion}
-The controlled study supports \textbf{dense retrieval followed by a cross-encoder}, with \textbf{Jina} as the current quality--latency candidate. Metadata helps at document level; the tested hybrid and graph policies require redesign before becoming defaults.
+The controlled study supports \textbf{dense retrieval followed by a cross-encoder}, with \textbf{Jina} as the current quality--latency candidate. Metadata helps at document level; the tested hybrid and graph policies require redesign; GPT-4o-mini CoT does not improve lexical answer quality under fixed context.
 \end{block}
 \vspace{0.2cm}
 \textbf{Next experiments}
@@ -93,7 +95,8 @@ The controlled study supports \textbf{dense retrieval followed by a cross-encode
   \item Collect blinded labels for legal correctness, completeness, faithfulness, and citation quality.
   \item Sweep candidate-pool size, RRF parameters, and graph-context budgets.
   \item Implement seed-preserving graph expansion and validate edge directions.
-  \item Evaluate generator reasoning strategies and larger, more diverse benchmarks.
+  \item Investigate DeepSeek context-order mismatches and rerun Qwen with aligned provenance.
+  \item Evaluate larger, more diverse Vietnamese legal benchmarks.
   \item Measure full-online p95 latency, GPU memory, and throughput.
 \end{itemize}
 \vspace{0.15cm}
