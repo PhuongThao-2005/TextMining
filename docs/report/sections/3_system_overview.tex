@@ -11,9 +11,12 @@ This section details the end-to-end architecture of \textbf{L\_RAG}, a Knowledge
 
 L\_RAG connects corpus indexing, hybrid retrieval, graph-based context
 selection, candidate reranking, and cited generation. \hyperref[fig:architecture]{Figure~\ref{fig:architecture}}
-shows five operational phases: (1) corpus ingestion and graph/vector indexing,
-(2) multi-modal retrieval, (3) graph overlay and context expansion,
-(4) sequential candidate reranking, and (5) LLM prompting and generation.
+illustrates the end-to-end query pipeline across five core operational phases:
+(1) query scope and temporal constraint resolution,
+(2) hybrid dense-sparse retrieval (E5 + BM25),
+(3) knowledge-graph overlay filtering and context expansion,
+(4) rank fusion and sequential candidate reranking, and
+(5) citation-grounded LLM prompting and answer generation.
 
 \begin{figure*}[t]
 \centering

@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex 2026.9.7)  16 SEP 2026 20:26
+This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex 2026.9.7)  16 SEP 2026 21:01
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1139,105 +1139,115 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 ) (./sections/3_system_overview.tex
-Underfull \hbox (badness 3128) in paragraph at lines 12--17
+Underfull \hbox (badness 3128) in paragraph at lines 12--20
 \TU/TimesNewRoman(0)/m/n/10.95 L_RAG connects corpus indexing, hybrid re-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 56--57
+Underfull \hbox (badness 1377) in paragraph at lines 12--20
+\TU/TimesNewRoman(0)/m/n/10.95 core operational phases: (1) query scope and
+ []
+
+
+Underfull \hbox (badness 1242) in paragraph at lines 12--20
+\TU/TimesNewRoman(0)/m/n/10.95 sparse retrieval (E5 + BM25), (3) knowledge-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 59--60
 \TU/TimesNewRoman(0)/m/n/10.95 Dense retrieval is powered by
  []
 
 
-Underfull \hbox (badness 1377) in paragraph at lines 56--57
+Underfull \hbox (badness 1377) in paragraph at lines 59--60
 \TU/lmtt/m/n/10.95 intfloat/multilingual-e5-large\TU/TimesNewRoman(0)/m/n/10.95
  , a 560M
  []
 
 
-Underfull \hbox (badness 1975) in paragraph at lines 56--57
+Underfull \hbox (badness 1975) in paragraph at lines 59--60
 \TU/TimesNewRoman(0)/m/n/10.95 parameter transformer embedding model. To
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 56--57
+Underfull \hbox (badness 10000) in paragraph at lines 59--60
 \TU/TimesNewRoman(0)/m/n/10.95 solve the structural blindness of standalone
  []
 
 [3]
-Underfull \hbox (badness 3746) in paragraph at lines 80--81
+Underfull \hbox (badness 3746) in paragraph at lines 83--84
 \TU/TimesNewRoman(0)/m/n/10.95 pointers (\TU/lmtt/m/n/10.95 CHUNK_NEXT\TU/Times
 NewRoman(0)/m/n/10.95 , \TU/lmtt/m/n/10.95 PROVISION_NEXT\TU/TimesNewRoman(0)/m
 /n/10.95 )
  []
 
 
-Underfull \hbox (badness 1436) in paragraph at lines 89--90
+Underfull \hbox (badness 1436) in paragraph at lines 92--93
 \TU/TimesNewRoman(0)/m/n/10.95 per query. To maximize precision, candidate
  []
 
 
-Underfull \hbox (badness 1383) in paragraph at lines 89--90
+Underfull \hbox (badness 1383) in paragraph at lines 92--93
 \TU/TimesNewRoman(0)/m/n/10.95 lists pass through a specialized Cross-Encoder
  []
 
 LaTeX Font Info:    Font shape `TU/lmtt/bx/n' in size <10.95> not available
-(Font)              Font shape `TU/lmtt/b/n' tried instead on input line 93.
+(Font)              Font shape `TU/lmtt/b/n' tried instead on input line 96.
 
-Overfull \hbox (102.84023pt too wide) in paragraph at lines 93--94
+Overfull \hbox (102.84023pt too wide) in paragraph at lines 96--97
 []\TU/lmtt/b/n/10.95 mMiniLMv2\TU/TimesNewRoman(0)/b/n/10.95 : [][]\TU/lmtt/m/n
 /10.95 cross-encoder/mmarco-mMiniLMv2-L12-H384-v1[][]
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 94--95
+Underfull \hbox (badness 10000) in paragraph at lines 97--98
 []\TU/lmtt/b/n/10.95 BGE-Reranker-v2-m3\TU/TimesNewRoman(0)/b/n/10.95 :
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 94--95
+Underfull \hbox (badness 10000) in paragraph at lines 97--98
 [][]\TU/lmtt/m/n/10.95 BAAI/bge-reranker-v2-m3[][] \TU/TimesNewRoman(0)/m/n/10.
 95 (Multilin-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 95--96
+Underfull \hbox (badness 10000) in paragraph at lines 98--99
 []\TU/lmtt/b/n/10.95 Jina-Reranker-v2\TU/TimesNewRoman(0)/b/n/10.95 :
  []
 
 
-Overfull \hbox (38.51254pt too wide) in paragraph at lines 95--96
+Overfull \hbox (38.51254pt too wide) in paragraph at lines 98--99
 [][]\TU/lmtt/m/n/10.95 jinaai/jina-reranker-v2-base-multilingual[][]
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 96--97
+Underfull \hbox (badness 10000) in paragraph at lines 99--100
 []\TU/lmtt/b/n/10.95 Qwen3-Reranker\TU/TimesNewRoman(0)/b/n/10.95 :
  []
 
 
-Underfull \hbox (badness 4279) in paragraph at lines 96--97
+Underfull \hbox (badness 4279) in paragraph at lines 99--100
 [][]\TU/lmtt/m/n/10.95 Qwen/Qwen3-Reranker-0.6B[][] \TU/TimesNewRoman(0)/m/n/10
 .95 (CausalLM-
  []
 
 
-Underfull \hbox (badness 1270) in paragraph at lines 96--97
+Underfull \hbox (badness 1270) in paragraph at lines 99--100
 \TU/TimesNewRoman(0)/m/n/10.95 based 0.6B parameter model evaluated in
  []
 
 
-Underfull \hbox (badness 1502) in paragraph at lines 114--115
+Underfull \hbox (badness 1502) in paragraph at lines 117--118
 \TU/TimesNewRoman(0)/m/n/10.95 explicitly cite governing statutory sources
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 115--116
+Underfull \hbox (badness 10000) in paragraph at lines 118--119
 \TU/TimesNewRoman(0)/m/n/10.95 should output \TU/lmtt/m/n/10.95 INSUFFICIENT_CO
 NTEXT
  []
 
-) (./sections/4_dataset_and_corpus.tex [4]
+[4]) (./sections/4_dataset_and_corpus.tex
 Underfull \hbox (badness 2229) in paragraph at lines 38--40
 []\TU/TimesNewRoman(0)/m/n/10.95 Before indexing, each passage receives the
  []
@@ -1352,7 +1362,7 @@ Underfull \hbox (badness 1057) in paragraph at lines 62--73
 \TU/TimesNewRoman(0)/m/n/10.95 maximum graph context of 10. The reranker
  []
 
-
+[6]
 Underfull \hbox (badness 1803) in paragraph at lines 82--94
 \TU/TimesNewRoman(0)/m/n/10.95 mode for the generator. The primary paired
  []
@@ -1384,7 +1394,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 82--94
 [] [][][] [] [][][][][][][][][] []$
  []
 
-[6]
+
 Underfull \hbox (badness 10000) in paragraph at lines 112--115
  []\TU/TimesNewRoman(0)/b/n/10.95 Primary metrics.[] \TU/TimesNewRoman(0)/m/n/1
 0.95 The primary generated-
@@ -1474,28 +1484,20 @@ Underfull \hbox (badness 10000) in paragraph at lines 271--4
 [][][][][][] [] [][][][][][][] []$
  []
 
-
-Underfull \vbox (badness 1308) has occurred while \output is active []
-
- [8]
-Underfull \hbox (badness 1377) in paragraph at lines 64--73
-\TU/TimesNewRoman(0)/m/n/10.95 ative to RRF-only, it improves Recall@10 by
- []
-
-[9]
-Underfull \hbox (badness 10000) in paragraph at lines 94--101
+[8] [9]
+Underfull \hbox (badness 10000) in paragraph at lines 88--95
 \TU/TimesNewRoman(0)/m/n/10.95 For GPT-4o-mini, CoT lowers Token F1
  []
 
 
-Underfull \hbox (badness 1616) in paragraph at lines 94--101
+Underfull \hbox (badness 1616) in paragraph at lines 88--95
 \TU/TimesNewRoman(0)/m/n/10.95 from 24.72% to 23.15% ($\OMS/cmsy/m/n/10.95 ^^@\
 OT1/cmr/m/n/10.95 1\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 57$ \TU/TimesNewRoma
 n(0)/m/n/10.95 pp; 95% CI
  []
 
 
-Underfull \hbox (badness 3503) in paragraph at lines 94--101
+Underfull \hbox (badness 3503) in paragraph at lines 88--95
 \TU/TimesNewRoman(0)/m/n/10.95 [$\OMS/cmsy/m/n/10.95 ^^@\OT1/cmr/m/n/10.95 2\OM
 L/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 24\OML/cmm/m/it/10.95 ; \OMS/cmsy/m/n/10.9
 5 ^^@\OT1/cmr/m/n/10.95 0\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 92$\TU/TimesNe
@@ -1503,72 +1505,69 @@ wRoman(0)/m/n/10.95 ]) and ROUGE-L from 21.60%
  []
 
 
-Underfull \hbox (badness 3354) in paragraph at lines 94--101
+Underfull \hbox (badness 3354) in paragraph at lines 88--95
 \TU/TimesNewRoman(0)/m/n/10.95 and end-to-end latency, and 1.21 seconds to
  []
 
 
-Underfull \hbox (badness 1852) in paragraph at lines 104--113
+Underfull \hbox (badness 1852) in paragraph at lines 98--107
 \TU/TimesNewRoman(0)/m/n/10.95 Because retrieval is fixed, Recall, MRR, and
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 116--124
+Underfull \hbox (badness 10000) in paragraph at lines 110--118
 \TU/TimesNewRoman(0)/m/n/10.95 The saved field historically called
  []
 
 
-Underfull \hbox (badness 2310) in paragraph at lines 116--124
+Underfull \hbox (badness 2310) in paragraph at lines 110--118
 \TU/lmtt/m/n/10.95 unanswerable_accuracy \TU/TimesNewRoman(0)/m/n/10.95 is a te
 mplate-based
  []
 
 
-Underfull \hbox (badness 1067) in paragraph at lines 116--124
+Underfull \hbox (badness 1067) in paragraph at lines 110--118
 \TU/TimesNewRoman(0)/m/n/10.95 answer/refuse check over both answerable and
  []
 
 
-Underfull \hbox (badness 1701) in paragraph at lines 116--124
+Underfull \hbox (badness 1701) in paragraph at lines 110--118
 \TU/TimesNewRoman(0)/m/n/10.95 of refusal quality. Both GPT prompt modes
  []
 
 
-Underfull \hbox (badness 1603) in paragraph at lines 116--124
+Underfull \hbox (badness 1603) in paragraph at lines 110--118
 \TU/TimesNewRoman(0)/m/n/10.95 refuse 98 of the 100 unanswerable cases and
  []
 
 
-Underfull \hbox (badness 1635) in paragraph at lines 116--124
+Underfull \hbox (badness 1635) in paragraph at lines 110--118
 \TU/TimesNewRoman(0)/m/n/10.95 cation decision, so the result cannot establish
  []
 
 
-Underfull \vbox (badness 3291) has occurred while \output is active []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 162--170
+Underfull \hbox (badness 10000) in paragraph at lines 156--164
 []\TU/TimesNewRoman(0)/m/n/10.95 The other model pairs are descriptive
  []
 
 
-Underfull \hbox (badness 3942) in paragraph at lines 162--170
+Underfull \hbox (badness 3942) in paragraph at lines 156--164
 \TU/TimesNewRoman(0)/m/n/10.95 checks, not additional primary tests. Their
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 162--170
+Underfull \hbox (badness 10000) in paragraph at lines 156--164
 \TU/TimesNewRoman(0)/m/n/10.95 CoT-minus-Base Token-F1 changes are
  []
 
 
-Underfull \hbox (badness 4686) in paragraph at lines 162--170
+Underfull \hbox (badness 4686) in paragraph at lines 156--164
 $\OMS/cmsy/m/n/10.95 ^^@\OT1/cmr/m/n/10.95 1\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/1
 0.95 33$ \TU/TimesNewRoman(0)/m/n/10.95 pp for DeepSeek-V3.1-Thinking (95%
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 162--170
+Underfull \hbox (badness 10000) in paragraph at lines 156--164
 \TU/TimesNewRoman(0)/m/n/10.95 CI [$\OMS/cmsy/m/n/10.95 ^^@\OT1/cmr/m/n/10.95 1
 \OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 96\OML/cmm/m/it/10.95 ; \OMS/cmsy/m/n/1
 0.95 ^^@\OT1/cmr/m/n/10.95 0\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 73$\TU/Time
@@ -1578,7 +1577,7 @@ sNewRoman(0)/m/n/10.95 ]), $\OMS/cmsy/m/n/10.95 ^^@\OT1/cmr/m/n/10.95 0\OML/cmm
  []
 
 
-Underfull \hbox (badness 1571) in paragraph at lines 162--170
+Underfull \hbox (badness 1571) in paragraph at lines 156--164
 \TU/TimesNewRoman(0)/m/n/10.95 ([$\OMS/cmsy/m/n/10.95 ^^@\OT1/cmr/m/n/10.95 2\O
 ML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 77\OML/cmm/m/it/10.95 ; \OMS/cmsy/m/n/10.
 95 ^^@\OT1/cmr/m/n/10.95 1\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 15$\TU/TimesN
@@ -1586,18 +1585,18 @@ ewRoman(0)/m/n/10.95 ]). Four DeepSeek cases have
  []
 
 
-Underfull \hbox (badness 3568) in paragraph at lines 172--181
+Underfull \hbox (badness 3568) in paragraph at lines 166--175
 \TU/TimesNewRoman(0)/m/n/10.95 structural citation fields, and latency records.
 
  []
 
 
-Underfull \hbox (badness 3128) in paragraph at lines 172--181
+Underfull \hbox (badness 3128) in paragraph at lines 166--175
 \TU/TimesNewRoman(0)/m/n/10.95 They do not contain legal correctness labels,
  []
 
 
-Underfull \hbox (badness 1014) in paragraph at lines 172--181
+Underfull \hbox (badness 1014) in paragraph at lines 166--175
 \TU/TimesNewRoman(0)/m/n/10.95 narrow conclusion: GPT-4o-mini CoT reduces
  []
 
@@ -1611,12 +1610,12 @@ Underfull \hbox (badness 1418) in paragraph at lines 84--90
 \TU/TimesNewRoman(0)/m/n/10.95 Token F1 changes are small and inconclusive.
  []
 
-) (./sections/8_discussion.tex
+[11]) (./sections/8_discussion.tex
 Underfull \hbox (badness 1297) in paragraph at lines 218--4
 \TU/TimesNewRoman(0)/m/n/10.95 Jina is intermediate (1.278 s), BGE is slower
  []
 
-[11]
+
 Underfull \hbox (badness 6252) in paragraph at lines 35--41
  []\TU/TimesNewRoman(0)/b/n/10.95 Reranking is the clearest robust improve-
  []
@@ -1641,10 +1640,7 @@ Underfull \hbox (badness 1067) in paragraph at lines 44--51
 \TU/TimesNewRoman(0)/m/n/10.95 is therefore operational: this CoT prompt has
  []
 
-
-Underfull \vbox (badness 1648) has occurred while \output is active []
-
- [12]
+[12]
 Underfull \hbox (badness 4660) in paragraph at lines 62--68
 \TU/TimesNewRoman(0)/m/n/10.95 augmentation should be introduced as a tar-
  []
@@ -1679,7 +1675,11 @@ Underfull \hbox (badness 7256) in paragraph at lines 92--4
 \TU/TimesNewRoman(0)/m/n/10.95 ery configuration. The graph corpus also
  []
 
-[13]) (./sections/10_conclusion.tex
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [13])
+(./sections/10_conclusion.tex
 Underfull \hbox (badness 1132) in paragraph at lines 7--16
 \TU/TimesNewRoman(0)/m/n/10.95 This controlled ablation study identifies where
  []
@@ -1715,6 +1715,7 @@ Underfull \hbox (badness 1852) in paragraph at lines 30--78
 
  []
 
+[14]
 No file ablation_report.bbl.
 (./appendix.tex
 Underfull \hbox (badness 5374) in paragraph at lines 9--19
@@ -1749,9 +1750,6 @@ Underfull \hbox (badness 1424) in paragraph at lines 9--19
  []
 
 
-Underfull \vbox (badness 5022) has occurred while \output is active []
-
- [14]
 Underfull \hbox (badness 10000) in paragraph at lines 20--24
 []\TU/TimesNewRoman(0)/m/n/10.95 The processed corpus summary contains
  []
@@ -1873,6 +1871,10 @@ Package natbib Warning: There were undefined citations.
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
 Package rerunfilecheck Info: File `ablation_report.out' has not changed.
 (rerunfilecheck)             Checksum: 6217F5946C9FD95E6CCB71FCFF18EF7A;10324.
  ) 

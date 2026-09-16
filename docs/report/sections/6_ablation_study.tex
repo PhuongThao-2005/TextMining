@@ -56,20 +56,14 @@ The third family provides the cleanest component comparison. It evaluates no
 reranking, RRF-only, mMiniLM, Qwen3, BGE, and Jina over the same reconstructed
 RRF pool of 30 candidates and retains the top 10. All six runs cover the same
 500 questions with no retrieval or generation errors, and the reconstruction
-matches the recorded RRF-only top-10 prefix for all 500 cases. Candidate
-Recall@30 (0.5995) and Candidate Hit@30 (0.6450) are identical across
-conditions, so the observed differences arise from ordering and retaining the
-same available evidence.
+matches the recorded RRF-only top-10 prefix for all 500 cases. Rerankers jointly score each query--candidate pair, capturing richer cross-attention interactions than comparing separately encoded query and document vectors. Candidate Recall@30 (0.5995) and Candidate Hit@30 (0.6450) are identical across conditions, so the observed differences arise entirely from re-ordering and retaining the same available evidence.
 
-Jina is the strongest retrieval configuration. Relative to RRF-only, it
+Jina is the strongest overall retrieval configuration. Relative to RRF-only, it
 improves Recall@10 by +9.23 pp, MRR@10 by +13.35 pp, and nDCG@10 by +11.85 pp;
-all paired 95\% bootstrap intervals exclude zero. Qwen3 and BGE also show
-positive retrieval effects, while mMiniLM delivers a smaller but reliable gain
-at the lowest reranking cost. BGE has the highest observed Token F1 and
-ROUGE-L, and Jina has the highest recorded unanswerable accuracy. These are
-lexical and template-based diagnostics, however, not judgments of legal
-correctness. \hyperref[tab:reranker-results]{Table~\ref{tab:reranker-results}} and \hyperref[tab:reranker-paired]{Table~\ref{tab:reranker-paired}}
-give the aggregate and paired results.
+all paired 95\% bootstrap confidence intervals exclude zero. Qwen3 and BGE also show
+strong positive retrieval effects, while mMiniLM delivers a smaller but reliable gain
+at the lowest reranking latency (0.385 s vs. 9.695 s for Qwen3). BGE achieves the highest observed Token F1 (0.2955) and ROUGE-L (0.2603), while Jina achieves the highest recorded unanswerable accuracy (0.884). These lexical and template-based diagnostics reflect output structure rather than formal legal correctness. \hyperref[tab:reranker-results]{Table~\ref{tab:reranker-results}} and \hyperref[tab:reranker-paired]{Table~\ref{tab:reranker-paired}}
+provide the aggregate and paired results.
 
 \subsection{LLM Generator Ablation: Base versus CoT}
 \label{sec:ablation-reasoning}
