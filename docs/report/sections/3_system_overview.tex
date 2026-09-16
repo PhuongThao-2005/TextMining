@@ -10,7 +10,7 @@ This section details the end-to-end architecture of \textbf{L\_RAG}, a Knowledge
 \label{sec:architecture}
 
 L\_RAG connects corpus indexing, hybrid retrieval, graph-based context
-selection, candidate reranking, and cited generation. Figure~\ref{fig:architecture}
+selection, candidate reranking, and cited generation. \hyperref[fig:architecture]{Figure~\ref{fig:architecture}}
 shows five operational phases: (1) corpus ingestion and graph/vector indexing,
 (2) multi-modal retrieval, (3) graph overlay and context expansion,
 (4) sequential candidate reranking, and (5) LLM prompting and generation.
@@ -90,10 +90,10 @@ Initial retrieval selects $K=30$ candidate chunks per query. To maximize precisi
 
 L\_RAG supports four distinct reranking backends loaded sequentially onto GPU:
 \begin{enumerate}
-    \item \textbf{\texttt{mMiniLMv2}:} \url{cross-encoder/mmarco-mMiniLMv2-L12-H384-v1} (Lightweight baseline, 117M params).
-    \item \textbf{\texttt{BGE-Reranker-v2-m3}:} \url{BAAI/bge-reranker-v2-m3} (Multilingual 567M params with sigmoid activation).
-    \item \textbf{\texttt{Jina-Reranker-v2}:} \url{jinaai/jina-reranker-v2-base-multilingual} (278M params, featuring dynamic position embedding patches).
-    \item \textbf{\texttt{Qwen3-Reranker}:} \url{Qwen/Qwen3-Reranker-0.6B} (CausalLM-based 0.6B parameter model evaluated in FP16 precision).
+    \item \textbf{\texttt{mMiniLMv2}:} \href{https://huggingface.co/cross-encoder/mmarco-mMiniLMv2-L12-H384-v1}{\texttt{cross-encoder/mmarco-mMiniLMv2-L12-H384-v1}} (Lightweight baseline, 117M params).
+    \item \textbf{\texttt{BGE-Reranker-v2-m3}:} \href{https://huggingface.co/BAAI/bge-reranker-v2-m3}{\texttt{BAAI/bge-reranker-v2-m3}} (Multilingual 567M params with sigmoid activation).
+    \item \textbf{\texttt{Jina-Reranker-v2}:} \href{https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual}{\texttt{jinaai/jina-reranker-v2-base-multilingual}} (278M params, featuring dynamic position embedding patches).
+    \item \textbf{\texttt{Qwen3-Reranker}:} \href{https://huggingface.co/Qwen/Qwen3-Reranker-0.6B}{\texttt{Qwen/Qwen3-Reranker-0.6B}} (CausalLM-based 0.6B parameter model evaluated in FP16 precision).
 \end{enumerate}
 
 To prevent GPU Out-Of-Memory (OOM) failures during multi-model evaluation, the loader executes a strict \textbf{Sequential Load-Run-Unload Cycle}:

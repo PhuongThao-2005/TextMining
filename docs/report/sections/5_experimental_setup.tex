@@ -10,7 +10,7 @@ legal QA benchmark. The benchmark contains 500 questions: 400 answerable and
 question identifiers, generator settings, and corpus/index version; only the
 component named by the family is changed. This design is important because the
 four completed families use different candidate budgets, as summarized in
-Table~\ref{tab:configurations}.
+\hyperref[tab:configurations]{Table~\ref{tab:configurations}}.
 
 \subsection{Research Questions}
 \label{sec:research-questions}
@@ -62,7 +62,7 @@ treated as full-online hybrid latency.
 All completed runs use \texttt{intfloat/multilingual-e5-large} for dense
 retrieval, temperature 0.0, and a maximum of 1,024 output tokens. The
 non-generator ablations use \texttt{gpt-4o-mini}; the reasoning family varies
-the generator model and prompt mode as listed in Table~\ref{tab:configurations}.
+the generator model and prompt mode as listed in \hyperref[tab:configurations]{Table~\ref{tab:configurations}}.
 The embedding-text ablation uses raw FAISS
 top-10 retrieval with no sparse, graph, fusion, or reranking module. The
 dense/hybrid/graph ablation retrieves 50 seeds and supplies at most 10 final
@@ -228,7 +228,7 @@ latency.
 \subsection{Ablation Configurations}
 \label{sec:configurations}
 
-Table~\ref{tab:configurations} lists the frozen configurations used in the
+\hyperref[tab:configurations]{Table~\ref{tab:configurations}} lists the frozen configurations used in the
 completed analyses. Names are aligned with the run manifests and the derived
 reports under \texttt{ablation\_work/}.
 

@@ -26,7 +26,7 @@ The result separates two levels of retrieval quality. Metadata makes it more
 likely that the system enters the correct legal instrument, but it does not
 promote the exact supporting chunk earlier in the ranking. It should therefore
 be treated as a document-discovery aid, not as an unconditional improvement in
-provision-level retrieval. Table~\ref{tab:embedding-results} provides the
+provision-level retrieval. \hyperref[tab:embedding-results]{Table~\ref{tab:embedding-results}} provides the
 complete comparison.
 
 \subsection{Retrieval Mode and Graph Expansion}
@@ -68,7 +68,7 @@ positive retrieval effects, while mMiniLM delivers a smaller but reliable gain
 at the lowest reranking cost. BGE has the highest observed Token F1 and
 ROUGE-L, and Jina has the highest recorded unanswerable accuracy. These are
 lexical and template-based diagnostics, however, not judgments of legal
-correctness. Tables~\ref{tab:reranker-results} and~\ref{tab:reranker-paired}
+correctness. \hyperref[tab:reranker-results]{Table~\ref{tab:reranker-results}} and \hyperref[tab:reranker-paired]{Table~\ref{tab:reranker-paired}}
 give the aggregate and paired results.
 
 \subsection{LLM Generator Ablation: Base versus CoT}
@@ -87,8 +87,7 @@ top-10 chunk-ID sequences for every question.
 The analysis reads frozen predictions, metrics, latency records, error files,
 and manifests; it does not rerun retrieval or generation. Deltas are CoT minus
 Base, with 95\% percentile confidence intervals from 10,000 paired bootstrap
-resamples (seed 42). Exact Match also uses an exact McNemar test. Section~
-\ref{sec:evaluation-metrics} defines the metrics and denominators.
+resamples (seed 42). Exact Match also uses an exact McNemar test. \hyperref[sec:evaluation-metrics]{Section~\ref{sec:evaluation-metrics}} defines the metrics and denominators.
 
 \subsubsection{Primary paired result}
 
@@ -125,7 +124,7 @@ result cannot establish whether the additional answers were appropriate.
 
 \subsubsection{Citation structure, reliability, and descriptive model checks}
 
-Table~\ref{tab:llm-reasoning-runs} consolidates all four models and both prompt
+\hyperref[tab:llm-reasoning-runs]{Table~\ref{tab:llm-reasoning-runs}} consolidates all four models and both prompt
 modes. For the primary GPT pair, CoT raises citation presence from 78.25\% to
 81.00\% and mean unique sources from 1.46 to 1.68, while structural citation
 coverage falls from 89.42\% to 87.91\%. Both runs have zero invalid markers.
