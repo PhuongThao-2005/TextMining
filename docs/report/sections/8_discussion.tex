@@ -22,14 +22,21 @@ with passage content when the target is a specific provision. The practical
 implication is to evaluate both document coverage and chunk ranking: reporting
 only one would hide this trade-off.
 
-\paragraph{The current hybrid and graph policies are not default choices.}
-Hybrid retrieval underperforms dense retrieval on exact-chunk coverage and
-adds a large latency cost. This does not show that BM25 or RRF are inherently
-unsuitable for legal retrieval; it identifies a limitation of this index,
-Vietnamese tokenization, fusion constant, and candidate budget. Similarly,
-one-hop graph expansion increases context density but removes more retrieved
-gold evidence than it adds. Under a top-10 budget, the graph is behaving as a
-replacement policy, not a safe supplement to high-confidence seed passages.
+\paragraph{Hybrid and graph results identify targeted refinements.}
+DenseOnly provides the strongest exact-chunk coverage in this family.
+The Hybrid result motivates examining tokenization, shard-local BM25
+statistics, fusion, and candidate allocation. Its reported timings include
+amortized batch computation, so online serving efficiency remains a separate
+engineering question.
+
+Structural expansion produces denser contexts, with a coverage trade-off
+under the current replacement policy. It starts from five seeds, whereas the
+baseline retains ten chunks. Of the 65 gold-chunk occurrences lost by
+DenseGraph, 60 were outside the original top five; the corresponding count
+for HybridGraph is 52 of 60. These observations motivate preserving the
+baseline evidence before adding structural context. The comparison evaluates
+seed selection, ordering, and expansion together; it does not isolate their
+individual effects or test the full validity-overlay functionality.
 
 \paragraph{Reranking is the clearest robust improvement.}
 With candidate evidence held fixed, every evaluated cross-encoder improves
@@ -52,15 +59,15 @@ quality advantage.
 \subsection{Design Implications}
 \label{sec:design-implications}
 
-The results suggest a simple default path for a retrieval-focused deployment:
-use dense retrieval followed by a cross-encoder reranker. Jina is the present
-quality--latency choice; mMiniLM is the practical fallback when response time
-is the main constraint; and BGE is a reasonable alternative when lexical
-overlap is prioritized. These are engineering choices for this benchmark, not
-rankings of legal reliability.
+The findings motivate evaluating dense retrieval followed by a cross-encoder
+as a streamlined deployment candidate. Jina is a promising choice based on
+its ranking and latency results in the tested dense--BM25 RRF pool; its
+performance on a dense-only pool remains to be measured. Within the evaluated
+pool, mMiniLM offers the lowest reranking latency and BGE the highest observed
+lexical overlap. These results guide the next configuration comparison.
 
-Hybrid retrieval should be revisited only after measuring online BM25 cost and
-tuning tokenization, fusion, and candidate allocation. Graph augmentation
+Further Hybrid evaluation should measure online BM25 cost and examine
+shared corpus statistics, tokenization, fusion, and candidate allocation. Graph augmentation
 should be introduced as a targeted, evidence-preserving mode for validity or
 relationship-heavy questions, rather than as unconditional expansion. A useful
 next graph policy would reserve space for high-confidence seed chunks before

@@ -21,7 +21,7 @@ We organize the experiments around five questions:
     improve exact evidence retrieval or document-level coverage?
     \item Does hybrid dense--sparse retrieval improve coverage or ranking over
     dense retrieval alone?
-    \item Does the current G-LRAG graph overlay improve evidence coverage and
+    \item Does the current G-LRAG structural context-expansion policy improve evidence coverage and
     downstream behavior for the tested legal QA benchmark?
     \item Which reranker best trades ranking quality against inference cost
     when the candidate pool is held fixed?
@@ -35,7 +35,7 @@ We organize the experiments around five questions:
 
 For answerable questions, retrieval is evaluated against the annotated gold
 chunk IDs using Recall@$k$, Hit@$k$, MRR@$k$, nDCG@$k$, and Precision@$k$.
-For graph runs we additionally report document-identity precision, because a
+For graph runs we additionally report chunk-ID context precision, because a
 graph variant can return fewer chunks and therefore make a fixed-denominator
 precision score misleading. The reranker analysis reports candidate
 Recall@30 and candidate Hit@30 to distinguish the evidence ceiling from the
@@ -50,24 +50,37 @@ metric. These automatic overlap and abstention measures are diagnostics rather t
 the available artifacts contain no human labels for legal correctness,
 completeness, claim faithfulness, or citation-to-chunk alignment. Those
 metrics are consequently not inferred from lexical overlap.
+For the retrieval/graph family, unanswerable accuracy is the fraction of the
+100 unanswerable questions whose output contains the Vietnamese fallback
+phrase. It is distinct from the 500-case decision accuracy reported for the
+reranker and reasoning families.
 
 Efficiency is reported as mean and median per-query latency, with p95 values
 where the source run recorded them. The reranker runs used cached BM25
 candidates and therefore report zero sparse-stage time; those values are not
-treated as full-online hybrid latency.
+treated as full-online hybrid latency. In the retrieval/graph family, Hybrid
+timings include the BM25 batch-precomputation cost divided by 500 queries
+(26.990 seconds per query). These amortized timings describe computation
+accounting for the batch, rather than directly measured online request latency.
 
 \subsection{Evaluation Protocol}
 \label{sec:protocol}
 
 All completed runs use \texttt{intfloat/multilingual-e5-large} for dense
-retrieval, temperature 0.0, and a maximum of 1,024 output tokens. The
+retrieval and temperature 0.0. Output-token limits are family-specific:
+the retrieval/graph notebooks set no explicit client-side cap, whereas the
+generator-reasoning protocol uses a 1,024-token limit. The
 non-generator ablations use \texttt{gpt-4o-mini}; the reasoning family varies
 the generator model and prompt mode as listed in \hyperref[tab:configurations]{Table~\ref{tab:configurations}}.
 The embedding-text ablation uses raw FAISS
 top-10 retrieval with no sparse, graph, fusion, or reranking module. The
-dense/hybrid/graph ablation retrieves 50 seeds and supplies at most 10 final
-chunks; graph variants expand five seeds by one hop with a maximum graph
-context of 10. The reranker ablation reconstructs a shared RRF candidate pool
+dense/hybrid/graph ablation retrieves up to 50 candidates per enabled retriever
+and selects a top-10 baseline context. Graph variants expand its top five
+seeds within their parent provisions (\texttt{max\_hop=1}), replacing the
+baseline context with at most 10 expanded chunks. They use broad validity
+filtering, without query-time validity overlays or reranking. This comparison
+evaluates the complete context-selection policy, including seed selection and
+expansion. The reranker ablation reconstructs a shared RRF candidate pool
 of 30 chunks (\texttt{C30}) and compares the top 10 final chunks
 (\texttt{T10}). Its fusion constant is \texttt{rrf\_k=60}.
 
@@ -95,18 +108,23 @@ used for the primary paired claim. The post-hoc analysis and frozen result ledge
 \subsection{Evaluation Workflow and Derived Metrics}
 \label{sec:evaluation-metrics}
 
-Each condition is a saved 500-case run over the same question IDs, benchmark
-labels, retrieved top-10 context, generation settings, and reference answers.
+This subsection describes the generator-reasoning post-hoc analysis.
+Each condition is a saved 500-case run over shared question IDs, benchmark
+labels, and reference answers, with context and provenance alignment as
+described above.
 The post-hoc analysis reads these records and does not call a model or rerun
 retrieval. A row is valid when it is not marked failed, errored, or skipped,
 has no saved error, and contains a prediction. Lexical metrics use successful
 answerable rows; a paired Base/CoT statistic uses only IDs that satisfy these
 conditions in both runs and contain all three lexical metrics.
 
-The original evaluator normalizes text with Unicode NFC, lowercasing,
+The reasoning-family evaluator normalizes text with Unicode NFC, lowercasing,
 punctuation-to-space replacement, and whitespace collapse. The derived metrics
 are separated below so that answer-quality outcomes are not conflated with
 retrieval, citation-structure, or operational diagnostics.
+The retrieval/graph notebooks instead lowercase text and collapse whitespace,
+retaining punctuation and using the complete answer for exact match. Lexical
+scores are therefore interpreted within each family using its saved evaluator.
 
 \paragraph{Primary metrics.}
 The primary generated-answer metrics are computed on successful answerable

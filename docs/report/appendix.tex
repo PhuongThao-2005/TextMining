@@ -87,9 +87,10 @@ metrics and unmeasured full-online deployment statistics.
 \section{Retrieval and Reranker Configurations}
 \label{app:config-reference}
 
-\hyperref[tab:config-reference]{Table~\ref{tab:config-reference}} records the exact hyperparameter settings,
-candidate budgets, model checkpoints, and scoring conventions used across all
-evaluation runs.
+\hyperref[tab:config-reference]{Table~\ref{tab:config-reference}} summarizes component settings.
+Family-specific budgets and generation settings appear in Section~\ref{sec:protocol};
+optional system capabilities are distinguished from the components activated
+in each experiment.
 
 \begin{table*}[t]
 \centering
@@ -102,14 +103,14 @@ evaluation runs.
 \textbf{Component} & \textbf{Model / Checkpoint} & \textbf{Key Settings / Parameters} & \textbf{Role \& Conventions} \\
 \midrule
 Dense Retriever & \texttt{intfloat/multilingual-e5-large} & 560M params, 1024-dim, L2-normalized IP & Encodes Metadata-Enriched text (\texttt{Doc\_Title $\parallel$ Header $\parallel$ Passage}); indexed in FAISS \texttt{IndexFlatIP}. \\
-Sparse Retriever & BM25 (\texttt{rank\_bm25}) & $k_1=1.5, b=0.75$, \texttt{underthesea} & Tokenizes compound Vietnamese legal terms; ranks by BM25 term frequency over document shards. \\
+Sparse Retriever & BM25 (\texttt{rank\_bm25}) & $k_1=1.5, b=0.75$, \texttt{underthesea} & Retrieval/graph uses 10 independent shards with shard-local statistics; shard candidates are merged by BM25 score. \\
 Fusion Layer & Reciprocal Rank Fusion (RRF) & $k=60$, Top-$K=30$ candidate pool & Fuses Dense and BM25 ranked hit lists into a shared candidate pool ($C_{30}$) for reranking. \\
-Graph Overlay & G-LRAG (In-Memory) & \texttt{as\_of\_date}, Authority Hierarchy & Dynamic validity whitelisting (\texttt{id\_str\_filter}) and 1-hop reading-order (\texttt{CHUNK\_NEXT}, \texttt{PROVISION\_NEXT}) expansion. \\
+Graph Module & G-LRAG (In-Memory) & Structural expansion; optional overlay & Retrieval/graph expands five seeds within their provisions, capped at 10 chunks. Query-time validity overlays are disabled in this family. \\
 Reranker: mMiniLM & \texttt{mmarco-mMiniLMv2-L12-H384-v1} & 117M params, FP32 & Lightweight cross-encoder baseline; joint query-passage scoring over candidate pool $C_{30}$. \\
 Reranker: BGE & \texttt{BAAI/bge-reranker-v2-m3} & 567M params, Sigmoid activation & Multilingual cross-encoder; scores candidate passages; highest observed lexical answer overlap. \\
 Reranker: Jina & \texttt{jina-reranker-v2-base-multilingual} & 278M params, Position-ID patch & Multilingual reranker with position embedding compatibility patch; top overall retrieval quality. \\
 Reranker: Qwen3 & \texttt{Qwen/Qwen3-Reranker-0.6B} & 0.6B params, FP16 precision & CausalLM-based reranker wrapper with automatic batch-size reduction and OOM retry logic. \\
-Generator & \texttt{gpt-4o-mini} & $T=0.0$, Max Tokens 1024, Top-$N=10$ & Synthesizes grounded answers from top-10 evidence chunks with explicit provision-level citation and \texttt{INSUFFICIENT\_CONTEXT} abstention. \\
+Generator & \texttt{gpt-4o-mini} & $T=0.0$, up to 10 context chunks & Retrieval/graph uses a Vietnamese evidence-only prompt and fallback phrase, with no explicit client-side output-token cap. Reasoning runs use a 1,024-token cap. \\
 \bottomrule
 \end{tabular}%
 }

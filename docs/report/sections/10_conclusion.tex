@@ -4,12 +4,13 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-This controlled ablation study identifies where L\_RAG currently gains value
-and where extra machinery is not yet justified. Metadata-enriched embeddings
-improve document-level coverage but not exact-chunk ranking. The tested hybrid
-fusion and one-hop graph expansion reduce exact-evidence coverage while adding
-cost or displacing strong seed passages. Cross-encoder reranking is the
-consistent exception: with the candidate pool fixed, Jina improves Recall@10,
+This controlled ablation study identifies effective components and concrete
+directions for refining L\_RAG. Metadata-enriched embeddings improve
+document-level coverage but not exact-chunk ranking. DenseOnly leads coverage
+in the retrieval/graph family, while the sharded Hybrid implementation and
+top-five-seed graph replacement policy highlight opportunities in fusion,
+serving efficiency, and evidence retention. With the candidate pool fixed,
+cross-encoder reranking provides consistent gains: Jina improves Recall@10,
 MRR@10, and nDCG@10 over RRF-only with paired confidence intervals above zero.
 BGE leads the observed lexical overlap metrics, while mMiniLM has the lowest
 reranking cost.
@@ -19,9 +20,10 @@ GPT-4o-mini, CoT prompting lowers Token F1 by 1.57 pp and ROUGE-L by 1.71 pp,
 improves only template-based answerability diagnostics, and increases latency.
 It is therefore not a demonstrated improvement in legal-answer quality.
 
-Taken together, the results support a dense-retrieval-plus-reranker baseline,
-with Jina as the current quality--latency candidate for this benchmark. They
-do not establish legal correctness, citation faithfulness, or safe autonomous
+Taken together, the results motivate testing a dense-retrieval-plus-reranker
+baseline. Jina is a promising candidate based on the evaluated RRF pool;
+transferring that advantage to a dense-only pool requires a direct comparison.
+The findings do not establish legal correctness, citation faithfulness, or safe autonomous
 legal advice: the available artifacts lack human semantic evaluations.
 
 \subsection{Future Work}

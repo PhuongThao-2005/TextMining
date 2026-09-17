@@ -10,7 +10,7 @@
 
 \scriptsize
 Offline: corpus structuring, vector indexing, and graph construction.\quad
-Online: hybrid retrieval, graph overlay, reranking, and cited generation.
+Online components are enabled per configuration; retrieval/graph ablation uses structural expansion without validity overlays or reranking.
 \end{frame}
 
 \begin{frame}{Five-Stage Online Pipeline}
@@ -103,7 +103,7 @@ The in-memory loader, builder, traversal, expansion, overlay, and context module
 \end{block}
 \end{frame}
 
-\begin{frame}{Sequential Multi-Reranker Stage}
+\begin{frame}{Alternative Reranker Backends}
 \small
 \begin{columns}[T]
   \column{0.54\textwidth}
@@ -115,7 +115,7 @@ The in-memory loader, builder, traversal, expansion, overlay, and context module
       \item Qwen3-Reranker-0.6B: instruction-aware causal-LM reranker.
     \end{enumerate}
   \column{0.43\textwidth}
-    \textbf{GPU-safe execution}
+    \textbf{One backend per condition}
     \[
       \mathrm{Load}(M_i)
       \rightarrow \mathrm{Run}(M_i)
@@ -141,8 +141,8 @@ Rerankers jointly score each query--candidate pair, capturing richer interaction
       \begin{itemize}
         \item Model: \texttt{gpt-4o-mini}
         \item Temperature: 0.0
-        \item Maximum output: 1,024 tokens
-        \item Context: top 10 reranked chunks
+        \item Retrieval/graph: no explicit output cap
+        \item Context: up to 10 selected chunks
       \end{itemize}
     \end{block}
   \column{0.49\textwidth}
@@ -150,8 +150,8 @@ Rerankers jointly score each query--candidate pair, capturing richer interaction
       \begin{itemize}
         \item Cite governing legal provisions explicitly.
         \item Use only retrieved evidence.
-        \item Return \texttt{INSUFFICIENT\_CONTEXT} when evidence is inadequate.
-        \item Format boolean, extractive, abstractive, and unanswerable outputs appropriately.
+        \item Retrieval/graph uses a Vietnamese insufficient-context fallback.
+        \item Answer directly and state partial evidence coverage.
       \end{itemize}
     \end{block}
 \end{columns}

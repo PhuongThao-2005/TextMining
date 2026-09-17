@@ -34,7 +34,9 @@ complete comparison.
 
 The second family compares DenseOnly, HybridOnly, DenseGraph, and HybridGraph.
 Hybrid retrieval adds BM25 and RRF to the same dense index; graph variants
-expand five seed chunks by one hop and retain at most 10 chunks. DenseOnly is
+expand the top five seeds within their parent provisions and replace the
+baseline context with at most 10 expanded chunks. The comparison evaluates
+this complete context-selection policy. DenseOnly is
 the strongest configuration in this family: it exceeds HybridOnly on
 Recall@10 (48.55\% vs. 42.57\%) and nDCG@10 (0.2813 vs. 0.2638). The paired
 Recall@10 change for HybridOnly is $-5.98$ pp (95\% CI [$-9.71,-2.21$]).
@@ -45,9 +47,9 @@ retrieved gold chunk for 61 questions and adds a graph-only gold chunk for
 only one. Relative to HybridOnly, HybridGraph lowers Recall@10 by 11.81 pp,
 with 59 questions losing gold evidence and six gaining it. Graph contexts are
 more concentrated---5.605 chunks on average for DenseGraph and 6.305 for
-HybridGraph---but less complete. Under this fixed budget, expansion is
-displacing high-value seed evidence more often than it is recovering missing
-context.
+HybridGraph over the 400 answerable questions---but cover fewer gold chunks.
+This identifies seed retention as a concrete opportunity to improve coverage
+while retaining local structural context.
 
 \subsection{Reranker Choice at a Fixed Candidate Pool}
 \label{sec:ablation-reranking}

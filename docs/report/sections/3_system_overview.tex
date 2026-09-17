@@ -15,8 +15,12 @@ illustrates the end-to-end query pipeline across five core operational phases:
 (1) query scope and temporal constraint resolution,
 (2) hybrid dense-sparse retrieval (E5 + BM25),
 (3) knowledge-graph overlay filtering and context expansion,
-(4) rank fusion and sequential candidate reranking, and
+(4) rank fusion and candidate reranking, and
 (5) citation-grounded LLM prompting and answer generation.
+This modular overview shows the available components; each ablation activates
+the subset specified in Section~\ref{sec:configurations}. In particular, the
+retrieval/graph family evaluates structural expansion without reranking or
+query-time validity overlays.
 
 \begin{figure*}[t]
 \centering
@@ -34,7 +38,7 @@ illustrates the end-to-end query pipeline across five core operational phases:
     \node [block, right=1.5cm of hybrid] (fusion) {Fusion \& Whitelist Filter\\(RRF + ID Masking)};
     \node [block, right=1.5cm of fusion] (reranker) {Multi-Reranker Stage\\(CrossEncoder / Jina / Qwen3)};
     \node [llmblock, below=1.2cm of reranker] (llm) {LLM Generation\\(\texttt{gpt-4o-mini})};
-    \node [block, left=1.5cm of llm] (output) {Final Answer\\+ Verified Citations};
+    \node [block, left=1.5cm of llm] (output) {Final Answer\\+ Source Citations};
 
     % Paths
     \path [line] (query) -- (hybrid);
@@ -66,32 +70,44 @@ Dense retrieval is powered by \texttt{intfloat/multilingual-e5-large}, a 560M pa
 Chunks are stored in an optimized FAISS vector database using \texttt{IndexFlatIP} with L2-normalized embeddings for fast cosine similarity search.
 
 \subsubsection{Sparse Keyword Search (BM25)}
-Sparse retrieval utilizes an inverted index built with \texttt{rank\_bm25}. Raw legal texts are tokenized using the \texttt{underthesea} Vietnamese morphological tokenizer, ensuring compound legal terms (e.g., \textit{"bất\_động\_sản"}, \textit{"trách\_nhiệm\_hình\_sự"}) are indexed as unified lexical tokens. BM25 parameters are set to standard defaults ($k_1=1.5, b=0.75$).
+Sparse retrieval uses \texttt{rank\_bm25} with Vietnamese word segmentation
+from \texttt{underthesea} and parameters $k_1=1.5$, $b=0.75$.
+The retrieval/graph experiment partitions the corpus into 10 independently
+built BM25 shards to fit the available memory. Candidates from each shard
+are combined by BM25 score before dense--sparse RRF fusion. IDF and average
+document length are estimated within each shard; the results therefore
+characterize this practical sharded implementation. Shared corpus statistics
+and alternative shard-merging policies offer useful directions for refinement.
 
 \subsubsection{Knowledge Graph Overlay (G-LRAG Module)}
 The Knowledge Graph module acts as a query coordinator that generates dynamic document filter whitelists (\texttt{id\_str\_filter}) and performs horizontal reading-order expansions. Key features include:
 
 \begin{itemize}
-    \item \textbf{Dynamic Overlay Folding:} Validity timelines are joined at query time relative to an \texttt{as\_of\_date} parameter, ensuring superseded provisions are excluded.
-    \item \textbf{Precedence Sorting:} Conflicts between legal authority ranks are resolved using statutory hierarchy rules:
+    \item \textbf{Dynamic Overlay Folding:} Validity timelines are joined at query time relative to an \texttt{as\_of\_date} parameter to support filtering using the available validity metadata.
+    \item \textbf{Precedence Sorting:} Candidates can be ordered using encoded legal-authority ranks:
     \begin{equation}
         \begin{aligned}
             \text{Hiến pháp} &\succ \text{Bộ luật / Luật} \\
             &\succ \text{Nghị định} \succ \text{Thông tư}
         \end{aligned}
     \end{equation}
-    \item \textbf{Reading-Order Traversal:} Structural edge pointers (\texttt{CHUNK\_NEXT}, \texttt{PROVISION\_NEXT}) slide context windows horizontally across sibling chunks within the same parent provision.
+    \item \textbf{Reading-Order Traversal:} \texttt{CHUNK\_NEXT} connects chunks within a provision, while \texttt{PROVISION\_NEXT} connects successive provisions. In the implemented hop convention, hop 1 covers the seed provision; additional hops reach subsequent provisions.
 \end{itemize}
 
 \subsubsection{Fusion Layer}
-Search hit lists from dense search ($R_{\text{dense}}$) and sparse search ($R_{\text{BM25}}$) are merged using Reciprocal Rank Fusion (RRF) with constant $k=60$. In configurations without RRF, score normalization is applied using min-max scaling prior to rank merging.
+In the Hybrid retrieval/graph conditions, hit lists from dense search
+($R_{\text{dense}}$) and sparse search ($R_{\text{BM25}}$) are merged using
+Reciprocal Rank Fusion (RRF) with constant $k=60$. DenseOnly retains the dense
+ranking without a fusion stage.
 
 \subsection{Reranking Components}
 \label{sec:reranking-components}
 
-Initial retrieval selects $K=30$ candidate chunks per query. To maximize precision, candidate lists pass through a specialized Cross-Encoder Reranker that scores the full $(query, chunk\_text)$ pair. 
+The reranker experiment selects $K=30$ candidate chunks per query and scores
+the full $(query, chunk\_text)$ pair to refine the final ranking.
 
-L\_RAG supports four distinct reranking backends loaded sequentially onto GPU:
+L\_RAG supports four alternative reranking backends. Evaluation conditions
+load and run one backend at a time, rather than cascading all four per query:
 \begin{enumerate}
     \item \textbf{\texttt{mMiniLMv2}:} \href{https://huggingface.co/cross-encoder/mmarco-mMiniLMv2-L12-H384-v1}{\texttt{cross-encoder/mmarco-mMiniLMv2-L12-H384-v1}} (Lightweight baseline, 117M params).
     \item \textbf{\texttt{BGE-Reranker-v2-m3}:} \href{https://huggingface.co/BAAI/bge-reranker-v2-m3}{\texttt{BAAI/bge-reranker-v2-m3}} (Multilingual 567M params with sigmoid activation).
@@ -110,11 +126,15 @@ To prevent GPU Out-Of-Memory (OOM) failures during multi-model evaluation, the l
 \subsection{Generation Component}
 \label{sec:generation-component}
 
-The top $N=10$ reranked chunks are formatted into a structured prompt context supplied to \texttt{gpt-4o-mini} (temperature $T=0.0$, max tokens $1024$). 
-
-The system prompt specifies three evidence-oriented behaviors:
+The non-generator ablations supply up to $N=10$ selected chunks to
+\texttt{gpt-4o-mini} at temperature $T=0.0$. Context selection and output
+settings follow each experiment's protocol. In the retrieval/graph family,
+the client sets no explicit output-token cap and uses a shared Vietnamese
+prompt with three evidence-oriented instructions:
 \begin{enumerate}
-    \item \textbf{Strict Citation Grounding:} Answers must explicitly cite governing statutory sources (e.g., \textit{"Theo Điều 15, Luật Đất đai 2024..."}).
-    \item \textbf{Unanswerable Abstention:} If the retrieved context lacks sufficient evidence, the LLM should output \texttt{INSUFFICIENT\_CONTEXT} rather than inventing an answer.
-    \item \textbf{Answer-Type Formatting:} Outputs are formatted according to the query type (\textit{boolean}, \textit{extractive}, \textit{abstractive}, or \textit{unanswerable}).
+    \item \textbf{Evidence grounding:} Use only the supplied context and cite legal sources when present.
+    \item \textbf{Explicit abstention:} When evidence is insufficient, respond \textit{``Không có đủ thông tin trong ngữ cảnh được cung cấp.''}
+    \item \textbf{Direct, scoped answers:} Answer naturally in Vietnamese, state any partial coverage, and omit internal reasoning. Benchmark answer types are evaluation labels, not prompt inputs in this family.
 \end{enumerate}
+Source citations support inspection; semantic citation verification is outside
+the completed evaluation.

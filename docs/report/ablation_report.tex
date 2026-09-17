@@ -50,8 +50,8 @@ BM25, a knowledge-graph overlay, rank fusion, cross-encoder reranking, and
 citation-grounded generation. Across a 500-question benchmark, the ablations
 yield three practical findings. Adding metadata to embeddings improves
 document-level coverage, but not exact-chunk ranking. The tested hybrid and
-graph configurations reduce evidence coverage, so their additional complexity
-is not justified under the current settings. In contrast, every tested
+graph context-selection configurations yield lower exact-chunk coverage than
+DenseOnly, identifying opportunities in fusion and seed retention. Every tested
 cross-encoder improves ranking when candidate evidence is held fixed: Jina
 achieves the strongest retrieval scores, BGE the highest lexical
 answer-overlap scores, and mMiniLM the lowest reranking latency. A separate,

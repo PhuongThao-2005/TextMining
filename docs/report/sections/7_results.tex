@@ -61,15 +61,17 @@ retrieved gold chunk for 61 and 59 queries, respectively.
 \centering
 \scriptsize
 \caption{Dense/hybrid retrieval and graph results. Retrieval values use 400
-answerable questions. ``ID precision'' divides the number of gold chunks by
-the actual number of returned chunks; p50/p95 latency is in seconds over all
-500 questions.}
+answerable questions, including average context size. ``Chunk-ID precision''
+is the per-query fraction of returned chunks matching gold chunk IDs.
+p50/p95 timings use all 500 questions. Hybrid timings include 26.990 seconds
+per query of amortized BM25 batch computation, rather than measured online
+BM25 request latency.}
 \label{tab:retrieval-graph-results}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrrrr}
 \toprule
 \textbf{Method} & \textbf{Recall@10} & \textbf{MRR@10} & \textbf{nDCG@10} &
-\textbf{ID precision} & \textbf{Avg. chunks} & \textbf{Retrieval p50/p95} &
+\textbf{Chunk-ID precision} & \textbf{Avg. chunks} & \textbf{Retrieval p50/p95} &
 \textbf{Total p50/p95} \\
 \midrule
 DenseOnly & 0.4855 & 0.2267 & 0.2813 & 0.0580 & 10.000 & 0.797/0.856 & 5.483/9.946 \\
@@ -81,9 +83,10 @@ HybridGraph & 0.3076 & 0.2012 & 0.2228 & 0.0641 & 6.305 & 27.858/27.929 & 31.180
 }
 \end{table*}
 
-Graph contexts are denser: ID precision rises from 0.0580 to 0.0800 for Dense
+Graph contexts are denser: chunk-ID precision rises from 0.0580 to 0.0800 for Dense
 and from 0.0493 to 0.0641 for Hybrid. That gain must be read beside the much
-larger recall loss. Recorded unanswerable accuracy also rises (0.38 to 0.41 for
+larger recall loss. Fallback detection on the 100 unanswerable questions
+also rises (0.38 to 0.41 for
 Dense and 0.38 to 0.47 for Hybrid), but paired Token F1 changes are small and
 inconclusive. The present graph policy thus creates a precision--coverage
 trade-off, not a demonstrated overall improvement.
@@ -215,9 +218,13 @@ overlap scores, while Jina has the best retrieval scores and a lower total p50
 than BGE (4.158 s vs. 5.848 s). These results support a conditional engineering
 choice, not a claim that either reranker generates more legally correct answers.
 
-Efficiency differences are substantial. Hybrid retrieval raises total median
-latency from 5.483 s to 31.538 s and reports a one-time BM25 precomputation
-cost of about 13,495 s. Among rerankers, mMiniLM is fastest (0.385 s
+The batch accounting makes the sparse-stage cost visible. Hybrid total
+median time is 31.538 s, compared with 5.483 s for DenseOnly, and includes
+26.990 s per query allocated from 13,495 s of BM25 precomputation over the
+500-question batch. The batch cost is already included in these per-query
+values and is distinct from index construction. These timings guide resource
+planning for the evaluated implementation; online latency requires a separate
+measurement. Among rerankers, mMiniLM is fastest (0.385 s
 reranker-stage p50), Jina is intermediate (1.278 s), BGE is slower (2.872 s),
 and Qwen3 is much slower (9.695 s). The reranker artifacts do not record p95,
 peak GPU memory, or full-online sparse latency, so those deployment quantities
