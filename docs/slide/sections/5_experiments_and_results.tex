@@ -13,7 +13,8 @@
       \item Retrieval metrics: 400 answerable cases.
       \item Dense encoder: \texttt{multilingual-e5-large}.
       \item Non-reasoning runs: \texttt{gpt-4o-mini}.
-      \item Reasoning primary pair: fixed context, Base vs. CoT.
+      \item LLM ablation: four models, each with Base and CoT.
+      \item GPT-4o-mini pair: fully matched context for causal comparison.
       \item Temperature 0; maximum 1,024 tokens.
       \item Comparisons paired by \texttt{qa\_id}.
     \end{itemize}
@@ -32,7 +33,7 @@ Candidate budgets differ across experiment families, so scores are compared \tex
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{Four Completed Ablation Families}
+\begin{frame}[t]{Four Completed Ablation Families}
 \scriptsize
 \centering
 \resizebox{0.98\linewidth}{!}{%
@@ -46,12 +47,8 @@ Reranking & None; RRF; mMiniLM; Qwen3; BGE; Jina & 30/10 & Final ranker \\
 LLM reasoning & 4 models, each with Base and CoT & fixed/10 & Prompt mode \\
 \bottomrule
 \end{tabular}}
-\vspace{0.35cm}
-\begin{block}{Fixed candidate-pool test}
-All rerankers receive the same reconstructed RRF pool of 30 chunks. Candidate Recall@30 is 0.5995 and Hit@30 is 0.6450 for every configuration.
-\end{block}
 \vspace{0.15cm}
-The GPT-4o-mini pair is the controlled primary comparison; the other three model pairs are descriptive checks because context or provenance is not fully aligned.
+All four LLM pairs are reported; GPT-4o-mini has matched contexts, so the other comparisons are descriptive.
 \end{frame}
 
 \begin{frame}{Ablation 1: Does Metadata Improve Embeddings?}
@@ -96,39 +93,36 @@ DenseGraph & 0.3615 & 0.2045 & 0.2374 & \textbf{0.0800} & 5.605 & \textbf{4.998}
 HybridGraph & 0.3076 & 0.2012 & 0.2228 & 0.0641 & 6.305 & 31.180 \\
 \bottomrule
 \end{tabular}}
-\vspace{0.3cm}
-\begin{columns}[T]
-  \column{0.48\textwidth}
-    \textbf{Hybrid effect}
-    \begin{itemize}
-      \item Recall changes by $-5.98$ pp vs. DenseOnly.
-      \item 95\% CI: $[-9.71,-2.21]$.
-      \item Median latency rises by about 26 seconds.
-    \end{itemize}
-  \column{0.49\textwidth}
-    \textbf{Graph effect}
-    \begin{itemize}
-      \item Recall: $-12.40$ pp (dense), $-11.81$ pp (hybrid).
-      \item Higher identity precision, but lower evidence coverage.
-      \item Expansion removes more gold evidence than it adds.
-    \end{itemize}
-\end{columns}
+\vspace{0.18cm}
+\begin{block}{Additional diagnostics}
+\tiny
+\begin{tabular}{lrrrr}
+\textbf{Method} & \textbf{F1} & \textbf{R-L} & \textbf{Unans. acc.} & \textbf{Total p50/p95 (s)} \\
+DenseOnly & 0.1949 & 0.1665 & 38.0\% & 5.483/9.946 \\
+HybridOnly & 0.1990 & 0.1719 & 38.0\% & 31.538/33.623 \\
+DenseGraph & 0.1987 & 0.1691 & 41.0\% & 4.998/9.750 \\
+HybridGraph & 0.2014 & 0.1710 & 47.0\% & 31.180/33.312 \\
+\end{tabular}
+\end{block}
+\vspace{0.06cm}
+\centering
+\tiny Hybrid adds latency; graph trades exact-chunk recall for higher identity precision.
 \end{frame}
 
 \begin{frame}{Ablation 3: Reranker Comparison}
 \tiny
 \centering
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{lrrrrrrrr}
+\begin{tabular}{lrrrrrrrrr}
 \toprule
-\textbf{Model} & \textbf{Recall@10} & \textbf{Hit@10} & \textbf{MRR@10} & \textbf{nDCG@10} & \textbf{Token F1} & \textbf{ROUGE-L} & \textbf{Rerank p50} & \textbf{Post-retrieval p50} \\
+\textbf{Model} & \textbf{Recall@10} & \textbf{Hit@10} & \textbf{MRR@10} & \textbf{nDCG@10} & \textbf{Token F1} & \textbf{ROUGE-L} & \textbf{Decision} & \textbf{Rerank p50} & \textbf{Post-retrieval p50} \\
 \midrule
-None & 0.4842 & 0.5375 & 0.2167 & 0.2714 & 0.2801 & 0.2453 & 0.000 & 2.925 \\
-RRF-only & 0.4382 & 0.4800 & 0.2335 & 0.2728 & 0.2750 & 0.2416 & 0.000 & 2.972 \\
-mMiniLM & 0.4973 & 0.5425 & 0.3047 & 0.3425 & 0.2901 & 0.2568 & \cellcolor{myGreen!20}\textcolor{myGreen}{\textbf{0.385}} & 3.343 \\
-Qwen3 & 0.5218 & 0.5725 & 0.3418 & 0.3688 & 0.2912 & 0.2583 & 9.695 & 13.007 \\
-BGE & 0.5188 & 0.5675 & 0.3247 & 0.3593 & \cellcolor{FusedOrange!20}\textcolor{FusedOrange}{\textbf{0.2955}} & \cellcolor{FusedOrange!20}\textcolor{FusedOrange}{\textbf{0.2603}} & 2.872 & 5.848 \\
-Jina & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.5305}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.5850}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.3670}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.3914}} & 0.2913 & 0.2558 & 1.278 & 4.158 \\
+None & 0.4842 & 0.5375 & 0.2167 & 0.2714 & 0.2801 & 0.2453 & 85.60\% & 0.000 & 2.925 \\
+RRF-only & 0.4382 & 0.4800 & 0.2335 & 0.2728 & 0.2750 & 0.2416 & 87.40\% & 0.000 & 2.972 \\
+mMiniLM & 0.4973 & 0.5425 & 0.3047 & 0.3425 & 0.2901 & 0.2568 & 87.20\% & \cellcolor{myGreen!20}\textcolor{myGreen}{\textbf{0.385}} & 3.343 \\
+Qwen3 & 0.5218 & 0.5725 & 0.3418 & 0.3688 & 0.2912 & 0.2583 & 87.60\% & 9.695 & 13.007 \\
+BGE & 0.5188 & 0.5675 & 0.3247 & 0.3593 & \cellcolor{FusedOrange!20}\textcolor{FusedOrange}{\textbf{0.2955}} & \cellcolor{FusedOrange!20}\textcolor{FusedOrange}{\textbf{0.2603}} & 86.80\% & 2.872 & 5.848 \\
+Jina & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.5305}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.5850}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.3670}} & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.3914}} & 0.2913 & 0.2558 & 88.40\% & 1.278 & 4.158 \\
 \bottomrule
 \end{tabular}}
 \vspace{0.15cm}
@@ -144,8 +138,9 @@ Jina & \cellcolor{UniBlue!15}\textcolor{UniBlue}{\textbf{0.5305}} & \cellcolor{U
     \end{block}
 \end{columns}
 \vspace{0.1cm}
-\begin{alertblock}{Mechanism}
-Rerankers jointly score each query--candidate pair, capturing richer interactions than comparing separately encoded query and document vectors.
+\begin{alertblock}{Additional diagnostics}
+\scriptsize
+Decision accuracy ranges from 85.6\% to 88.4\%; all six 500-case runs completed. Citation-structure fields were not saved for this family.
 \end{alertblock}
 \end{frame}
 
@@ -172,6 +167,11 @@ Qwen3-8B & CoT & 17.25 & 20.05 & 17.17 & 95.20\% & 98.25\% & 58.15\% & 1.81 & 4.
 }
 \vspace{0.3cm}
 \begin{alertblock}{Reading boundary}
-EM, F1, ROUGE-L, and citation fields use 400 answerable outputs; decision accuracy uses all 500 cases. Only the GPT-4o-mini pair has fully identical saved contexts.
+EM, F1, ROUGE-L, and citation fields use 400 answerable outputs; decision accuracy uses all 500. Prompting effects are reported for all four LLMs, but only GPT-4o-mini has fully identical saved contexts.
 \end{alertblock}
+\vspace{0.08cm}
+\begin{block}{Additional diagnostics}
+\tiny
+All eight runs completed 500/500 cases. Invalid markers were zero except for Qwen3 Base (5/877) and CoT (4/901); Context Recall@10 is fixed within each pair and describes evidence availability.
+\end{block}
 \end{frame}
