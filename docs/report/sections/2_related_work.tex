@@ -11,7 +11,47 @@ the standard RAG workflow, then identifies the legal properties that ordinary
 text retrieval does not capture. The purpose is not to claim that one
 paradigm solves legal QA by itself, but to make explicit which prior ideas
 motivate each component and which evaluation check tests the corresponding
-design assumption.
+design assumption. Table~\ref{tab:legal-rag-requirements} provides the
+design-to-evidence roadmap before the individual research strands are
+discussed.
+
+\begin{table*}[!t]
+\centering
+\footnotesize
+\caption{Legal RAG requirements, corresponding L\_RAG design choices, and
+evaluation checks. Automatic checks diagnose system behavior; they do not
+replace expert assessment of legal correctness.}
+\label{tab:legal-rag-requirements}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.21\textwidth}
+                    >{\raggedright\arraybackslash}p{0.34\textwidth}
+                    >{\raggedright\arraybackslash}p{0.35\textwidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{L\_RAG design response} &
+\textbf{Evaluation check} \\
+\midrule
+Traceable provenance & Stable document, provision, and chunk identifiers;
+source markers retained through generation & Gold-ID Recall@$k$/Hit@$k$ and
+citation-marker validity \\
+Context preservation & Metadata-enriched embedding text plus containment and
+reading-order graph edges & Chunk-only versus chunk+metadata ablation and
+seed-preserving/lost-evidence analysis for graph expansion \\
+Legal applicability & Authority and effective-date metadata, validity
+timeline, quarantine, and direction-verification gates & Schema/build audit;
+the current graph ablation does not estimate the temporal overlay's effect,
+and semantic validity remains a human-label gap \\
+Complementary access & E5 dense retrieval, Vietnamese-tokenized BM25, and RRF
+candidate fusion & Paired DenseOnly versus HybridOnly Recall, MRR, nDCG, and
+latency \\
+Evidence prioritization & Second-stage reranking of a shared candidate pool
+before context construction & Candidate Recall@30 ceiling versus final
+Recall/MRR/nDCG@10 and reranker latency \\
+Grounded failure behavior & Evidence-constrained prompting, source markers,
+and explicit insufficient-context response & Answerability decisions,
+citation presence/structure, completion, and latency, reported separately
+from legal correctness \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 \subsection{Retrieval-Augmented Generation}
 \label{sec:related-rag}
@@ -31,11 +71,12 @@ them.
 The basic RAG abstraction is useful for L\_RAG because it separates three
 possible failure locations: the retriever can miss the governing passage, the
 context builder can omit its parent or exception, and the generator can fail
-to use or cite the evidence. Advanced methods such as Self-RAG~\cite{asai2023self}
-and Corrective RAG~\cite{yan2024corrective} add self-reflection or retrieval
-correction. They motivate measuring evidence availability and abstention, but
-they do not by themselves encode the formal hierarchy, amendment history, or
-temporal validity of Vietnamese legal instruments.
+to use or cite the evidence. Advanced methods such as
+Self-RAG~\cite{asai2023self} and Corrective RAG~\cite{yan2024corrective} add
+self-critique or retrieval-quality assessment and correction. They motivate
+separating retrieval quality from answer behavior, but they do not by
+themselves encode the formal hierarchy, amendment history, or temporal
+validity of Vietnamese legal instruments.
 
 \subsection{Legal Information Retrieval}
 \label{sec:related-legal-ir}
@@ -95,20 +136,22 @@ unconditional improvement.
 \label{sec:related-graph}
 
 Knowledge graphs represent entities and explicit relationships as triples
-$(e_1,r,e_2)$. GraphRAG~\cite{edge2024graphrag} shows how graph structure can
-support query-focused retrieval and multi-hop context. In a legal corpus, a
-graph can connect a document to its provisions, a provision to its chunks,
-adjacent chunks in reading order, and one instrument to another through
-citation, amendment, replacement, or repeal edges.
+$(e_1,r,e_2)$. GraphRAG~\cite{edge2024graphrag} demonstrates graph-derived
+community context for query-focused synthesis over large collections. L\_RAG
+uses a different, legal-structure graph: it connects a document to its
+provisions, a provision to its chunks, adjacent chunks in reading order, and
+one instrument to another through citation, amendment, replacement, expiry,
+guidance, or suspension edges.
 
 This structure can restore context that a fixed-size vector chunk omits. It
 also introduces failure modes that do not occur in a simple vector index:
 incorrect edge direction, stale validity fields, and a traversal policy that
-replaces high-confidence seeds under a fixed context budget. L\_RAG's G-LRAG
-overlay therefore applies validity and authority filters at query time and
-tests one-hop expansion as a distinct ablation. The graph result is
-interpreted as evidence about the tested policy, not about graph retrieval in
-general.
+replaces high-confidence seeds under a fixed context budget. L\_RAG therefore
+stores direction-verification, validity-timeline, and authority metadata in
+separate auditable structures. The reported G-LRAG ablation, however, tests
+only bounded one-hop structural expansion with broad validity filtering; it
+does not activate the query-time temporal-validity or authority overlay. Its
+result is evidence about that tested policy, not graph retrieval in general.
 
 \subsection{Reranking and Citation-Grounded Generation}
 \label{sec:related-reranking}
@@ -117,10 +160,11 @@ Cross-encoder rerankers score the query and candidate passage jointly rather
 than comparing two independently encoded vectors. Passage reranking with
 BERT~\cite{nogueira2019passage} motivates this second-stage design: it can
 improve the order of evidence at the cost of additional inference time. L\_RAG
-compares multilingual backends including BGE-Reranker-v2-m3~\cite{chen2024bge},
-Jina Reranker v2~\cite{jina2024jina}, and Qwen3 Reranker~\cite{qwen2025qwen3}
-over a shared 30-candidate pool. Holding the pool fixed makes a positive
-effect interpretable as evidence promotion rather than new evidence access.
+compares pairwise multilingual rerankers from mMiniLM,
+BGE/FlagEmbedding~\cite{chen2024bge}, and Jina~\cite{jina2024jina}, together
+with the causal-language-model-based Qwen3 Reranker~\cite{qwen2025qwen3}, over
+a shared 30-candidate pool. Holding the pool fixed makes a positive effect
+interpretable as evidence promotion rather than new evidence access.
 
 Citation-grounded generation adds source identifiers or provision references
 to the answer format and asks the generator to abstain when context is
@@ -141,45 +185,12 @@ implemented L\_RAG design response and to the evaluation evidence used in
 this report. This mapping prevents an architectural feature from being
 presented as a benefit before its effect has been measured.
 
-\begin{table*}[t]
-\centering
-\scriptsize
-\caption{Legal RAG requirements, corresponding L\_RAG design choices, and
-evaluation checks. Automatic checks diagnose system behavior; they do not
-replace expert assessment of legal correctness.}
-\label{tab:legal-rag-requirements}
-\begin{tabular}{@{}p{0.18\textwidth}p{0.36\textwidth}p{0.36\textwidth}@{}}
-\toprule
-\textbf{Requirement} & \textbf{L\_RAG design response} &
-\textbf{Evaluation check} \\
-\midrule
-Traceable provenance & Stable document, provision, and chunk identifiers;
-source markers retained through generation & Gold-ID Recall@$k$/Hit@$k$ and
-citation-marker validity \\
-Context preservation & Metadata-enriched embedding text plus containment and
-reading-order graph edges & Chunk-only versus chunk+metadata ablation and
-seed-preserving/lost-evidence analysis for graph expansion \\
-Legal applicability & Authority and effective-date metadata, validity
-timeline, quarantine, and direction-verification gates & Document-identity
-precision and graph-result audit; semantic validity remains a human-label gap
-\\
-Complementary access & E5 dense retrieval, Vietnamese-tokenized BM25, and RRF
-candidate fusion & Paired DenseOnly versus HybridOnly Recall, MRR, nDCG, and
-latency \\
-Evidence prioritization & Cross-encoder reranking of a shared candidate pool
-before context construction & Candidate Recall@30 ceiling versus final
-Recall/MRR/nDCG@10 and reranker latency \\
-Grounded failure behavior & Evidence-constrained prompting, source markers,
-and explicit insufficient-context response & Answerability decisions,
-citation presence/structure, completion, and latency, reported separately
-from legal correctness \\
-\bottomrule
-\end{tabular}
-\end{table*}
+L\_RAG represents these requirements through structured corpus records,
+graph/overlay interfaces, frozen per-question artifacts, and paired analyses.
+Not every represented capability is activated in every experiment. The
+remaining evidence gaps are therefore explicit: the current automatic checks
+do not validate temporal applicability, claim-level citation entailment, or
+the substantive legal correctness of generated answers. The dataset and
+benchmark that make the implemented checks reproducible are described next.
 
-L\_RAG operationalizes these requirements through structured corpus records,
-the G-LRAG overlay, frozen per-question artifacts, and paired analyses. It also
-makes the remaining evidence gaps explicit: the current automatic checks do
-not validate temporal applicability, claim-level citation entailment, or the
-substantive legal correctness of generated answers. The dataset and benchmark
-that make the implemented checks reproducible are described next.
+\FloatBarrier

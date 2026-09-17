@@ -19,9 +19,25 @@
 % Project-specific packages used by the section files.
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{multirow}
+\usepackage{placeins}
+\usepackage{balance}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows, positioning}
+
+% ACL enables \flushbottom by default.  The report contains several pages with
+% wide floats, for which vertical stretching produces conspicuous gaps between
+% headings and paragraphs.  Keep natural column bottoms and give top floats
+% enough room to remain close to the discussion that introduces them.
+\raggedbottom
+\setcounter{topnumber}{4}
+\setcounter{dbltopnumber}{4}
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\dbltopfraction}{0.95}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.80}
+\renewcommand{\dblfloatpagefraction}{0.80}
 
 \title{L\_RAG: A Controlled Ablation Study of Vietnamese Legal
 Retrieval-Augmented Generation}
@@ -45,18 +61,20 @@ Legal question answering must retrieve evidence that is relevant, complete in
 its statutory context, valid at the relevant time, and traceable to an
 authoritative source. We evaluate L\_RAG, a Vietnamese legal
 retrieval-augmented generation pipeline that combines E5 dense retrieval,
-BM25, a knowledge-graph overlay, reciprocal-rank fusion, cross-encoder
+BM25, a knowledge-graph overlay, reciprocal-rank fusion, second-stage
 reranking, and citation-grounded generation. On a fixed 500-question
 benchmark (400 answerable and 100 unanswerable questions), we report five
 controlled ablation analyses grouped into four run families rather than a
 pooled factorial comparison: embedding text; dense, hybrid, and graph
 retrieval as one joint retrieval/graph run family; reranking within a shared
 candidate pool; and Base versus chain-of-thought (CoT) prompting. Metadata
-improves document success at depth 10 by 4.5 percentage
-points but reduces MRR. The tested BM25+RRF hybrid loses 5.98 Recall@10
-points to dense retrieval and increases median total latency from 5.483 to
-31.538 seconds. One-hop graph expansion loses 11.81--12.40 Recall@10 points,
-chiefly by replacing seed evidence. In a common 30-candidate pool, Jina
+improves document-level success at depth 10 by 4.5 percentage points but
+reduces exact-chunk MRR. The tested BM25+RRF hybrid loses 5.98 Recall@10
+points to dense retrieval; its recorded median total rises from 5.483 to
+31.538 seconds under an accounting convention that includes amortized BM25
+precomputation and is not online request latency. One-hop graph expansion
+loses 11.81--12.40 Recall@10 points, chiefly by replacing seed evidence. In a
+common 30-candidate pool, Jina
 reranking improves Recall@10 by 9.23 points and nDCG@10 by 11.85 points over
 RRF-only. Under fixed context, CoT decreases GPT-4o-mini Token F1 by 1.57
 points. Retrieval is scored against gold chunk identifiers; lexical answer
@@ -74,7 +92,8 @@ entailment, or faithful reasoning.
 \input{sections/4_dataset_and_corpus}
 \input{sections/5_experimental_setup}
 \input{sections/6_ablation_study}
-\clearpage
+\FloatBarrier
+\nobalance
 \input{sections/7_results}
 \input{sections/8_discussion}
 
@@ -83,7 +102,8 @@ The authors thank Dr. Le Thanh Tung for guidance on the course project and
 the contributors who prepared the Vietnamese legal corpus, benchmark, and
 evaluation artifacts. We also acknowledge the open-source maintainers of the
 retrieval, embedding, reranking, and document-processing libraries used by
-the implementation.
+the implementation. This work was completed as a course project; no external
+funding or institutional endorsement is claimed.
 
 \bibliography{references}
 

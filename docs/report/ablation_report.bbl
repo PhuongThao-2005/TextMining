@@ -1,4 +1,4 @@
-\begin{thebibliography}{13}
+\begin{thebibliography}{15}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{Asai et~al.(2024)Asai, Wu, Wang, Sil, and Hajishirzi}]{asai2023self}
@@ -15,10 +15,12 @@ Ilias Chalkidis, Manos Fergadiotis, Prodromos Malakasiotis, Nikolaos Aletras,
 \newblock In \emph{Findings of the Association for Computational Linguistics:
   EMNLP 2020}, pages 2898--2904.
 
-\bibitem[{Chen et~al.(2024)Chen, Xiao et~al.}]{chen2024bge}
-Jianlv Chen, Shufang Xiao, et~al. 2024.
-\newblock {BGE} {M3}-embedding: Multi-lingual, multi-functionality,
-  multi-granularity text embeddings through self-knowledge distillation.
+\bibitem[{Chen et~al.(2024)Chen, Xiao, Zhang, Luo, Lian, and Liu}]{chen2024bge}
+Jianlv Chen, Shitao Xiao, Peitian Zhang, Kun Luo, Defu Lian, and Zheng Liu.
+  2024.
+\newblock \href {https://arxiv.org/abs/2402.03216} {{M3}-embedding:
+  Multi-linguality, multi-functionality, multi-granularity text embeddings
+  through self-knowledge distillation}.
 \newblock arXiv preprint arXiv:2402.03216.
 
 \bibitem[{Cormack et~al.(2009)Cormack, Clarke, and
@@ -37,10 +39,19 @@ Douglas Edge, Ha~Trinh, Newey Cheng, Joshua Bradley, Alex Chao, Apurva Mody,
   summarization.
 \newblock \emph{arXiv preprint arXiv:2404.16130}.
 
+\bibitem[{Gao et~al.(2023)Gao, Yen, Yu, and Chen}]{gao2023enabling}
+Tianyu Gao, Howard Yen, Jiatong Yu, and Danqi Chen. 2023.
+\newblock \href {https://doi.org/10.18653/v1/2023.emnlp-main.398} {Enabling
+  large language models to generate text with citations}.
+\newblock In \emph{Proceedings of the 2023 Conference on Empirical Methods in
+  Natural Language Processing}, pages 6465--6488.
+
 \bibitem[{{Jina AI}(2024)}]{jina2024jina}
 {Jina AI}. 2024.
-\newblock Jina reranker v2 for agentic {RAG}.
-\newblock Technical report.
+\newblock \href
+  {https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual}
+  {jina-reranker-v2-base-multilingual}.
+\newblock Hugging Face model card.
 
 \bibitem[{Lewis et~al.(2020)Lewis, Perez, Piktus, Petroni, Karpukhin, Goyal,
   Kuttler, Lewis, Yih, Rocktaschel, Riedel, and Kiela}]{lewis2020retrieval}
@@ -61,11 +72,12 @@ Rodrigo Nogueira and Kyungha Cho. 2019.
 \newblock Passage re-ranking with {BERT}.
 \newblock \emph{arXiv preprint arXiv:1901.04085}.
 
-\bibitem[{{Qwen Team}(2025)}]{qwen2025qwen3}
-{Qwen Team}. 2025.
-\newblock Qwen3 embedding: Advancing text embedding and reranking through
-  foundation models.
-\newblock arXiv preprint arXiv:2506.05176.
+\bibitem[{Robertson and Zaragoza(2009)}]{robertson2009probabilistic}
+Stephen Robertson and Hugo Zaragoza. 2009.
+\newblock \href {https://doi.org/10.1561/1500000019} {The probabilistic
+  relevance framework: {BM25} and beyond}.
+\newblock \emph{Foundations and Trends in Information Retrieval},
+  3(4):333--389.
 
 \bibitem[{Wang et~al.(2022)Wang, Yang, Huang, Jiao et~al.}]{wang2022e5}
 Liang Wang, Nan Yang, Xiaolong Huang, Binbin Jiao, et~al. 2022.
@@ -78,9 +90,19 @@ Chaojun Xiao, Xueyu Zhong, Zijun Zhang, et~al. 2021.
   documents.
 \newblock \emph{arXiv preprint arXiv:2105.03887}.
 
-\bibitem[{Yan et~al.(2024)}]{yan2024corrective}
-Shiyu Yan et~al. 2024.
-\newblock Corrective retrieval augmented generation.
+\bibitem[{Yan et~al.(2024)Yan, Gu, Zhu, and Ling}]{yan2024corrective}
+Shi-Qi Yan, Jia-Chen Gu, Yun Zhu, and Zhen-Hua Ling. 2024.
+\newblock \href {https://arxiv.org/abs/2401.15884} {Corrective retrieval
+  augmented generation}.
 \newblock \emph{arXiv preprint arXiv:2401.15884}.
+
+\bibitem[{Zhang et~al.(2025)Zhang, Li, Long, Zhang, Lin, Yang, Xie, Yang, Liu,
+  Lin, Huang, and Zhou}]{qwen2025qwen3}
+Yanzhao Zhang, Mingxin Li, Dingkun Long, Xin Zhang, Huan Lin, Baosong Yang,
+  Pengjun Xie, An~Yang, Dayiheng Liu, Junyang Lin, Fei Huang, and Jingren Zhou.
+  2025.
+\newblock \href {https://arxiv.org/abs/2506.05176} {Qwen3 embedding: Advancing
+  text embedding and reranking through foundation models}.
+\newblock arXiv preprint arXiv:2506.05176.
 
 \end{thebibliography}

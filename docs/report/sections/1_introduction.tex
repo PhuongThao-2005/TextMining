@@ -41,7 +41,7 @@ legal structure, and generation is constrained by inspectable evidence.
 L\_RAG provides a common implementation and evaluation setting for comparing
 these choices. In particular, it enables controlled tests of metadata-enriched
 embeddings, dense versus dense--sparse retrieval, one-hop graph expansion,
-cross-encoder rerankers, and base versus explicit reasoning prompts. This
+second-stage rerankers, and base versus explicit reasoning prompts. This
 evidence-driven framing is necessary because a component that is intuitively
 appropriate for legal text may still reduce exact evidence coverage or impose
 an unacceptable latency cost in a fixed pipeline.
@@ -50,10 +50,13 @@ an unacceptable latency cost in a fixed pipeline.
 \label{sec:problem-statement}
 
 Given a natural-language Vietnamese legal question $q$, a corpus of legal
-documents $\mathcal{D}$, and an optional legal time or scope constraint, the
-system must select a compact evidence set $E \subset \mathcal{D}$ and generate
-an answer $a$ whose material claims can be traced to $E$. The task is difficult
-because four failure modes interact:
+documents $\mathcal{D}$, and retrieval units $\mathcal{U}$ derived from those
+documents, the system must select a compact evidence set
+$E \subset \mathcal{U}$ and generate an answer $a$ whose material claims can
+be traced through chunk, provision, and document identifiers. A legal time or
+scope constraint can further restrict applicability when the corresponding
+overlay is explicitly supplied. The task is difficult because four failure
+modes interact:
 
 \begin{enumerate}
     \item \textbf{Lexical mismatch.} A user's vocabulary may differ from the
@@ -77,9 +80,9 @@ instrument, overlook a controlling provision, present outdated material, or
 produce an answer that cannot be audited. The research problem is therefore
 to determine how semantic, lexical, structural, and generative components can
 be combined while measuring both evidence quality and operational cost. In
-this report, success is evaluated as benchmark-bounded retrieval, answer
-overlap, answerability-decision, citation-structure, and latency performance;
-it is not treated as certification of legal correctness.
+this report, success is evaluated through benchmark-bounded retrieval, answer
+overlap, answer/refuse behavior, structural citation, completion, and latency
+diagnostics; it is not treated as certification of legal correctness.
 
 \subsection{Project Objectives}
 \label{sec:objectives}
@@ -133,11 +136,14 @@ implemented module and a report artifact:
 The implemented scope covers the offline preparation of Vietnamese legal
 documents, structural parsing into provisions and chunks, dense and sparse
 index construction, knowledge-graph construction, candidate retrieval and
-fusion, graph-assisted context selection, cross-encoder reranking, prompt
+fusion, graph-assisted context selection, second-stage reranking, prompt
 construction, citation-grounded generation, and offline evaluation. The
 experimental scope is limited to the available corpus and frozen benchmark,
 the recorded index and graph versions, the tested retrieval budgets, and the
-    models and prompts documented in Section~\ref{sec:implementation-setup}.
+models and prompts documented in Section~\ref{sec:implementation-setup}. The
+reported graph ablation tests bounded structural expansion with broad validity
+filtering; it does not test the separate query-time temporal-validity or
+authority overlay.
 
 The project does not claim exhaustive coverage of Vietnamese law, real-time
 synchronization with authoritative legal databases, resolution of every
@@ -157,24 +163,26 @@ This work makes five main contributions:
 
 \begin{enumerate}
     \item A processed Vietnamese legal corpus with document--provision--chunk
-    provenance, comprising 151,624 document records, 1,386,267 provisions,
-    and 1,513,376 retrieval chunks.
+    provenance, comprising 151,624 retained document records, 1,386,267
+    provisions, and 1,513,376 retrieval chunks.
     \item A typed legal graph containing structural reading-order links and
-    883,256 retained cross-document relationship records, together with
-    quarantine, direction-verification, query-time filtering, and
-    context-expansion mechanisms.
+    883,256 retained cross-document relationship records plus 19,763 external
+    stubs, together with quarantine records, a verified-edge view, temporal
+    and authority overlay interfaces, and bounded context expansion. The
+    overlay interfaces are documented system capabilities, not effects tested
+    by the reported graph ablation.
     \item A modular end-to-end pipeline that integrates multilingual dense
-    retrieval, Vietnamese BM25, RRF, four cross-encoder rerankers, and
+    retrieval, Vietnamese BM25, RRF, four second-stage rerankers, and
     evidence-constrained answer generation.
     \item A 500-question Vietnamese legal QA benchmark with answerability,
     category, answer type, reference answer, and document-, provision-, and
     chunk-level evidence provenance.
-    \item Four controlled ablation families that distinguish component value
-    from architectural intent. The experiments show that metadata primarily
-    improves document-level identification, the tested hybrid and graph
-    settings trade away exact evidence coverage, reranking provides the
-    clearest retrieval gains, and explicit reasoning prompts do not
-    automatically improve generated-answer overlap.
+    \item Five controlled analyses grouped into four run families, separating
+    component value from architectural intent. The experiments show that
+    metadata primarily improves document-level identification, the tested
+    hybrid and graph settings trade away exact evidence coverage, reranking
+    provides the clearest retrieval gains, and explicit reasoning prompts do
+    not automatically improve generated-answer overlap.
 \end{enumerate}
 
 \subsection{Report Organization}

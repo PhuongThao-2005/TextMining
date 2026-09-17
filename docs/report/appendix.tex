@@ -78,36 +78,207 @@ specific article or chunk remains absent from the retrieved evidence.
 \section{Graph Relationship Vocabulary}
 \label{app:graph-vocabulary}
 
-Graph edges are directed and retain a source record, target record, relation
-type, provenance, and (when available) effective-date or confidence fields.
-The structural and legal relations used by L\_RAG are summarized in
-\hyperref[tab:appendix-edge-vocabulary]{Table~\ref*{tab:appendix-edge-vocabulary}}.
+This appendix fixes the interpretation of every edge used by L\_RAG. Structural
+edges are created from the document hierarchy, whereas cross-document edges are
+normalized from the relationship source. A cross-document record has the
+following auditable shape:
 
-\begin{table}[t]
+{\scriptsize
+\begin{verbatim}
+edge_id
+src_id, dst_id
+rel_canonical, rel_group, rel_raw
+direction_normalized, direction_verified
+external_target, edge_quality_flags[]
+provenance{doc_id, other_doc_id, relationship}
+\end{verbatim}
+}
+
+The identity key is the full triple
+\texttt{(src\_id, dst\_id, rel\_canonical)}. Consequently, two documents may
+legitimately be connected by several distinct relationships. The raw Vietnamese
+label is retained in \texttt{rel\_raw}; \texttt{rel\_canonical} is its
+one-to-one normalized form and is materialized as an upper-snake-case graph
+type. No canonical label is merged or discarded merely because another label
+describes its inverse.
+
+\subsection{Edge record semantics}
+
+\hyperref[tab:appendix-edge-fields]{Table~\ref*{tab:appendix-edge-fields}}
+distinguishes identity, semantics, provenance, and safety controls. This
+separation is important because a syntactically valid edge is not necessarily
+eligible for retrieval or temporal reasoning.
+
+\begin{table*}[t]
 \centering
 \scriptsize
-\caption{Graph relation conventions.}
-\label{tab:appendix-edge-vocabulary}
-\begin{tabular}{p{0.40\columnwidth}p{0.45\columnwidth}}
+\caption{Canonical cross-document edge fields and enforcement semantics.}
+\label{tab:appendix-edge-fields}
+\begin{tabular}{p{0.20\textwidth}p{0.35\textwidth}p{0.35\textwidth}}
 \toprule
-\textbf{Edge} & \textbf{Direction and use} \\
+\textbf{Field} & \textbf{Meaning} & \textbf{Integrity or query-time rule} \\
 \midrule
-\texttt{DOCUMENT\_HAS\_PROVISION} & Document to contained provision. \\
-\texttt{PROVISION\_HAS\_CHUNK} & Provision to indexed chunk. \\
-\texttt{CHUNK\_NEXT} & Earlier chunk to next chunk in reading order. \\
-\texttt{PROVISION\_NEXT} & Earlier provision to next provision in reading order. \\
-\texttt{CITES} & Citing instrument to cited instrument. \\
-\texttt{AMENDS}/\texttt{REPEALS} & Later instrument to the instrument it changes or terminates. \\
-\texttt{REPLACES} & Superseding instrument to the replaced instrument. \\
+\texttt{edge\_id} & Stable identifier for one normalized relationship row. & Used by audit logs and as the trace target of \texttt{source\_edge\_id}. \\
+\texttt{src\_id}, \texttt{dst\_id} & Endpoints in canonical semantic direction. & The builder preserves these endpoints; it does not infer or flip direction. \\
+\texttt{rel\_canonical} & Machine-readable one-to-one normalization of the raw label. & Combined with both endpoints to form the full relationship identity. \\
+\texttt{rel\_group} & One of \texttt{basis}, \texttt{citation}, \texttt{related}, \texttt{validity}, \texttt{guidance}, \texttt{supplement}, \texttt{amendment}, or \texttt{suspension}. & Selects traversal policy and determines whether direction sign-off is required. \\
+\texttt{rel\_raw} & Original Vietnamese relationship label. & Preserved verbatim for audit and mapping review. \\
+\texttt{direction\_normalized} & Records that endpoints follow the canonical reading convention. & It is provenance, not permission to reason over an unsigned group. \\
+\texttt{direction\_verified} & Human/data-contract sign-off for semantic direction. & Only \texttt{true} edges enter the verified reasoning view. \\
+\texttt{external\_target} & Indicates that the target has no complete in-corpus document record. & Requires an external stub; the stub cannot be used as citable evidence. \\
+\texttt{edge\_quality\_flags} & Non-destructive warnings such as weak relation or missing target metadata. & Retained for reporting and downstream policy; a flag is not silently converted into confidence. \\
+\texttt{provenance} & Original document IDs and relationship surface form. & Allows every normalized edge and derived validity event to be traced upstream. \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
-Only verified directions are exposed to query-time traversal. An uncertain
-relation can remain in the audit ledger or point to an \texttt{ExternalStub},
-but it is not silently promoted to an authoritative retrievable edge. The
-validity overlay also records unknown status explicitly; it does not infer
-current law from a similar title.
+\subsection{Relationship types and direction}
+
+For every normalized edge, the arrow is read literally as
+``source \emph{REL} destination.'' Thus, for example,
+\texttt{A -[AMENDS]-> B} means that instrument A amends instrument B.
+\hyperref[tab:appendix-edge-vocabulary]{Table~\ref*{tab:appendix-edge-vocabulary}}
+lists the complete canonical cross-document vocabulary and the structural
+relations added by the graph builder.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Graph relationship vocabulary, canonical direction, and retrieval role.}
+\label{tab:appendix-edge-vocabulary}
+\begin{tabular}{p{0.20\textwidth}p{0.31\textwidth}p{0.39\textwidth}}
+\toprule
+\textbf{Class/group} & \textbf{Canonical relationship(s)} & \textbf{Direction and query-time use} \\
+\midrule
+Containment & \texttt{DOCUMENT\_HAS\_PROVISION}; \texttt{PROVISION\_HAS\_CHUNK} & Parent document to provision and parent provision to indexed chunk; used to recover citation and hierarchy context. \\
+Reading order & \texttt{PROVISION\_NEXT}; \texttt{CHUNK\_NEXT} & Earlier sibling to the immediately following sibling; used only for bounded neighboring-context expansion. \\
+\texttt{basis} & \texttt{BASED\_ON} & Instrument to the instrument on which it is based; legal-basis traversal is capped at three hops. \\
+\texttt{citation} & \texttt{CITES} & Citing instrument to cited instrument; supplies supplementary evidence rather than a validity decision. \\
+\texttt{related} & \texttt{RELATED\_TO} & Source record to a generally related record; symmetric in meaning but retained in its normalized stored direction, and excluded from the default graph-guided filter. \\
+\texttt{guidance} & \texttt{GUIDES\_OR\_DETAILS}; \texttt{GUIDED\_OR\_DETAILED\_BY} & Guiding/implementing instrument to governed instrument, or the explicit inverse label; available only after direction sign-off. \\
+\texttt{supplement} & \texttt{SUPPLEMENTS}; \texttt{SUPPLEMENTED\_BY} & Supplementing instrument to supplemented instrument, or its explicit inverse; represents content addition, not automatic invalidation. \\
+\texttt{amendment} & \texttt{AMENDS}; \texttt{AMENDED\_BY} & Amending instrument to amended instrument, or its explicit inverse; represents content change without implying whole-document expiry. \\
+\texttt{validity} & \texttt{EXPIRES\_OR\_REPLACES}; \texttt{EXPIRED\_OR\_REPLACED\_BY}; \texttt{PARTIALLY\_EXPIRES}; \texttt{PARTIALLY\_EXPIRED\_BY} & Instrument causing whole/partial loss of effect to affected instrument, or the explicit inverse. These edges explain lineage and feed the temporal overlay; they do not directly overwrite currency. \\
+\texttt{suspension} & \texttt{SUSPENDS}; \texttt{SUSPENDED\_BY}; \texttt{PARTIALLY\_SUSPENDS}; \texttt{PARTIALLY\_SUSPENDED\_BY} & Suspending instrument to affected instrument, or the explicit inverse; partial relations retain their scope. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Raw-to-canonical mapping}
+
+The dataset contains 17 raw relationship labels. Inverse surface labels remain
+distinct canonical values, rather than being guessed from endpoint order at
+query time. The graph type is obtained mechanically by converting the
+lower-snake-case canonical value in
+\hyperref[tab:appendix-raw-edge-map]{Table~\ref*{tab:appendix-raw-edge-map}}
+to upper snake case.
+
+This appendix documents the materialized graph artifact and current
+\texttt{GraphEdge} contract. A separate proposed dataset convention describes
+folding inverse labels onto a single semantic direction; that convention has
+not been applied to this 17-type artifact. Adopting it would require an
+explicit, versioned migration and a new reconciliation of edge identities and
+counts rather than an undocumented change during retrieval.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Vietnamese source labels and their one-to-one canonical mappings. A slash separates two distinct raw rows and two distinct canonical values.}
+\label{tab:appendix-raw-edge-map}
+\begin{tabular}{p{0.39\textwidth}p{0.36\textwidth}p{0.13\textwidth}}
+\toprule
+\textbf{Raw Vietnamese label(s)} & \textbf{Canonical value(s)} & \textbf{Group} \\
+\midrule
+\textit{Văn bản căn cứ} & \texttt{based\_on} & \texttt{basis} \\
+\textit{Văn bản dẫn chiếu} & \texttt{cites} & \texttt{citation} \\
+\textit{Văn bản liên quan khác} & \texttt{related\_to} & \texttt{related} \\
+\textit{Văn bản HD, QĐ chi tiết} / \textit{Văn bản được HD, QĐ chi tiết} & \texttt{guides\_or\_details} / \texttt{guided\_or\_detailed\_by} & \texttt{guidance} \\
+\textit{Văn bản bổ sung} / \textit{Văn bản được bổ sung} & \texttt{supplements} / \texttt{supplemented\_by} & \texttt{supplement} \\
+\textit{Văn bản sửa đổi} / \textit{Văn bản được sửa đổi} & \texttt{amends} / \texttt{amended\_by} & \texttt{amendment} \\
+\textit{Văn bản hết hiệu lực} / \textit{Văn bản quy định hết hiệu lực} & \texttt{expires\_or\_replaces} / \texttt{expired\_or\_replaced\_by} & \texttt{validity} \\
+\textit{Văn bản bị hết hiệu lực 1 phần} / \textit{Văn bản quy định hết hiệu lực 1 phần} & \texttt{partially\_expired\_by} / \texttt{partially\_expires} & \texttt{validity} \\
+\textit{Văn bản đình chỉ} / \textit{Văn bản bị đình chỉ} & \texttt{suspends} / \texttt{suspended\_by} & \texttt{suspension} \\
+\textit{Văn bản đình chỉ 1 phần} / \textit{Văn bản bị đình chỉ 1 phần} & \texttt{partially\_suspends} / \texttt{partially\_suspended\_by} & \texttt{suspension} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Source, confidence, and exclusion policy}
+
+Structural relations inherit the deterministic identities and order fields in
+\texttt{documents.jsonl}, \texttt{provisions.jsonl}, and
+\texttt{chunks.jsonl}. Cross-document relations originate in
+\texttt{edges.jsonl}; \texttt{provenance} preserves the original document pair
+and relationship label so every graph hop can be audited. The v2 reconciliation
+retains 883,256 normalized edges and quarantines 14,634 rows from 897,890 raw
+relationships. Quarantine is loss-preserving: rejected rows remain inspectable
+with their exclusion reasons.
+
+The canonical \texttt{GraphEdge} does not invent a scalar confidence score.
+Confidence is represented by observable controls: the
+\texttt{direction\_verified} gate, \texttt{edge\_quality\_flags}, source
+provenance, and corpus-level quality reports. A normalized but unverified edge
+may remain in the audit data, but it cannot enter a reasoning path. References
+to missing in-corpus targets become deterministic \texttt{ExternalStub} nodes
+with \texttt{citation\_safe=false}; they preserve connectivity but cannot be
+returned as answer evidence.
+
+The builder consequently exposes two views: all parsed document edges for
+audit and \texttt{verified\_document\_edges} for reasoning. Duplicate node
+identifiers are rejected, orphan provisions/chunks and missing stub targets
+are surfaced as build warnings, and structural-edge counts are reported by
+type. Query-time traversal must use the verified view; filtering an unsafe edge
+after generation would be too late because it may already have influenced the
+answer context.
+
+\subsection{Validity and authority conventions}
+
+Validity is temporal rather than a permanently stored graph label. Each row in
+\texttt{validity\_timeline.jsonl} records
+\texttt{id\_str}, \texttt{event\_type}, \texttt{event\_date\_iso},
+\texttt{counterparty\_id}, \texttt{scope}, \texttt{rel\_canonical},
+\texttt{source\_edge\_id}, and \texttt{direction\_verified}. Event types cover
+enactment, effectiveness, expiry, replacement, amendment, suspension, and their
+partial variants. Partial events retain an article-level or free-text
+\texttt{scope} instead of collapsing the whole document into one status.
+
+At query time, \texttt{currency\_status(id\_str, as\_of\_date)} can fold
+verified events whose effective dates do not exceed an explicitly supplied
+date. In the current implementation, callers must pass an ISO-formatted
+\texttt{as\_of\_date} for this guarantee: passing \texttt{None} labels the
+overlay ``today'' but does not exclude future-dated events. This mismatch is a
+known implementation limitation, and the reported graph ablation does not
+claim temporal-applicability evaluation. Every event must trace to a
+\texttt{source\_edge\_id}. The stored \texttt{currency\_hint} is a
+non-authoritative fallback when the timeline is incomplete, and an unresolved
+case remains \texttt{unknown}. Authority is orthogonal to currency:
+\texttt{authority\_index.jsonl} maps document type to a versioned
+\texttt{legal\_authority\_rank}, where smaller values denote higher authority
+and 99 denotes an unknown type. Authority, recency, and validity are therefore
+available as separate, inspectable ranking signals.
+
+The implemented fold sorts date strings with deterministic tie-break fields,
+discards events whose direction is unverified, and, when an explicit date is
+provided, ignores later events. ISO-date validation and treatment of undated
+events must therefore be enforced upstream. The coarse mapping is:
+\texttt{enacted}/\texttt{effective}
+to \texttt{active}; \texttt{expired}/\texttt{replaced} to \texttt{expired};
+amendment and partial-expiry/replacement events to \texttt{partial}; and whole
+or partial suspension to \texttt{suspended}. With no eligible event, or with
+an unrecognized final event, the result is \texttt{unknown}. This fold is a
+retrieval overlay, not a substitute for legal interpretation of a provision's
+scope.
+
+For example, consider a hypothetical document with an \texttt{effective}
+event dated 2020-01-01 and a verified \texttt{partially\_amended} event dated
+2023-07-01 whose scope is ``Điều 5.'' A query as of 2022-12-31 receives
+\texttt{active}; a query as of 2024-01-01 receives \texttt{partial}, while the
+scope remains available to explain why the document must not be treated as
+wholly expired. If the amendment edge is unverified, it cannot change the
+derived status. When multiple authority-index entries match a document type,
+the implementation selects the lowest rank and then the newest version among
+equal-rank entries; absence of a match yields rank 99 with an explicit fallback
+source.
 
 \section{Retrieval and Reranker Configurations}
 \label{app:retrieval-reranker-configurations}
@@ -142,34 +313,283 @@ Generator & \texttt{gpt-4o-mini} & $T=0.0$; family-specific cap; $T_{10}$ & Retr
 }
 \end{table*}
 
+\FloatBarrier
 \section{Prompt and Output Formats}
 \label{app:prompt-output-formats}
 
-The Base and CoT conditions use the same retrieved context and output budget
-in the primary GPT-4o-mini comparison. The retrieval/graph family instead sets
-no explicit client-side output-token cap and uses the Vietnamese fallback phrase
-\textit{``Không có đủ thông tin trong ngữ cảnh được cung cấp.''}. The Base prompt asks for a concise
-answer supported by the supplied passages and provision-level citations. The
-CoT prompt adds an explicit reasoning instruction, but the saved artifacts
-retain only the final answer and observable diagnostics, not hidden reasoning.
+This appendix records the observable contract between retrieval, generation,
+and evaluation. The primary Base--reasoning comparison fixes the model,
+retrieved context and order, decoding parameters, and 1,024-token output budget;
+only \texttt{prompt\_strategy} changes. Both conditions use prompt template
+\texttt{legal-grounded-answer-v2-citations} and citation contract
+\texttt{retrieved-context-citations-v1}.
 
-The output contract is conceptually:
+\subsection{Common prompt envelope}
+
+The following is the common, human-readable prompt envelope. Braced fields are
+filled by the evaluator, and the retrieved passages are treated as evidence,
+not as further instructions. It consolidates repository-visible instructions;
+because the frozen manifests retain prompt hashes rather than the complete
+rendered strings, it is not presented as a byte-for-byte reconstruction. The
+hashes in Table~\ref{tab:appendix-prompt-identity} are the authoritative frozen
+identities.
+
 {\scriptsize
 \begin{verbatim}
-answer_type: boolean | extractive |
-             abstractive | unanswerable
-answer: final answer text or INSUFFICIENT_CONTEXT
-citations: [{doc_id, provision_id,
-             chunk_id, marker}]
+Bạn là hệ thống RAG pháp lý Việt Nam.
+Chỉ trả lời dựa trên CONTEXT được cung cấp.
+Không suy diễn, không bịa thêm ngoài CONTEXT.
+Nếu CONTEXT không đủ thông tin để trả lời, hãy trả lời:
+"Không có đủ thông tin trong ngữ cảnh được cung cấp."
+
+QUESTION:
+{question}
+ANSWER_TYPE:
+{answer_type}
+CONTEXT:
+{ranked_context}
+Trả lời bằng tiếng Việt có dấu:
 \end{verbatim}
 }
 
-The parser records citation presence, the number of unique sources, structural
-coverage of scored factual sentences, invalid markers, and refusal markers.
-These fields measure formatting and parser behavior. They do not determine
-whether a cited provision entails the adjacent statement, whether an answer
-is legally complete, or whether abstention was substantively appropriate.
+The Base strategy then requests a concise final answer, grounded in the supplied
+passages, with bracketed citations whenever the context contains a legal basis.
+The reasoning strategy adds the observable instruction to analyze the supplied
+evidence before producing the final answer and to attach citations to supported
+claims. This is a prompt intervention, not evidence that a model's hidden
+reasoning is available or faithful. The frozen ablation artifacts contain final
+answers and output diagnostics, but no raw chain-of-thought, structured
+justifications, reasoning-token counts, or reasoning cost.
 
+\subsection{Prompt variants and frozen identity}
+
+The repository-visible strategy-specific instructions are reproduced below in
+abridged form. The Base condition emphasizes the externally scored answer
+shape:
+
+{\scriptsize
+\begin{verbatim}
+Yêu cầu định dạng:
+- Nếu answer_type là boolean:
+  dòng đầu tiên chỉ được là "Có" hoặc "Không";
+  phần giải thích đặt sau "Giải thích:".
+- Nếu answer_type là unanswerable:
+  chỉ nêu rằng không có đủ thông tin trong ngữ cảnh.
+- Với các loại khác:
+  trả lời ngắn gọn bằng tiếng Việt có dấu;
+  có thể nêu căn cứ pháp lý nếu CONTEXT có.
+\end{verbatim}
+}
+
+The reasoning condition adds an explicit evidence-analysis instruction before
+the final answer request:
+
+{\scriptsize
+\begin{verbatim}
+Trước tiên, trình bày quá trình suy luận
+(reasoning/thinking) của bạn dựa trên CONTEXT.
+Sau đó, đưa ra câu trả lời cuối cùng
+bằng tiếng Việt có dấu, kèm căn cứ pháp lý
+(citation) nếu có trong CONTEXT.
+\end{verbatim}
+}
+
+These excerpts document the observable manipulation; they are not permission
+to publish or evaluate private model internals. If a provider returns a
+separate reasoning field, the response parser separates it from the final
+answer, while the frozen ablation retains and scores only the final-answer
+surface.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Frozen identity of the primary GPT-4o-mini prompt pair. Hashes are SHA-256 prefixes; full values are retained in each run manifest.}
+\label{tab:appendix-prompt-identity}
+\begin{tabular}{lllllll}
+\toprule
+\textbf{Condition} & \textbf{Strategy} & \textbf{Prompt hash} & \textbf{Citation hash} & \textbf{$T$} & \textbf{top-$p$} & \textbf{Output cap} \\
+\midrule
+Base & \texttt{base} & \texttt{ccedea197be5} & \texttt{f12b25de1289} & 0.0 & 1.0 & 1,024 \\
+CoT & \texttt{reasoning} & \texttt{a02841e4296c} & \texttt{f12b25de1289} & 0.0 & 1.0 & 1,024 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Both manifests also record seed 42, model \texttt{gpt-4o-mini}, template
+version \texttt{legal-grounded-answer-v2-citations}, and citation-contract
+version \texttt{retrieved-context-citations-v1}. Identical citation hashes
+show that citation syntax is a control; different prompt hashes identify the
+intended intervention. Reproduction should compare these values rather than
+relying only on directory names.
+
+\subsection{Context serialization and citations}
+
+Each retrieved chunk is serialized with a stable numeric marker and its legal
+identity. The implementation uses the citation anchor when present, otherwise
+the citation label, provision identifier, or chunk identifier in that order:
+
+{\scriptsize
+\begin{verbatim}
+[rank] chunk_id=<chunk_id>;
+       provision_id=<provision_id>;
+       document_id=<document_id>;
+       citation=<citation_anchor>
+<chunk_text>
+\end{verbatim}
+}
+
+The answer cites evidence with \texttt{[rank]} markers, for example
+\texttt{[2]} or \texttt{[2][5]}. A marker is valid only when it resolves to an
+item in the supplied context. The stored citation object preserves
+\texttt{document\_id}, \texttt{provision\_id}/\texttt{section},
+\texttt{chunk\_id}, rank, source path, retrieval score, and the answer offsets
+of each marker. This makes provision-level citation display reproducible even
+when several chunks originate from the same instrument.
+
+A schematic two-passage context illustrates the binding between rank markers
+and stable corpus identities:
+
+{\scriptsize
+\begin{verbatim}
+[1] chunk_id=DOC-A::article::5::chunk::1;
+    provision_id=DOC-A::article::5;
+    document_id=DOC-A;
+    citation=Văn bản A, Điều 5
+<text of the first retrieved chunk>
+
+[2] chunk_id=DOC-B::article::2::chunk::1;
+    provision_id=DOC-B::article::2;
+    document_id=DOC-B;
+    citation=Văn bản B, Điều 2
+<text of the second retrieved chunk>
+\end{verbatim}
+}
+
+The numeric marker is local to one prompt and must not be interpreted as a
+global source identifier. The stable join path is marker $\rightarrow$ context
+rank $\rightarrow$ \texttt{chunk\_id} $\rightarrow$
+\texttt{provision\_id} $\rightarrow$ \texttt{document\_id}. Reordering the
+same chunks therefore changes marker meaning, which is why the fixed-context
+ablation verifies the complete ordered top-10 chunk-ID sequence, not merely
+the set of retrieved documents.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Citation-marker resolution and the diagnostic consequence.}
+\label{tab:appendix-citation-resolution}
+\begin{tabular}{p{0.20\textwidth}p{0.30\textwidth}p{0.40\textwidth}}
+\toprule
+\textbf{Answer surface} & \textbf{Resolution} & \textbf{Recorded interpretation} \\
+\midrule
+\texttt{... [1]} & Marker resolves to context rank 1. & Valid reference; answer offsets and source identity are stored. \\
+\texttt{... [1][3]} & Both ranks exist in the supplied context. & Two references are stored; unique-source count may still be one if both chunks share a document. \\
+\texttt{... [11]} with top-10 context & No supplied context item has rank 11. & Invalid marker; included in \texttt{invalid\_citation\_count} and warnings. \\
+Factual sentence without a marker & No local citation reference. & Can reduce structural citation coverage; it is not automatically labeled false. \\
+Refusal sentence with no marker & No evidence asserted. & Parsed through the refusal detector rather than penalized merely for lacking a citation. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Answer and refusal formats}
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Observable output convention by benchmark answer type.}
+\label{tab:appendix-output-formats}
+\begin{tabular}{p{0.16\textwidth}p{0.34\textwidth}p{0.40\textwidth}}
+\toprule
+\textbf{Answer type} & \textbf{Visible answer shape} & \textbf{Evaluation convention} \\
+\midrule
+\texttt{boolean} & First non-empty line is exactly \textit{Có} or \textit{Không}; supporting text follows \textit{Giải thích:} and carries citations. & Exact match is computed on the first answer line; faithfulness and citation checks use the complete response. \\
+\texttt{extractive} & Short Vietnamese span or proposition recoverable from the supplied passage, followed by supporting marker(s). & Token F1 and ROUGE-L compare the final answer with the reference; citations are parsed separately. \\
+\texttt{abstractive} & Concise Vietnamese synthesis of the supplied evidence, with markers adjacent to supported factual claims. & Lexical answer metrics and citation diagnostics are both reported; neither alone establishes legal correctness. \\
+\texttt{unanswerable} & Exact visible refusal: \textit{``Không có đủ thông tin trong ngữ cảnh được cung cấp.''} & The evaluator normalizes the refusal into the semantic insufficient-context decision and scores answerability accuracy. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+An empty context is handled before generation and recorded as a skipped or
+insufficient-context case. A non-empty but inadequate context must trigger the
+same refusal rather than a guessed answer. The semantic state may be represented
+internally as \texttt{INSUFFICIENT\_CONTEXT}; it is the Vietnamese sentence
+above, not that internal token, that forms the visible response contract.
+
+Representative valid surfaces are:
+
+{\scriptsize
+\begin{verbatim}
+boolean:
+Có
+Giải thích: CONTEXT nêu điều kiện áp dụng tại Điều 5 [1].
+
+extractive/abstractive:
+Điều kiện áp dụng gồm ... [1][2].
+
+unanswerable:
+Không có đủ thông tin trong ngữ cảnh được cung cấp.
+\end{verbatim}
+}
+
+For Boolean scoring, only the first non-empty line is used for Exact Match,
+but citations, refusal detection, and other diagnostics inspect the complete
+answer. For extractive and abstractive cases, Token F1 and ROUGE-L operate on
+the normalized final text; they do not validate that a cited source entails
+the claim. A refusal containing extra unsupported legal advice violates the
+intent of the refusal contract even if the expected phrase is present.
+
+\subsection{Saved prediction record and diagnostic limits}
+
+The evaluator stores one auditable record per question. The abbreviated schema
+below separates the generated text, supplied evidence, parsed citations, and
+execution state:
+
+{\scriptsize
+\begin{verbatim}
+qa_id, question, category, difficulty, answer_type
+reference_answer, predicted_answer, ground_truth
+metrics{exact_match, token_f1, rouge_l,
+        answerability_decision_accuracy, context_recall@k}
+retrieved_context[{rank, document_id, provision_id,
+                   chunk_id, text, score, citation_anchor}]
+citations[{citation_id, document_id, section, chunk_id,
+           rank, score, source_path}]
+citation_references[{marker, answer_start, answer_end}]
+citation_metrics{citation_count, valid_citation_count,
+                 invalid_citation_count,
+                 unique_cited_source_count,
+                 structural_citation_coverage}
+status, failed_stage, error, latency_ms
+\end{verbatim}
+}
+
+The status fields make incomplete runs distinguishable from low-quality
+answers. An empty retrieved context is intercepted before model invocation;
+provider or serialization errors populate \texttt{failed\_stage} and
+\texttt{error}; a successfully parsed response receives \texttt{success} even
+when its lexical score is low. Scheduled-denominator reliability therefore
+counts failures separately, while paired lexical analysis requires successful
+answerable rows in both conditions.
+
+The response parser can detect a provider-supplied reasoning field or remove a
+\texttt{<think>...</think>} block before scoring the final answer; otherwise it
+records \texttt{reasoning\_source=not\_returned}. For the frozen ablation, only
+the final-answer surface and observable diagnostics are analyzed. Citation
+presence, marker validity, unique-source count, and structural coverage measure
+output structure and parser behavior. They do not prove that a cited provision
+entails the adjacent claim, that all controlling law was retrieved, or that an
+abstention was substantively correct.
+
+Reasoning extraction follows a fixed precedence: a dedicated provider field,
+then a complete \texttt{<think>...</think>} block, then
+\texttt{not\_returned}. An unterminated think block is not guessed or silently
+repaired. This parser behavior prevents visible reasoning wrappers from
+contaminating the scored final answer when a supported response shape is
+available, but it does not establish that the extracted text is faithful to
+the model's internal computation.
+
+\FloatBarrier
 \section{Run Manifests and Additional Results}
 \label{app:run-manifests-results}
 

@@ -61,6 +61,7 @@ Delta & $-3.8$ & $-2.2$ & $-6.5$ & $+2.8$ & $-0.2$ & $+0.1$ & $-5.9$ & $+4.5$ \\
 \end{tabular}%
 }
 \end{table*}
+
 \subsection{Retrieval Ablation: Dense versus Hybrid Retrieval}
 \label{sec:ablation-retrieval}
 
@@ -254,53 +255,97 @@ analysis.}
 \label{fig:reranker-curves}
 \end{figure*}
 
+\balance
+\FloatBarrier
+\nobalance
+\clearpage
 \subsection{Generator Ablation: Base Prompt versus Chain-of-Thought Prompt}
 \label{sec:ablation-reasoning}
 
-The generator-reasoning family keeps the intended retrieved top-10 context
-fixed for each question and changes the prompt mode. The primary comparison
-uses complete GPT-4o-mini Base and CoT runs: both cover all 500 benchmark
-questions and share 400 answerable question IDs. The frozen artifacts report
-zero retrieval-context mismatches. The DeepSeek-V3.1-Thinking, GLM-5, and
-Qwen3-8B pairs are complete but descriptive; four shared DeepSeek cases have
-different exact top-10 chunk-ID sequences, and the Qwen pair uses different
-code snapshots, timeout values, and retry limits.
+\subsubsection{Control and pairing}
 
-On the 400 paired answerable questions, CoT decreases Token F1 from 24.72\% to
-23.15\% ($-1.57$ points) and ROUGE-L from 21.60\% to 19.90\% ($-1.71$
-points). Exact match is essentially unchanged (14.00\% to 13.75\%,
-$-0.25$ points). The Token F1 win/tie/loss count is 79/164/157 in favor of
-Base. The run inventory is in
-\hyperref[tab:llm-reasoning-runs]{Table~\ref*{tab:llm-reasoning-runs}} and the
-paired GPT-4o-mini result is linked in
-\hyperref[tab:llm-reasoning-paired]{Table~\ref*{tab:llm-reasoning-paired}}.
+This ablation asks whether an explicit Chain-of-Thought (CoT) prompt changes
+observable answer behavior when evidence retrieval is held fixed. The
+pre-specified primary comparison uses GPT-4o-mini with the same benchmark,
+saved retrieval stack, ordered top-10 context, citation contract, temperature
+0, top-$p=1$, 1,024-token output limit, timeout, retry policy, and seed. Only
+the prompt strategy and its prompt hash change between Base and CoT. The
+post-hoc analysis reads the frozen predictions and does not rerun retrieval or
+generation.
+The observable prompt and output contracts are reproduced in
+Appendix~\ref{app:prompt-output-formats}.
+
+The manipulation is deliberately narrow. The Base template asks the generator
+to answer directly and concisely from the supplied Vietnamese legal passages.
+The CoT template adds an explicit instruction to inspect and connect the
+evidence before returning the answer, while retaining the same refusal rule
+and bracketed citation contract. Evaluation is applied to the visible final
+answer only. The analysis neither assumes access to provider-side hidden
+reasoning nor treats any exposed rationale as ground truth; therefore, ``CoT''
+denotes the prompt condition rather than an observed faithful reasoning trace.
+
+Both primary runs complete all 500 scheduled questions without failures or
+skips. Their ordered top-10 chunk-ID sequences match for all 500 questions,
+and all 400 answerable cases form valid lexical-metric pairs by
+\texttt{qa\_id}; the remaining 100 questions are retained for answerability
+diagnostics. This establishes a fixed-context comparison: retrieval metrics
+are controls, not outcomes that the prompt can improve. The complete run
+inventory is reported in
+\hyperref[tab:llm-reasoning-runs]{Table~\ref*{tab:llm-reasoning-runs}}.
+
+For scoring, the evaluator applies Unicode NFC normalization, lowercasing,
+punctuation-to-space conversion, and whitespace collapse. Exact Match requires
+equality after normalization; for Boolean questions it compares the first
+non-empty line. Token F1 is the harmonic mean of precision and recall over
+multiset token overlap, while ROUGE-L uses the longest common token
+subsequence. All deltas below are computed per question as CoT minus Base.
+Uncertainty is obtained from 10,000 paired bootstrap resamples with seed 42,
+and the binary Exact Match transitions are additionally checked with an exact
+McNemar test.
 
 \begin{table*}[t]
 \centering
 \scriptsize
 \caption{End-to-end generator-reasoning run inventory. Lexical metrics are
-means over successful answerable cases; decision accuracy is the saved
-template-based answerability diagnostic.}
+means over successful answerable cases; decision accuracy and total p50/p95
+latency use all 500 scheduled cases.}
 \label{tab:llm-reasoning-runs}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lllrrrrr}
 \toprule
-\textbf{Model} & \textbf{Prompt} & \textbf{Run directory} & \textbf{Valid/500} &
+\textbf{Model} & \textbf{Prompt} & \textbf{Run directory} &
 \textbf{EM (\%)} & \textbf{Token F1 (\%)} & \textbf{ROUGE-L (\%)} &
-\textbf{Decision acc. (\%)} \\
+\textbf{Decision acc. (\%)} & \textbf{Total p50/p95 (s)} \\
 \midrule
-GPT-4o-mini & Base & \texttt{4o-mini-base} & 500/500 & 14.00 & 24.72 & 21.60 & 82.60 \\
-GPT-4o-mini & CoT & \texttt{4o-mini-CoT} & 500/500 & 13.75 & 23.15 & 19.90 & 84.00 \\
-DeepSeek-V3.1-Thinking & Base & \texttt{deepseek-base} & 500/500 & 22.25 & 17.84 & 15.28 & 92.00 \\
-DeepSeek-V3.1-Thinking & CoT & \texttt{deepseek-CoT} & 500/500 & 22.25 & 16.51 & 14.12 & 92.20 \\
-GLM-5 & Base & \texttt{glm5-base} & 500/500 & 25.25 & 16.91 & 14.90 & 91.80 \\
-GLM-5 & CoT & \texttt{glm5-CoT} & 500/500 & 25.00 & 16.23 & 14.27 & 93.40 \\
-Qwen3-8B & Base & \texttt{qwen3-8b-base} & 500/500 & 19.25 & 21.98 & 18.92 & 95.80 \\
-Qwen3-8B & CoT & \texttt{qwen3-8b-CoT} & 500/500 & 17.25 & 20.05 & 17.17 & 95.20 \\
+GPT-4o-mini & Base & \texttt{4o-mini-base} & 14.00 & 24.72 & 21.60 & 82.60 & 13.99/17.21 \\
+GPT-4o-mini & CoT & \texttt{4o-mini-CoT} & 13.75 & 23.15 & 19.90 & 84.00 & 14.74/18.42 \\
+DeepSeek-V3.1-Thinking & Base & \texttt{deepseekv3.1-thinking-base} & 22.25 & 17.84 & 15.28 & 92.00 & 16.15/24.55 \\
+DeepSeek-V3.1-Thinking & CoT & \texttt{deepseekv3.1-thinking-CoT} & 22.25 & 16.51 & 14.12 & 92.20 & 18.52/31.37 \\
+GLM-5 & Base & \texttt{glm5-base} & 25.25 & 16.91 & 14.90 & 91.80 & 14.29/19.09 \\
+GLM-5 & CoT & \texttt{glm5-CoT} & 25.00 & 16.23 & 14.27 & 93.40 & 15.96/21.23 \\
+Qwen3-8B & Base & \texttt{qwen3-8b-base} & 19.25 & 21.98 & 18.92 & 95.80 & 14.15/18.51 \\
+Qwen3-8B & CoT & \texttt{qwen-8b-CoT} & 17.25 & 20.05 & 17.17 & 95.20 & 14.58/20.16 \\
 \bottomrule
 \end{tabular}%
 }
 \end{table*}
+
+\subsubsection{Primary paired lexical result}
+
+On the 400 paired answerable questions, CoT reduces Token F1 from 24.72\% to
+23.15\%, a $-1.57$ percentage-point change whose 95\% paired-bootstrap
+interval is $[-2.24,-0.92]$. ROUGE-L similarly decreases from 21.60\% to
+19.90\% ($-1.71$ points, 95\% CI $[-2.34,-1.10]$). Both intervals exclude
+zero. Exact Match changes only from 14.00\% to 13.75\% ($-0.25$ points, 95\%
+CI $[-1.50,+1.00]$); its interval includes zero and the exact McNemar test
+gives $p=1.00$.
+
+The paired outcomes show that the aggregate decline is not caused by a small
+number of extreme cases. CoT wins, ties, and loses on Token F1 for
+79/164/157 questions and on ROUGE-L for 80/163/157 questions. Thus, losses
+outnumber wins for both graded overlap metrics, whereas Exact Match is tied on
+393 of 400 questions. Table~\ref{tab:llm-reasoning-paired} reports the means,
+paired uncertainty, and per-question win/tie/loss counts.
 
 \begin{table*}[t]
 \centering
@@ -310,19 +355,134 @@ answerable questions. Deltas are CoT minus Base in percentage points; CIs
 are percentile bootstrap intervals from 10,000 paired resamples.}
 \label{tab:llm-reasoning-paired}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrrrr}
 \toprule
 \textbf{Metric} & \textbf{Base (\%)} & \textbf{CoT (\%)} &
-\textbf{$\Delta$ (pp)} & \textbf{95\% paired CI (pp)} \\
+\textbf{$\Delta$ (pp)} & \textbf{95\% paired CI (pp)} &
+\textbf{CoT W/T/L} \\
 \midrule
-Exact Match & 14.00 & 13.75 & $-0.25$ & $[-1.50,+1.00]$ \\
-Token F1 & 24.72 & 23.15 & $-1.57$ & $[-2.24,-0.92]$ \\
-ROUGE-L & 21.60 & 19.90 & $-1.71$ & $[-2.34,-1.10]$ \\
+Exact Match & 14.00 & 13.75 & $-0.25$ & $[-1.50,+1.00]$ & 3/393/4 \\
+Token F1 & 24.72 & 23.15 & $-1.57$ & $[-2.24,-0.92]$ & 79/164/157 \\
+ROUGE-L & 21.60 & 19.90 & $-1.71$ & $[-2.34,-1.10]$ & 80/163/157 \\
 \bottomrule
 \end{tabular}%
 }
 \end{table*}
 
+In relative terms, the Token F1 reduction is 6.35\% of the Base mean and the
+ROUGE-L reduction is 7.92\%. These relative values are descriptive---the
+percentage-point paired effects and their confidence intervals remain the
+primary quantities---but they show that the change is not negligible compared
+with the low absolute lexical scores of the task.
+
+\subsubsection{Where the paired degradation occurs}
+
+The prompt effect is not uniform across benchmark slices. The largest
+well-populated category decrease occurs for single-hop questions
+($-2.22$ Token-F1 points, $n=172$), while the citation category also declines
+($-1.55$ points, $n=106$). The legal-validity interval crosses zero. The
+cross-document and multi-hop subsets contain only 11 and 20 cases,
+respectively, so their intervals are reported for transparency but should not
+be read as stable subgroup estimates. By answer type, both abstractive and
+extractive answers lose about two Token-F1 points. Boolean answers show a
+smaller $-0.71$-point change whose upper confidence bound is effectively zero.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{GPT-4o-mini Token-F1 slices for the fixed-context Base-versus-CoT
+comparison. Deltas are CoT minus Base in percentage points; intervals use
+10,000 paired bootstrap resamples. Small slices are exploratory.}
+\label{tab:llm-reasoning-slices}
+\begin{tabular}{llrrrrr}
+\toprule
+\textbf{Slice family} & \textbf{Slice} & \textbf{$n$} &
+\textbf{Base} & \textbf{CoT} & \textbf{$\Delta$} & \textbf{95\% CI} \\
+\midrule
+Category & Citation & 106 & 25.72 & 24.18 & $-1.55$ & $[-2.92,-0.33]$ \\
+Category & Cross-document & 11 & 27.67 & 27.62 & $-0.05$ & $[-1.18,+1.05]$ \\
+Category & Legal validity & 91 & 14.78 & 14.38 & $-0.40$ & $[-1.89,+1.27]$ \\
+Category & Multi-hop & 20 & 30.73 & 28.33 & $-2.40$ & $[-4.22,-0.84]$ \\
+Category & Single-hop & 172 & 28.48 & 26.27 & $-2.22$ & $[-3.21,-1.30]$ \\
+\midrule
+Answer type & Abstractive & 199 & 32.96 & 31.02 & $-1.94$ & $[-3.09,-0.80]$ \\
+Answer type & Boolean & 123 & 8.50 & 7.78 & $-0.71$ & $[-1.46,+0.00]$ \\
+Answer type & Extractive & 78 & 29.30 & 27.31 & $-1.99$ & $[-3.39,-0.78]$ \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsubsection{Evidence, answerability, citation, and latency diagnostics}
+
+Conditioning on evidence availability does not reverse the primary result.
+CoT Token F1 is lower when all annotated support is retrieved ($-1.98$
+points, $n=138$), when support is partial ($-1.86$ points, $n=29$), and when
+no gold chunk is retrieved ($-1.30$ points, $n=233$). ROUGE-L changes in the
+same direction in all three strata. These are answer-overlap results
+conditional on a fixed context, not measures of claim faithfulness; the full
+breakdown is in
+\hyperref[tab:llm-reasoning-evidence]{Table~\ref*{tab:llm-reasoning-evidence}}.
+
+The saved template-based answerability diagnostic rises from 82.60\% to
+84.00\%. This increase comes entirely from answering seven additional
+answerable questions: false refusals fall from 85/400 (21.25\%) to 78/400
+(19.50\%), while both prompts correctly refuse 98/100 unanswerable questions.
+It therefore measures answer/refuse format behavior, not semantic refusal
+quality. CoT also increases citation presence from 78.25\% to 81.00\% and
+mean unique sources from 1.46 to 1.68, but structural citation coverage falls
+from 89.42\% to 87.91\%. These citation fields test marker presence and parser
+coverage rather than source entailment; see
+\hyperref[tab:evidence-diagnostics]{Table~\ref*{tab:evidence-diagnostics}}.
+
+The marker counts make the trade-off more concrete. CoT produces 714 parsed
+citation markers versus 599 for Base, a 19.2\% increase, and neither condition
+contains an invalid marker. Nevertheless, the lower structural coverage means
+that adding markers and sources does not ensure that a larger share of scored
+factual sentences is cited. The data therefore support a formatting claim
+(more citation activity), not a grounding claim (better evidential support).
+
+A supplementary length diagnostic computed from the frozen final answers also
+shows that CoT changes response form. On the 400 answerable pairs, mean output
+length rises from 43.98 to 52.66 whitespace-delimited tokens. The paired mean
+increase is 8.69 tokens (95\% paired-bootstrap CI $[6.41,11.14]$); CoT is
+longer on 176 cases, equal on 163, and shorter on 61. These are simple surface
+tokens rather than provider billing or reasoning tokens. The longer output is
+consistent with the additional instruction and may contribute to lower lexical
+overlap, but the saved artifacts do not identify a causal mechanism.
+
+The final column of Table~\ref{tab:llm-reasoning-runs} reports saved
+end-to-end total p50/p95 latency, not generation time alone. Each percentile
+uses all 500 rows in the corresponding \texttt{latency.json}; the millisecond
+values were converted to seconds and cross-checked against
+\texttt{run\_reliability.csv}. In the controlled GPT-4o-mini pair, generation
+p50/p95 rises from 2.92/5.74 seconds to 3.68/6.17 seconds, while total p50/p95
+rises from 13.99/17.21 seconds to 14.74/18.42 seconds. From the unrounded
+artifacts, the total median and p95 increases are 0.759 seconds (5.4\%) and
+1.213 seconds (7.0\%). The descriptive p50/p95 increases are 2.37/6.82 seconds
+for DeepSeek, 1.67/2.13 for GLM-5, and 0.43/1.64 for Qwen3-8B; these secondary
+pairs are not interpreted as prompt-only effects. The system-wide comparison
+appears in \hyperref[tab:latency-results]{Table~\ref*{tab:latency-results}}.
+
+\subsubsection{Descriptive model checks and claim boundary}
+
+The other complete model pairs show the same descriptive direction for Token
+F1: CoT minus Base is $-1.33$ points for DeepSeek-V3.1-Thinking, $-0.68$
+for GLM-5, and $-1.92$ for Qwen3-8B. They are not pooled with the primary
+effect. GPT-4o-mini was the pre-specified primary comparison; four DeepSeek
+cases have different exact top-10 chunk-ID sequences, and the Qwen manifests
+use different code snapshots, timeouts, and retry limits.
+
+Under the controlled GPT-4o-mini setting, explicit CoT is therefore not a
+demonstrated answer-quality improvement: it lowers both graded lexical-overlap
+metrics and adds latency, while improving only template-based non-refusal and
+citation-presence diagnostics. The artifacts contain no expert legal labels,
+claim-level entailment annotations, raw chain-of-thought, reasoning-token
+counts, or cost records. Accordingly, this ablation supports a conclusion
+about observable output behavior under a fixed context, not about latent
+reasoning quality, legal correctness, citation faithfulness, or deployment
+safety.
+
+\FloatBarrier
 \subsection{Performance by Question Category and Answer Type}
 \label{sec:breakdown-analysis}
 
@@ -333,9 +493,65 @@ a main conclusion. The table reports Jina versus RRF-only deltas on answerable
 cases with 2,000 paired-bootstrap resamples; see
 \hyperref[tab:jina-slices]{Table~\ref*{tab:jina-slices}}.
 
-\begin{table*}[t]
+\subsection{Evidence Coverage, Abstention, and Citation Analysis}
+\label{sec:evidence-analysis}
+
+The GPT-4o-mini pair provides structural diagnostics for evidence availability,
+answerability decisions, and citations. These fields describe observable
+output format and saved parser coverage; they do not establish citation
+entailment, semantic refusal quality, or legal correctness. CoT lowers the
+false-refusal rate on answerable questions from 21.25\% to 19.50\%, while
+unanswerable recognition remains 98.00\% for both prompts. Citation presence
+rises from 78.25\% to 81.00\% and mean unique sources from 1.46 to 1.68, but
+structural citation coverage falls from 89.42\% to 87.91\%; the detailed
+diagnostics are in \hyperref[tab:evidence-diagnostics]{Table~\ref*{tab:evidence-diagnostics}}.
+
+Evidence-stratified deltas do not reverse the result: CoT Token F1 is lower
+when all gold support is retrieved ($-1.98$ points, $n=138$), when support is
+partial ($-1.86$ points, $n=29$), and when support is absent ($-1.30$ points,
+$n=233$). The saved records cannot support claim-level faithfulness.
+
+\subsection{Latency and Efficiency Comparison}
+\label{sec:ablation-efficiency}
+
+Efficiency differences are substantial. Hybrid retrieval reports a one-time
+BM25 precomputation cost of about 13,495 seconds, which contributes 26.990
+amortized seconds per query to the reported hybrid totals, and a much larger
+per-query retrieval cost. This batch accounting is not online request latency.
+Among rerankers, mMiniLM is fastest, Jina is intermediate,
+BGE is slower, and Qwen3 is much slower. The generator CoT prompt raises
+generation p50/p95 from 2.92/5.74 seconds to 3.68/6.17 seconds, and total
+p50/p95 from 13.99/17.21 to 14.74/18.42 seconds. Reranker p95, peak GPU
+memory, and controlled full-online throughput are unavailable. The complete
+stage and end-to-end comparison is linked in
+\hyperref[tab:latency-results]{Table~\ref*{tab:latency-results}}.
+
+\subsection{Qualitative Ablation Examples and Failure Cases}
+\label{sec:qualitative-ablation}
+
+The saved aggregate artifacts support a precise failure taxonomy even without
+hand-labelled legal case studies. Metadata has a document--provision trade-off:
+document-level success increases at top 10 while exact chunk MRR falls, so a
+retrieved document title is not proof that the governing provision is ranked
+early. Hybrid fusion can add lexical context while lowering exact gold-chunk
+coverage; a generation-overlap gain is not evidence that RRF preserved the
+gold ranked list. Graph expansion has a direct seed-displacement failure: it
+introduces a new top-10 gold chunk for only 1/400 Dense and 6/400 Hybrid
+questions, but removes at least one seed-retrieved gold chunk for 61 and 59
+questions respectively. Finally, a fluent response with a structural citation
+marker is not a verified legally correct or entailed answer.
+
+Future case studies should preserve the \texttt{qa\_id}, gold chunk IDs,
+ordered candidate IDs before and after the changed component, serialized
+context, final answer, and citation parser output. A case must label whether
+its diagnosis is an automatic rank fact or a human legal judgement; this keeps
+illustrative examples auditable rather than anecdotal.
+
+\begin{table*}[!t]
 \centering
 \scriptsize
+\renewcommand{\arraystretch}{0.93}
+\captionsetup{skip=3pt}
 \caption{Jina versus RRF-only on selected category and answer-type slices.
 Deltas are percentage points with 95\% paired-bootstrap CIs.}
 \label{tab:jina-slices}
@@ -363,24 +579,8 @@ $+14.18$ [$+7.64,+21.13$] & $+11.68$ [$+6.27,+17.95$] \\
 \bottomrule
 \end{tabular}%
 }
-\end{table*}
 
-\subsection{Evidence Coverage, Abstention, and Citation Analysis}
-\label{sec:evidence-analysis}
-
-The GPT-4o-mini pair provides structural diagnostics for evidence availability,
-answerability decisions, and citations. These fields describe observable
-output format and saved parser coverage; they do not establish citation
-entailment, semantic refusal quality, or legal correctness. CoT lowers the
-false-refusal rate on answerable questions from 21.25\% to 19.50\%, while
-unanswerable recognition remains 98.00\% for both prompts. Citation presence
-rises from 78.25\% to 81.00\% and mean unique sources from 1.46 to 1.68, but
-structural citation coverage falls from 89.42\% to 87.91\%; the detailed
-diagnostics are in \hyperref[tab:evidence-diagnostics]{Table~\ref*{tab:evidence-diagnostics}}.
-
-\begin{table*}[t]
-\centering
-\scriptsize
+\vspace{0.20em}
 \caption{Structural evidence, abstention, and citation diagnostics for the
 paired GPT-4o-mini runs.}
 \label{tab:evidence-diagnostics}
@@ -397,16 +597,8 @@ Unanswerable recognition & 98.00\% & 98.00\% & refusal-marker diagnostic \\
 \bottomrule
 \end{tabular}%
 }
-\end{table*}
 
-Evidence-stratified deltas do not reverse the result: CoT Token F1 is lower
-when all gold support is retrieved ($-1.98$ points, $n=138$), when support is
-partial ($-1.86$ points, $n=29$), and when support is absent ($-1.30$ points,
-$n=233$). The saved records cannot support claim-level faithfulness.
-
-\begin{table*}[t]
-\centering
-\scriptsize
+\vspace{0.20em}
 \caption{Evidence-availability strata for the paired GPT-4o-mini reasoning
 comparison. Values are lexical means on the 400 paired answerable cases.}
 \label{tab:llm-reasoning-evidence}
@@ -423,26 +615,8 @@ No support retrieved & 233 & 22.53 & 21.23 & $-1.30$ & 19.29 & 17.92 & $-1.37$ \
 \bottomrule
 \end{tabular}%
 }
-\end{table*}
 
-\subsection{Latency and Efficiency Comparison}
-\label{sec:ablation-efficiency}
-
-Efficiency differences are substantial. Hybrid retrieval reports a one-time
-BM25 precomputation cost of about 13,495 seconds, which contributes 26.990
-amortized seconds per query to the reported hybrid totals, and a much larger
-per-query retrieval cost. This batch accounting is not online request latency.
-Among rerankers, mMiniLM is fastest, Jina is intermediate,
-BGE is slower, and Qwen3 is much slower. The generator CoT prompt raises
-generation p50/p95 from 2.92/5.74 seconds to 3.68/6.17 seconds, and total
-p50/p95 from 13.99/17.21 to 14.74/18.42 seconds. Reranker p95, peak GPU
-memory, and controlled full-online throughput are unavailable. The complete
-stage and end-to-end comparison is linked in
-\hyperref[tab:latency-results]{Table~\ref*{tab:latency-results}}.
-
-\begin{table*}[t]
-\centering
-\scriptsize
+\vspace{0.20em}
 \caption{Recorded latency comparisons. Values are p50/p95 seconds unless
 noted; reranker p95 was not recorded. Cached BM25 means reranker rows are not
 full-online sparse-latency measurements.}
@@ -466,47 +640,8 @@ Jina & 1.278/N/A & 4.158/N/A & reranker \\
 \bottomrule
 \end{tabular}%
 }
-\end{table*}
 
-\subsection{Qualitative Ablation Examples and Failure Cases}
-\label{sec:qualitative-ablation}
-
-The saved aggregate artifacts support a precise failure taxonomy even without
-hand-labelled legal case studies. Metadata has a document--provision trade-off:
-document-level success increases at top 10 while exact chunk MRR falls, so a
-retrieved document title is not proof that the governing provision is ranked
-early. Hybrid fusion can add lexical context while lowering exact gold-chunk
-coverage; a generation-overlap gain is not evidence that RRF preserved the
-gold ranked list. Graph expansion has a direct seed-displacement failure: it
-introduces a new top-10 gold chunk for only 1/400 Dense and 6/400 Hybrid
-questions, but removes at least one seed-retrieved gold chunk for 61 and 59
-questions respectively. Finally, a fluent response with a structural citation
-marker is not a verified legally correct or entailed answer.
-
-Future case studies should preserve the \texttt{qa\_id}, gold chunk IDs,
-ordered candidate IDs before and after the changed component, serialized
-context, final answer, and citation parser output. A case must label whether
-its diagnosis is an automatic rank fact or a human legal judgement; this keeps
-illustrative examples auditable rather than anecdotal.
-
-\subsection{Summary of Ablation Findings}
-\label{sec:ablation-summary}
-
-The five reported analyses support conditional engineering decisions. Metadata
-helps document-level retrieval but not exact chunk ranking. The tested hybrid
-configuration reduces exact-chunk coverage and adds latency. One-hop graph
-expansion increases context density while displacing more gold evidence than
-it adds. Cross-encoder reranking is the clearest positive retrieval result:
-Jina gives the strongest ranking scores, BGE gives the strongest lexical
-overlap, and mMiniLM gives the lowest recorded reranking cost. For the primary
-generator pair, CoT lowers lexical overlap under fixed context while improving
-only template-based decision diagnostics and adding latency. The consolidated
-recommendations are linked in
-\hyperref[tab:ablation-decision-summary]{Table~\ref*{tab:ablation-decision-summary}}.
-
-\begin{table*}[t]
-\centering
-\scriptsize
+\vspace{0.20em}
 \caption{Decision summary for the completed ablation families. Quality claims
 are limited to the deterministic metrics available in the saved artifacts.}
 \label{tab:ablation-decision-summary}
@@ -539,3 +674,18 @@ retain Base for this lexical benchmark \\
 \end{tabular}%
 }
 \end{table*}
+
+\subsection{Summary of Ablation Findings}
+\label{sec:ablation-summary}
+
+The five reported analyses support conditional engineering decisions. Metadata
+helps document-level retrieval but not exact chunk ranking. The tested hybrid
+configuration reduces exact-chunk coverage and adds latency. One-hop graph
+expansion increases context density while displacing more gold evidence than
+it adds. Cross-encoder reranking is the clearest positive retrieval result:
+Jina gives the strongest ranking scores, BGE gives the strongest lexical
+overlap, and mMiniLM gives the lowest recorded reranking cost. For the primary
+generator pair, CoT lowers lexical overlap under fixed context while improving
+only template-based decision diagnostics and adding latency. The consolidated
+recommendations are linked in
+\hyperref[tab:ablation-decision-summary]{Table~\ref*{tab:ablation-decision-summary}}.
