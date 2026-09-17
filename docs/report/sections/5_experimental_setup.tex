@@ -14,21 +14,25 @@ therefore compared only with its paired control inside the same family.
 \subsection{Pipeline and Frozen Artifacts}
 \label{sec:software-architecture}
 
-The evaluated pipeline has five stages: query embedding with
-\texttt{intfloat/multilingual-e5-large}; dense FAISS retrieval and, where
-enabled, tokenized BM25 retrieval; RRF fusion, graph expansion, or
-cross-encoder reranking; serialization of retained chunks into a grounded
-prompt; and answer generation and evaluation. The analysis reads frozen
-manifests, predictions, aggregate metrics, latency records, and error logs;
-it does not rerun models.
+The evaluated pipeline consists of five stages: (1) query embedding with \texttt{intfloat/multilingual-e5-large};
+(2) dense FAISS retrieval and, where enabled, tokenized BM25 retrieval;
+(3) RRF fusion, graph-based context selection, or cross-encoder reranking;
+(4) serialization of retained chunks into a grounded prompt;
+and (5) answer generation followed by post-hoc evaluation.
 
-Every primary comparison is joined by \texttt{qa\_id}. A valid row has a
-prediction, no saved error, and no failed or skipped status. The same ID is
-used to join the question category, reference answer, gold chunk set,
-ordered retrieved context, output diagnostics, and latency. This row-level
-alignment is what makes a reported mean difference traceable to paired cases.
+All reported analyses operate on frozen artifacts rather than rerunning models.
+Each run is associated with a manifest identifying the run configuration, 
+corpus snapshot, benchmark version, model checkpoint or revision, random seed, and code revision.
+Checksums for the benchmark and major corpus or index artifacts are retained where available 
+so that the evaluated inputs can be distinguished from later repository or dataset updates.
+Runtime metadata such as execution timestamp, software environment, and hardware configuration is recorded with the run artifacts when available; detailed manifest fields are listed in Appendix~F.
 
-The completed work is organized around five research questions:
+The analysis reads saved manifests, per-question predictions, retrieved context identifiers, aggregate metrics, latency records, and error logs.
+Every primary comparison is aligned by \texttt{qa\_id}. A row is considered valid when it has status \texttt{success}, \texttt{completed}, or \texttt{ok}, has no saved error, and is not marked \texttt{failed}, \texttt{error}, or \texttt{skipped}; older artifacts without a status field fall back to the presence of a saved prediction.
+The same identifier links the question category, answer type, reference answer, gold evidence, ordered retrieved context, output diagnostics, and latency record.
+Reported paired effects are therefore computed only over question IDs satisfying the validity requirements of both compared conditions.
+
+The completed experiments address five research questions:
 \begin{enumerate}
     \item Does document and provision metadata improve exact evidence
     retrieval or document-level coverage?
@@ -102,55 +106,73 @@ LLM reasoning & GPT-4o-mini CoT & fixed context & -- & -- & CoT prompt & fixed/1
 \subsection{Benchmark and Metrics}
 \label{sec:evaluation-metrics}
 
-The benchmark contains 500 questions: 400 answerable questions with gold
-chunk identifiers and 100 unanswerable questions. Retrieval scores use only
-the 400 answerable records. Given gold chunks $G_i$ and retrieved top-$k$
-chunks $R_{i,k}$,
+The benchmark contains 500 questions: 400 answerable questions with gold chunk identifiers
+and 100 unanswerable questions. Retrieval metrics are computed only on the 400 answerable questions.
+Let $G_i$ denote the gold chunk set for question $i$, and let $R_{i,k}$ denote the ordered set of retrieved chunks up to rank $k$.
+Recall and hit rate are defined as
+
 \begin{equation}
 \begin{aligned}
-\mathrm{Recall@}k_i&=\frac{|G_i\cap R_{i,k}|}{|G_i|},\\
-\mathrm{Hit@}k_i&=\mathbb{1}[G_i\cap R_{i,k}\ne\varnothing].
+\mathrm{Recall@}k_i
+&=
+\frac{|G_i \cap R_{i,k}|}{|G_i|},\\
+\mathrm{Hit@}k_i
+&=
+\mathbb{1}[G_i \cap R_{i,k} \neq \varnothing].
 \end{aligned}
 \end{equation}
-MRR and nDCG reward an earlier gold rank. Candidate Recall@30 and Candidate
-Hit@30 define the evidence ceiling for the reranker family and are identical
-across its reranker conditions. Graph runs additionally report document- or
-identity-level precision because a graph policy can return fewer chunks.
 
-For a normalized prediction $y_i$ and reference $r_i$, exact match is
+Let $r_i$ be the rank of the first retrieved gold chunk. Truncated reciprocal rank is
+
 \begin{equation}
-\mathrm{EM}_i=\begin{cases}1,&y_i=r_i,\\0,&y_i\ne r_i.\end{cases}
+\mathrm{MRR@}k_i =
+\begin{cases}
+1/r_i, & r_i \leq k,\\
+0, & r_i > k \text{ or no gold chunk is retrieved}.
+\end{cases}
 \end{equation}
-Token F1 uses token overlap $O_i$ and prediction/reference lengths
-$L_i^y,L_i^r$:
+
+For nDCG, retrieved chunks use binary relevance,
+$\mathrm{rel}_{i,j}=1$ when the chunk at rank $j$ belongs to $G_i$ and $0$ otherwise:
 \begin{equation}
-P_i=\frac{O_i}{L_i^y},\qquad R_i=\frac{O_i}{L_i^r},\qquad
+\frac{\mathrm{DCG@}k_i}{\mathrm{IDCG@}k_i},
+\end{equation}
+
+where $\mathrm{IDCG@}k_i$ is the maximum possible DCG obtained by placing up to $\min(|G_i|,k)$ gold chunks at the highest ranks.
+
+Candidate Recall@30 and Candidate Hit@30 measure whether gold evidence is present in the shared 30-candidate pool used by the reranker family. Because this pool is fixed before reranking, these metrics define the maximum evidence coverage available to every reranker condition.
+
+For graph analyses that may return fewer than $k$ chunks, identity-level precision measures the fraction of returned chunks whose mapped document or provision identifier belongs to the corresponding gold identity set. When no chunk is returned, identity precision is defined as zero.
+
+For a normalized prediction $y_i$ and reference answer $r_i$, Exact Match is
+
+\begin{equation}
+\mathrm{EM}_i =
+\begin{cases}
+1, & y_i = r_i,\\
+0, & y_i \neq r_i.
+\end{cases}
+\end{equation}
+
+The lexical evaluator normalizes text with Unicode NFC, lowercasing, punctuation-to-space replacement, and whitespace collapse. Token F1 uses token overlap $O_i$ and prediction/reference token counts $L_i^y$ and $L_i^r$ when both token lists are non-empty:
+
+\begin{equation}
+P_i=\frac{O_i}{L_i^y},
+\qquad
+R_i=\frac{O_i}{L_i^r},
+\qquad
 F_{1,i}=\frac{2P_iR_i}{P_i+R_i}.
 \end{equation}
-ROUGE-L uses the same F-score form with the token-level longest common
-subsequence in place of $O_i$. These overlap metrics are computed on
-successful answerable outputs; they are not legal-correctness scores.
 
-The saved unanswerable score is a template-based answer/refuse diagnostic. In
-the retrieval/graph family, unanswerable accuracy is the fraction of the 100
-unanswerable outputs containing the Vietnamese fallback phrase
-\textit{``Không có đủ thông tin trong ngữ cảnh được cung cấp.''}; it is
-distinct from the 500-case decision diagnostic used elsewhere. Citation
-presence is the fraction of successful answerable outputs containing at least
-one marker, while structural coverage is the fraction of scored factual
-sentences with a marker. Neither measure tests claim-to-source entailment.
-Completion is successful rows divided by scheduled rows. Latency is reported
-in seconds as saved mean, p50, and p95 values where available. Hybrid timing
-includes 26.990 seconds per query amortized from 13,495 seconds of BM25 batch
-precomputation over 500 questions; it is not a direct online request-latency
-measurement. Reranker runs use cached BM25 candidates and therefore also do
-not represent full-online sparse latency.
+When both prediction and reference tokenize to empty strings, Token F1 and ROUGE-L return 1.0; when exactly one side is empty, they return 0.0. ROUGE-L otherwise uses the same F-score structure with the token-level longest common subsequence in place of direct token overlap. Exact Match, Token F1, and ROUGE-L are computed only on valid answerable outputs and are treated as lexical-overlap diagnostics rather than measures of legal correctness.
 
-Family-specific preprocessing is retained in the interpretation: the
-retrieval/graph notebooks lowercase and collapse whitespace while retaining
-punctuation, whereas the reasoning evaluator additionally applies Unicode NFC
-normalization and punctuation-to-space replacement. Scores are compared only
-within the evaluator that produced them.
+Unanswerable behavior is reported separately from retrieval quality. For the retrieval/graph family, the \textit{fallback-marker rate} is the fraction of the 100 unanswerable outputs containing the expected Vietnamese fallback phrase, ``Không có đủ thông tin trong ngữ cảnh được cung cấp.'' This is a template-based abstention diagnostic rather than semantic proof that the response correctly recognized insufficient evidence. The 500-question answerability-decision diagnostic used in other run families is reported separately.
+
+Citation presence is the fraction of valid answerable outputs containing at least one parsed citation marker. Structural citation coverage is the fraction of factual sentences identified by the saved output parser that contain at least one citation marker. The post-hoc analysis averages this metric only over valid answerable rows with a non-null saved \texttt{structural\_citation\_coverage} value; rows with no scored factual sentences save this value as null and are excluded from that denominator. These citation metrics measure observable output structure only and do not test whether a cited source entails, fully supports, or legally justifies the associated claim.
+
+Completion rate is the number of valid completed rows divided by the number of scheduled rows. Latency is reported in seconds using saved mean, p50, and p95 values where available. The hybrid retrieval totals include an amortized BM25 preprocessing cost of 26.990 seconds per query, obtained from 13,495 seconds of batch computation over 500 questions; this value is therefore not a direct online request-latency measurement. Reranker experiments use cached BM25 candidates and likewise do not represent full online sparse-retrieval latency.
+
+Metric preprocessing is evaluator-specific. Retrieval/graph evaluations lowercase text and collapse whitespace while preserving punctuation, whereas the generator-reasoning lexical evaluator applies Unicode NFC normalization and replaces punctuation with spaces before tokenization. Scores are compared only within the evaluator and run family that produced them.
 
 \subsection{Pairing, Uncertainty, and Claim Boundaries}
 \label{sec:experimental-protocol}

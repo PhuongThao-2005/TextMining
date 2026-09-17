@@ -4,8 +4,7 @@
 \section{Ablation Studies}
 \label{sec:ablation-study}
 
-This chapter follows the ablation plan in
-\texttt{report\_structure.md}. We report five completed ablation analyses
+We report five completed ablation analyses
 grouped into four run families: embedding text; dense, hybrid, and graph
 retrieval as one joint retrieval/graph family; reranking; and generator
 prompting. Comparisons are made within a family because candidate
@@ -18,13 +17,21 @@ the results are not treated as one pooled factorial experiment.
 This comparison holds the dense encoder, generator, benchmark, seed, and raw
 FAISS evaluation path fixed. Only the indexed text changes from the chunk body
 to a header-plus-chunk representation. On 400 paired answerable questions,
-metadata leaves exact chunk Recall@10 effectively unchanged (48.5\% versus
-48.5\%) but increases document-level success from 65.8\% to 70.2\%. The
-paired document-success gain is +4.5 percentage points (95\% CI
-[+0.5,+8.8]), whereas the MRR@10 change is $-5.9$ points (95\% CI
-[$-9.1,-2.7$]). Metadata therefore improves document identification while
-making the first exact gold chunk appear later; the complete scores are in
-\hyperref[tab:embedding-results]{Table~\ref*{tab:embedding-results}} and the
+exact chunk Recall@10 is effectively unchanged: both variants round to
+48.5\%, with an unrounded metadata-minus-chunk-only difference of only
++0.08 percentage points (reported as +0.1 pp in
+\hyperref[tab:embedding-results]{Table~\ref*{tab:embedding-results}}).
+Metadata nevertheless increases document-level success at rank 10 from
+65.8\% to 70.2\%, a paired gain of +4.5 pp (95\% CI [+0.5,+8.8]), while
+MRR@10 decreases by 5.9 pp (95\% CI [$-9.1,-2.7$]).
+
+Because the metadata representation includes both document titles and
+provision headers, we additionally report provision-level success. At rank
+10, provision success is 53.8\% for chunk-only retrieval and 53.5\% for
+chunk+metadata, a negligible $-0.25$ pp difference (95\% CI
+[$-5.0,+4.5$]). At rank 5, provision success decreases from 44.3\% to
+40.3\%. Thus, the observed metadata gain is concentrated at document
+discovery rather than provision identification or exact chunk ranking. The
 retrieval curves and paired outcomes are shown in
 \hyperref[fig:embedding-ablation]{Figure~\ref*{fig:embedding-ablation}}.
 
@@ -43,20 +50,23 @@ counts. Both plots use the shared answerable-question comparison.}
 \centering
 \scriptsize
 \caption{Embedding-text ablation on 400 paired answerable questions. Values
-are percentages; document success means that a retrieved chunk from the gold
-document is present in the indicated context. Deltas are chunk+metadata minus
-chunk-only.}
+are percentages. Document and provision success denote retrieval of at least one
+chunk from a gold document or gold provision, respectively. Deltas are
+chunk+metadata minus chunk-only. Recall@10 values in the two rows both round
+to 48.5\%; the unrounded difference is +0.08 pp.}
 \label{tab:embedding-results}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrrrrrr}
+\begin{tabular}{lrrrrrrrrrr}
 \toprule
 \textbf{Variant} & \textbf{Hit@5} & \textbf{Recall@5} & \textbf{MRR@5} &
-\textbf{Doc.@5} & \textbf{Hit@10} & \textbf{Recall@10} &
-\textbf{MRR@10} & \textbf{Doc.@10} \\
+\textbf{Doc@5} & \textbf{Prov@5} & \textbf{Hit@10} &
+\textbf{Recall@10} & \textbf{MRR@10} & \textbf{Doc@10} &
+\textbf{Prov@10} \\
 \midrule
-Chunk-only & 44.0 & 39.0 & 27.4 & 59.0 & 53.5 & 48.5 & 28.6 & 65.8 \\
-Chunk+metadata & 40.2 & 36.8 & 20.9 & 61.8 & 53.2 & 48.5 & 22.7 & 70.2 \\
-Delta & $-3.8$ & $-2.2$ & $-6.5$ & $+2.8$ & $-0.2$ & $+0.1$ & $-5.9$ & $+4.5$ \\
+Chunk-only & 44.0 & 39.0 & 27.4 & 59.0 & 44.3 & 53.5 & 48.5 & 28.6 & 65.8 & 53.8 \\
+Chunk+metadata & 40.2 & 36.8 & 20.9 & 61.8 & 40.3 & 53.2 & 48.5 & 22.7 & 70.2 & 53.5 \\
+Delta & $-3.8$ & $-2.2$ & $-6.5$ & $+2.8$ & $-4.0$ & $-0.2$ &
+$+0.1$ & $-5.9$ & $+4.5$ & $-0.3$ \\
 \bottomrule
 \end{tabular}%
 }
@@ -323,21 +333,26 @@ ROUGE-L & 21.60 & 19.90 & $-1.71$ & $[-2.34,-1.10]$ \\
 }
 \end{table*}
 
-\subsection{Performance by Question Category and Answer Type}
+\subsection{Jina vs RRF-Only by Question Category and Answer Type}
 \label{sec:breakdown-analysis}
 
-The largest Jina gains occur for legal-validity and citation questions, while
-the smaller extractive slice is inconclusive. The multi-hop slice has only 20
-questions and is exploratory; hard and cross-document slices are too small for
-a main conclusion. The table reports Jina versus RRF-only deltas on answerable
-cases with 2,000 paired-bootstrap resamples; see
+This subgroup analysis is restricted to the 400 answerable questions and
+compares Jina against RRF-only within the shared reranker candidate pool.
+Consequently, the slice counts differ from the full benchmark inventory in
+Section~\ref{sec:question-taxonomy}, which also includes 100 unanswerable
+questions. The largest observed gains occur for legal-validity and citation
+questions. The extractive and multi-hop slices have wider intervals, and the
+cross-document and hard subsets are too small for stable subgroup estimates.
+The reported intervals use 2,000 paired-bootstrap resamples; see
 \hyperref[tab:jina-slices]{Table~\ref*{tab:jina-slices}}.
 
 \begin{table*}[t]
 \centering
 \scriptsize
-\caption{Jina versus RRF-only on selected category and answer-type slices.
-Deltas are percentage points with 95\% paired-bootstrap CIs.}
+\caption{Jina versus RRF-only on selected answerable category and answer-type
+slices. Counts differ from the full benchmark inventory because unanswerable
+questions are excluded. Deltas are percentage points with 95\%
+paired-bootstrap CIs.}
 \label{tab:jina-slices}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{llrlll}
@@ -364,6 +379,13 @@ $+14.18$ [$+7.64,+21.13$] & $+11.68$ [$+6.27,+17.95$] \\
 \end{tabular}%
 }
 \end{table*}
+
+The category pattern suggests that reranking is most useful when relevant
+evidence must be distinguished among several semantically related legal
+passages, as in citation and validity questions. However, these are subgroup
+analyses rather than separate preregistered experiments, so differences
+between slices are treated descriptively rather than as evidence of
+between-category effects.
 
 \subsection{Evidence Coverage, Abstention, and Citation Analysis}
 \label{sec:evidence-analysis}
@@ -428,66 +450,94 @@ No support retrieved & 233 & 22.53 & 21.23 & $-1.30$ & 19.29 & 17.92 & $-1.37$ \
 \subsection{Latency and Efficiency Comparison}
 \label{sec:ablation-efficiency}
 
-Efficiency differences are substantial. Hybrid retrieval reports a one-time
-BM25 precomputation cost of about 13,495 seconds, which contributes 26.990
-amortized seconds per query to the reported hybrid totals, and a much larger
-per-query retrieval cost. This batch accounting is not online request latency.
-Among rerankers, mMiniLM is fastest, Jina is intermediate,
-BGE is slower, and Qwen3 is much slower. The generator CoT prompt raises
-generation p50/p95 from 2.92/5.74 seconds to 3.68/6.17 seconds, and total
+Latency values are interpreted only within their measurement scope. The
+retrieval/graph family records retrieval-stage and total latency, but the
+Hybrid rows include 26.990 seconds per query amortized from a 13,495-second
+BM25 batch computation over 500 questions. They therefore combine an offline
+batch cost with measured query-time work rather than representing direct
+online request latency. Reranker timings are cached-stage measurements over a
+preconstructed candidate pool and exclude full online sparse retrieval. The
+generator rows measure generation under the fixed-context reasoning family.
+Accordingly, the rows in
+\hyperref[tab:latency-results]{Table~\ref*{tab:latency-results}} should not be
+read as a single end-to-end latency leaderboard across families.
+
+Within the reranker family, mMiniLM has the lowest recorded reranking p50,
+followed by Jina, BGE, and Qwen3. Within the generator family, CoT raises
+generation p50/p95 from 2.92/5.74 seconds to 3.68/6.17 seconds and total
 p50/p95 from 13.99/17.21 to 14.74/18.42 seconds. Reranker p95, peak GPU
-memory, and controlled full-online throughput are unavailable. The complete
-stage and end-to-end comparison is linked in
-\hyperref[tab:latency-results]{Table~\ref*{tab:latency-results}}.
+memory, and controlled full-online throughput are unavailable. Hardware,
+batching, warm-up/cache policy, and model-load inclusion are not recorded
+consistently across all run families, so the report makes no
+hardware-normalized cross-family efficiency claim.
 
 \begin{table*}[t]
 \centering
 \scriptsize
-\caption{Recorded latency comparisons. Values are p50/p95 seconds unless
-noted; reranker p95 was not recorded. Cached BM25 means reranker rows are not
-full-online sparse-latency measurements.}
+\caption{Recorded latency by measurement scope. Values are p50/p95 seconds
+unless noted. Rows from different scopes are not directly comparable.
+Reranker p95 was not recorded.}
 \label{tab:latency-results}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrl}
+\begin{tabular}{llll}
 \toprule
-\textbf{Configuration} & \textbf{Stage p50/p95} & \textbf{Total p50/p95} &
-\textbf{Stage} \\
+\textbf{Configuration} & \textbf{Stage p50/p95} &
+\textbf{Total p50/p95} & \textbf{Measurement scope} \\
 \midrule
-DenseOnly & 0.797/0.856 & 5.483/9.946 & retrieval \\
-HybridOnly & 27.855/27.924 & 31.538/33.623 & retrieval \\
-DenseGraph & 0.798/0.860 & 4.998/9.750 & retrieval + graph \\
-HybridGraph & 27.858/27.929 & 31.180/33.312 & retrieval + graph \\
-GPT-4o-mini Base & 2.92/5.74 & 13.99/17.21 & generation \\
-GPT-4o-mini CoT & 3.68/6.17 & 14.74/18.42 & generation \\
-mMiniLM & 0.385/N/A & 3.343/N/A & reranker \\
-Qwen3 & 9.695/N/A & 13.007/N/A & reranker \\
-BGE & 2.872/N/A & 5.848/N/A & reranker \\
-Jina & 1.278/N/A & 4.158/N/A & reranker \\
+DenseOnly & 0.797/0.856 & 5.483/9.946 & measured retrieval + total \\
+DenseGraph & 0.798/0.860 & 4.998/9.750 & measured retrieval/graph + total \\
+HybridOnly & 27.855/27.924 & 31.538/33.623 & measured + amortized BM25 batch cost \\
+HybridGraph & 27.858/27.929 & 31.180/33.312 & measured + amortized BM25 batch cost \\
+\midrule
+mMiniLM & 0.385/N/A & 3.343/N/A & cached candidate-pool reranking \\
+Jina & 1.278/N/A & 4.158/N/A & cached candidate-pool reranking \\
+BGE & 2.872/N/A & 5.848/N/A & cached candidate-pool reranking \\
+Qwen3 & 9.695/N/A & 13.007/N/A & cached candidate-pool reranking \\
+\midrule
+GPT-4o-mini Base & 2.92/5.74 & 13.99/17.21 & fixed-context generation \\
+GPT-4o-mini CoT & 3.68/6.17 & 14.74/18.42 & fixed-context generation \\
 \bottomrule
 \end{tabular}%
 }
 \end{table*}
 
-\subsection{Qualitative Ablation Examples and Failure Cases}
+\subsection{Aggregate Failure Modes and Representative Examples}
 \label{sec:qualitative-ablation}
+The aggregate results reveal several recurring failure modes. Metadata can improve document-level discovery while degrading exact evidence ranking, and graph-based context construction can displace already retrieved gold evidence under a fixed context budget. The following per-question traces illustrate how these retrieval changes propagate to generated answers.
 
-The saved aggregate artifacts support a precise failure taxonomy even without
-hand-labelled legal case studies. Metadata has a document--provision trade-off:
-document-level success increases at top 10 while exact chunk MRR falls, so a
-retrieved document title is not proof that the governing provision is ranked
-early. Hybrid fusion can add lexical context while lowering exact gold-chunk
-coverage; a generation-overlap gain is not evidence that RRF preserved the
-gold ranked list. Graph expansion has a direct seed-displacement failure: it
-introduces a new top-10 gold chunk for only 1/400 Dense and 6/400 Hybrid
-questions, but removes at least one seed-retrieved gold chunk for 61 and 59
-questions respectively. Finally, a fluent response with a structural citation
-marker is not a verified legally correct or entailed answer.
+\paragraph{Metadata can demote the governing evidence.}
+\textbf{QA ID:} \texttt{vlrag-e6094add97}. \
 
-Future case studies should preserve the \texttt{qa\_id}, gold chunk IDs,
-ordered candidate IDs before and after the changed component, serialized
-context, final answer, and citation parser output. A case must label whether
-its diagnosis is an automatic rank fact or a human legal judgement; this keeps
-illustrative examples auditable rather than anecdotal.
+\textbf{Question:} ``Có cần chuẩn bị giấy tờ gì đặc biệt không khi tôi là lãnh đạo một sở tại tỉnh Tiền Giang muốn đi nước ngoài?'' \
+
+\textbf{Reference:} ``Khi đi nước ngoài, bạn phải có văn bản xin ý kiến Ủy ban nhân dân tỉnh trước khi tiến hành các thủ tục liên quan.'' \
+
+\textbf{Chunk-only:} Gold chunk is ranked 1. \
+\textbf{Generated answer:} ``Có. Là lãnh đạo sở, bạn cần có văn bản xin ý kiến Ủy ban nhân dân tỉnh trước khi tiến hành các thủ tục liên quan [1].'' \
+
+\textbf{Chunk+metadata:} The same gold chunk falls to rank 9. \
+\textbf{Generated answer:} ``Bạn cần chuẩn bị các giấy tờ sau khi đi nước ngoài về việc công: văn bản đề nghị của cơ quan, đơn vị; văn bản chấp thuận của tổ chức Đảng nếu là đảng viên; công văn, thư mời hoặc giấy triệu tập; và các thông tin về mục đích, thời gian, nước đến và nguồn kinh phí [1][2][4].'' \
+
+\textbf{Effect:} MRR@10 decreases from $1.000$ to $0.111$, while Token F1 decreases from $0.750$ to $0.234$. The gold evidence remains in the top-10 context, but higher-ranked related provisions dominate the generated answer. This case shows that metadata can improve broader document matching without improving the rank of the exact governing provision.
+
+\paragraph{Graph context can displace already retrieved evidence.}
+\textbf{QA ID:} \texttt{vlrag-bbca4159cf}. \
+
+\textbf{Question:} ``Gia đình tôi tham gia thực hiện đề tài khoa học xã hội cấp tỉnh, xin hỏi những ai có trách nhiệm phải thi hành quyết định về việc đánh giá, nghiệm thu đề tài này?'' \
+
+\textbf{Reference:} ``Chánh Văn phòng Ủy ban nhân dân tỉnh; Giám đốc Sở Khoa học và Công nghệ; thủ trưởng các sở, ban, ngành; Chủ tịch Ủy ban nhân dân các huyện, thị xã; các đơn vị liên quan; và các tổ chức, cá nhân thực hiện đề tài.'' \
+
+\textbf{HybridOnly:} Gold chunk is retrieved at rank 9. \
+\textbf{Generated answer:} ``Những người có trách nhiệm thi hành quyết định về việc đánh giá, nghiệm thu đề tài khoa học xã hội cấp tỉnh bao gồm: Chánh Văn phòng Ủy ban nhân dân tỉnh, Giám đốc Sở Khoa học và Công nghệ, thủ trưởng các sở, ban, ngành cấp tỉnh, Chủ tịch Ủy ban nhân dân các huyện, thị, thành phố, cùng các tổ chức và cá nhân có liên quan. Căn cứ: Điều 3 của Quyết định 11/2009/QĐ-UBND.'' \
+
+\textbf{HybridGraph:} The final context no longer contains the gold chunk, and no useful graph neighbor replaces it. \
+\textbf{Generated answer:} ``Sở Khoa học và Công nghệ tỉnh có trách nhiệm tổ chức hướng dẫn, đôn đốc, kiểm tra các tổ chức, cá nhân tham gia thực hiện đề tài, dự án khoa học xã hội và nhân văn cấp tỉnh. Ngoài ra, Hội đồng đánh giá, nghiệm thu cấp tỉnh cũng có trách nhiệm trong việc đánh giá và nghiệm thu đề tài. Căn cứ: Quyết định 11/2009/QĐ-UBND và Quyết định 89/2005/QĐ-UB.'' \
+
+\textbf{Effect:} Recall@10 decreases from $1.0$ to $0.0$, MRR@10 from $0.111$ to $0$, and Token F1 from $0.560$ to $0.286$. This is a direct seed-displacement failure: relevant evidence was available under HybridOnly but was removed during graph-based context construction.
+
+Across the full answerable benchmark, graph expansion introduces a new top-10 gold chunk for only 1/400 Dense and 6/400 Hybrid questions, while removing at least one previously retrieved gold chunk for 61 and 59 questions, respectively. The representative cases therefore illustrate two distinct mechanisms: relevant evidence may remain available but become poorly ranked, or it may be removed entirely during context construction.
+
+These cases are interpreted as auditable retrieval and generation traces rather than expert legal judgements. Successful retrieval does not guarantee evidence utilization, and a fluent answer or structurally valid citation marker does not by itself establish claim-to-source entailment or legal correctness.
 
 \subsection{Summary of Ablation Findings}
 \label{sec:ablation-summary}
