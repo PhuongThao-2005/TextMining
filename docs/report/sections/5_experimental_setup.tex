@@ -1,148 +1,77 @@
 % ============================================================================
-% Section 5: Experimental Setup
+% Section 5: Implementation and Experimental Setup
 % ============================================================================
-\section{Experimental Setup}
-\label{sec:experimental-setup}
+\section{Implementation and Experimental Setup}
+\label{sec:implementation-setup}
 
-We evaluate L\_RAG with controlled, paired ablations over the same Vietnamese
-legal QA benchmark. The benchmark contains 500 questions: 400 answerable and
-100 unanswerable. Runs within an ablation family use the same benchmark,
-question identifiers, generator settings, and corpus/index version; only the
-component named by the family is changed. This design is important because the
-four completed families use different candidate budgets, as summarized in
-Table~\ref{tab:configurations}.
+This section states the controls and scoring rules needed to interpret the
+ablations in Section~\ref{sec:ablation-study}. The benchmark and corpus are
+shared where possible, but the five reported analyses are grouped into four
+run families and are not one factorial experiment: candidate pools, context
+construction, output limits, and latency accounting differ. A result is
+therefore compared only with its paired control inside the same family.
 
-\subsection{Research Questions}
-\label{sec:research-questions}
+\subsection{Pipeline and Frozen Artifacts}
+\label{sec:software-architecture}
 
-We organize the experiments around five questions:
+The evaluated pipeline has five stages: query embedding with
+\texttt{intfloat/multilingual-e5-large}; dense FAISS retrieval and, where
+enabled, tokenized BM25 retrieval; RRF fusion, graph expansion, or
+cross-encoder reranking; serialization of retained chunks into a grounded
+prompt; and answer generation and evaluation. The analysis reads frozen
+manifests, predictions, aggregate metrics, latency records, and error logs;
+it does not rerun models.
+
+Every primary comparison is joined by \texttt{qa\_id}. A valid row has a
+prediction, no saved error, and no failed or skipped status. The same ID is
+used to join the question category, reference answer, gold chunk set,
+ordered retrieved context, output diagnostics, and latency. This row-level
+alignment is what makes a reported mean difference traceable to paired cases.
+
+The completed work is organized around five research questions:
 \begin{enumerate}
-    \item Does adding document and provision metadata to the embedding text
-    improve exact evidence retrieval or document-level coverage?
-    \item Does hybrid dense--sparse retrieval improve coverage or ranking over
+    \item Does document and provision metadata improve exact evidence
+    retrieval or document-level coverage?
+    \item Does dense--sparse hybrid retrieval improve coverage or rank over
     dense retrieval alone?
-    \item Does the current G-LRAG graph overlay improve evidence coverage and
-    downstream behavior for the tested legal QA benchmark?
-    \item Which reranker best trades ranking quality against inference cost
-    when the candidate pool is held fixed?
-    \item Which generator reasoning strategy should be used? The completed
-    generator-reasoning comparison contrasts base prompting with explicit
-    chain-of-thought (CoT) prompting under a fixed retrieved context.
+    \item Does the current G-LRAG graph policy improve evidence coverage or
+    downstream behavior under a ten-chunk context budget?
+    \item Which reranker best trades ranking quality against cost when the
+    candidate pool is fixed?
+    \item Does an explicit chain-of-thought prompt improve observable answer
+    behavior when the retrieved context is fixed?
 \end{enumerate}
 
-\subsection{Metrics}
-\label{sec:metrics}
+\subsection{Indexes, Graph, and Runtime Settings}
+\label{sec:build-process}
 
-For answerable questions, retrieval is evaluated against the annotated gold
-chunk IDs using Recall@$k$, Hit@$k$, MRR@$k$, nDCG@$k$, and Precision@$k$.
-For graph runs we additionally report document-identity precision, because a
-graph variant can return fewer chunks and therefore make a fixed-denominator
-precision score misleading. The reranker analysis reports candidate
-Recall@30 and candidate Hit@30 to distinguish the evidence ceiling from the
-ability of a reranker to promote evidence already present in the candidate
-pool.
+The dense/hybrid/graph experiment uses a FAISS index with 1,513,376 chunk
+vectors and a graph over the same chunk identifiers. The hybrid branch
+searches ten independently built BM25 shards, each with shard-local IDF and
+average-document-length statistics; shard candidates are merged by BM25 score
+before RRF. Dense and hybrid retrieval use a 50-result search budget, broad
+filtering, and a final context of ten chunks; RRF uses $k=60$ when BM25 is
+enabled. Graph variants take five seed chunks within their parent provisions,
+use \texttt{max\_hop=1}, replace the baseline context, and retain at most ten
+graph-context chunks. This family uses broad validity filtering without a
+query-time validity overlay or reranking. The associated generation artifacts
+use \texttt{gpt-4o-mini}.
 
-For generated answers, we report exact match, token-level F1, and ROUGE-L on
-answerable questions. We also report the template-based answerability
-decision matrix (including non-refusal on answerable questions) and call its
-aggregate ``decision accuracy'' rather than treating it as a legal-safety
-metric. These automatic overlap and abstention measures are diagnostics rather than legal judgments:
-the available artifacts contain no human labels for legal correctness,
-completeness, claim faithfulness, or citation-to-chunk alignment. Those
-metrics are consequently not inferred from lexical overlap.
-
-Efficiency is reported as mean and median per-query latency, with p95 values
-where the source run recorded them. The reranker runs used cached BM25
-candidates and therefore report zero sparse-stage time; those values are not
-treated as full-online hybrid latency.
-
-\subsection{Evaluation Protocol}
-\label{sec:protocol}
-
-All completed runs use \texttt{intfloat/multilingual-e5-large} for dense
-retrieval, temperature 0.0, and a maximum of 1,024 output tokens. The
-non-generator ablations use \texttt{gpt-4o-mini}; the reasoning family varies
-the generator model and prompt mode as listed in Table~\ref{tab:configurations}.
-The embedding-text ablation uses raw FAISS
-top-10 retrieval with no sparse, graph, fusion, or reranking module. The
-dense/hybrid/graph ablation retrieves 50 seeds and supplies at most 10 final
-chunks; graph variants expand five seeds by one hop with a maximum graph
-context of 10. The reranker ablation reconstructs a shared RRF candidate pool
-of 30 chunks (\texttt{C30}) and compares the top 10 final chunks
-(\texttt{T10}). Its fusion constant is \texttt{rrf\_k=60}.
-
-Comparisons are paired by \texttt{qa\_id}. Overall retrieval deltas use the
-400 answerable questions. We report percentile bootstrap 95\% confidence
-intervals for the mean per-question delta, using 10,000 resamples for the
-main comparisons and 2,000 resamples for the smaller reranker slices. A
-confidence interval containing zero is described as inconclusive rather than
-as evidence of an effect. The reranker candidate reconstruction agrees with
-the recorded RRF-only top-10 prefix for all 500 questions.
-
-The generator-reasoning family holds the retrieval stack and intended retrieved
-top-10 context fixed for each question, and changes the prompt mode for the
-generator. The primary paired comparison uses the complete GPT-4o-mini Base and
-CoT runs (500/500 questions, with 400 answerable pairs); their saved contexts
-match exactly. The DeepSeek-V3.1-Thinking, GLM-5, and Qwen3-8B pairs are also
-complete but remain descriptive cross-model checks. Four of the 500 shared DeepSeek cases have
-different exact top-10 chunk-ID sequences between Base and CoT. The Qwen Base
-and CoT manifests use different code snapshots, timeouts, and retry limits, so
-their latency and failure comparisons are descriptive. These conditions are not
-used for the primary paired claim. The post-hoc analysis and frozen result ledger are available at
-\url{ablation_study/e2e_LLM_reasoning/results/report.md} and
-\url{ablation_work/e2e_LLM_Reasoning/analyze_posthoc.py}.
-
-\subsection{Evaluation Workflow and Derived Metrics}
-\label{sec:evaluation-metrics}
-
-Each condition is a saved 500-case run over the same question IDs, benchmark
-labels, retrieved top-10 context, generation settings, and reference answers.
-The post-hoc analysis reads these records and does not call a model or rerun
-retrieval. A row is valid when it is not marked failed, errored, or skipped,
-has no saved error, and contains a prediction. Lexical metrics use successful
-answerable rows; a paired Base/CoT statistic uses only IDs that satisfy these
-conditions in both runs and contain all three lexical metrics.
-
-The original evaluator normalizes text with Unicode NFC, lowercasing,
-punctuation-to-space replacement, and whitespace collapse. Exact Match is the
-binary equality of normalized prediction and reference (for boolean items, the
-first non-empty line is compared). Token F1 uses multiset token overlap, with
-$F_1=2PR/(P+R)$, where $P$ and $R$ are token precision and recall. ROUGE-L uses
-the token-level longest common subsequence in the same F-score form. For each
-paired ID we calculate $\Delta=m_{\mathrm{CoT}}-m_{\mathrm{Base}}$, average the
-deltas, count CoT wins, ties, and losses, and form a percentile paired-bootstrap
-95\% confidence interval from 10,000 resamples (seed 42). Exact Match also
-uses an exact McNemar test on discordant binary outcomes.
-
-Additional diagnostics are calculated as follows. Evidence availability is
-$\text{context-recall@}k=|G\cap R_k|/|G|$, where $G$ is the gold chunk-ID set
-and $R_k$ is the retrieved top-$k$ set; answerable cases are stratified as
-fully retrieved, partial, or absent. The persisted
-\texttt{unanswerable\_accuracy} detector is mapped to answer/refuse decisions:
-an answerable refusal is an error, while a refusal marker on an unanswerable
-case is correct. Scheduled decision accuracy uses all 500 rows, whereas
-valid-only accuracy excludes failed rows. Citation presence is the fraction of
-successful answerable rows with at least one marker; structural coverage is
-the mean saved share of scored factual sentences with a marker; invalid-marker
-rate is total invalid markers divided by all markers. Completion is successful
-rows divided by scheduled rows, and latency p50/p95 are the saved millisecond
-values converted to seconds. These fields are structural or operational
-diagnostics, not tests of citation entailment, legal correctness, or hidden
-reasoning.
-
-\subsection{Ablation Configurations}
-\label{sec:configurations}
-
-Table~\ref{tab:configurations} lists the frozen configurations used in the
-completed analyses. Names are aligned with the run manifests and the derived
-reports under \texttt{ablation\_work/}.
+The reranker family fixes a 30-chunk RRF candidate pool ($C_{30}$) and a
+ten-chunk final context ($T_{10}$). It compares no reranking, RRF-only,
+mMiniLM, Qwen3, BGE, and Jina. The primary generator study compares
+GPT-4o-mini Base and CoT with the saved top-10 context fixed by question.
+The metadata study changes only the indexed string from chunk body to
+header-plus-chunk text; encoder, FAISS, top-$k=10$, generator, prompt, seed,
+corpus, and benchmark remain fixed.
 
 \begin{table*}[t]
 \centering
 \scriptsize
-\caption{Completed ablation configurations. A dash means that the component
-was disabled. Candidate budgets are shown because they differ by ablation
-family.}
+\caption{Frozen configurations used by the completed run families. The five
+reported analyses include separate retrieval and graph views of the joint
+retrieval/graph family. A dash means that the component was disabled.
+Candidate/final values differ by family and are not pooled across rows.}
 \label{tab:configurations}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lllllll}
@@ -170,17 +99,97 @@ LLM reasoning & GPT-4o-mini CoT & fixed context & -- & -- & CoT prompt & fixed/1
 }
 \end{table*}
 
-\subsection{Reproducibility and Artifact Ledger}
-\label{sec:reproducibility}
+\subsection{Benchmark and Metrics}
+\label{sec:evaluation-metrics}
 
-Each run is accompanied by a manifest, per-question outputs, metric summary,
-and latency file. The derived analyses are versioned alongside the source
-outputs: the embedding comparison is in
-\url{ablation_study/chunkOnly_vs_chunkMetadata/results/}, the
-dense/hybrid/graph comparison is in
-\url{ablation_study/dense_vs_Hybrid_vs_Graph/results/}, and the
-multi-reranker analysis is in
-\url{ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v2/}.
-The script that reconstructs the reranker candidate pool and produces its
-paired analysis is
-\url{ablation_work/reranker_choices/analyze_reranker_metrics.py}.
+The benchmark contains 500 questions: 400 answerable questions with gold
+chunk identifiers and 100 unanswerable questions. Retrieval scores use only
+the 400 answerable records. Given gold chunks $G_i$ and retrieved top-$k$
+chunks $R_{i,k}$,
+\begin{equation}
+\begin{aligned}
+\mathrm{Recall@}k_i&=\frac{|G_i\cap R_{i,k}|}{|G_i|},\\
+\mathrm{Hit@}k_i&=\mathbb{1}[G_i\cap R_{i,k}\ne\varnothing].
+\end{aligned}
+\end{equation}
+MRR and nDCG reward an earlier gold rank. Candidate Recall@30 and Candidate
+Hit@30 define the evidence ceiling for the reranker family and are identical
+across its reranker conditions. Graph runs additionally report document- or
+identity-level precision because a graph policy can return fewer chunks.
+
+For a normalized prediction $y_i$ and reference $r_i$, exact match is
+\begin{equation}
+\mathrm{EM}_i=\begin{cases}1,&y_i=r_i,\\0,&y_i\ne r_i.\end{cases}
+\end{equation}
+Token F1 uses token overlap $O_i$ and prediction/reference lengths
+$L_i^y,L_i^r$:
+\begin{equation}
+P_i=\frac{O_i}{L_i^y},\qquad R_i=\frac{O_i}{L_i^r},\qquad
+F_{1,i}=\frac{2P_iR_i}{P_i+R_i}.
+\end{equation}
+ROUGE-L uses the same F-score form with the token-level longest common
+subsequence in place of $O_i$. These overlap metrics are computed on
+successful answerable outputs; they are not legal-correctness scores.
+
+The saved unanswerable score is a template-based answer/refuse diagnostic. In
+the retrieval/graph family, unanswerable accuracy is the fraction of the 100
+unanswerable outputs containing the Vietnamese fallback phrase
+\textit{``Không có đủ thông tin trong ngữ cảnh được cung cấp.''}; it is
+distinct from the 500-case decision diagnostic used elsewhere. Citation
+presence is the fraction of successful answerable outputs containing at least
+one marker, while structural coverage is the fraction of scored factual
+sentences with a marker. Neither measure tests claim-to-source entailment.
+Completion is successful rows divided by scheduled rows. Latency is reported
+in seconds as saved mean, p50, and p95 values where available. Hybrid timing
+includes 26.990 seconds per query amortized from 13,495 seconds of BM25 batch
+precomputation over 500 questions; it is not a direct online request-latency
+measurement. Reranker runs use cached BM25 candidates and therefore also do
+not represent full-online sparse latency.
+
+Family-specific preprocessing is retained in the interpretation: the
+retrieval/graph notebooks lowercase and collapse whitespace while retaining
+punctuation, whereas the reasoning evaluator additionally applies Unicode NFC
+normalization and punctuation-to-space replacement. Scores are compared only
+within the evaluator that produced them.
+
+\subsection{Pairing, Uncertainty, and Claim Boundaries}
+\label{sec:experimental-protocol}
+
+Headline effects are paired by \texttt{qa\_id}. Retrieval deltas use the
+shared answerable intersection; scheduled-denominator answerability
+diagnostics retain all 500 cases. Percentile paired-bootstrap confidence
+intervals use 10,000 resamples (seed 42) for headline metadata,
+dense/hybrid, reranker, and GPT comparisons, and 2,000 resamples for the
+smaller reranker slices. An interval crossing zero is reported as
+inconclusive rather than as evidence of an effect. Exact Match in the primary
+GPT pair also uses an exact McNemar test.
+
+The primary GPT-4o-mini Base/CoT runs complete 500/500 cases and have
+identical ordered top-10 chunk-ID sequences for every question. DeepSeek,
+GLM, and Qwen prompt pairs are descriptive checks: four DeepSeek cases have
+different context order, and the Qwen manifests differ in code snapshot,
+timeouts, or retry limits. No prompt effect is pooled across models.
+
+Output limits are family-specific: the retrieval/graph runs set no explicit
+client-side output-token cap, while the fixed-context generator-reasoning
+comparison uses a 1,024-token limit. The graph policy is consequently tested
+as a full context-selection change (seed selection plus expansion), not as an
+isolated add-on to an otherwise fixed top-10 list.
+
+The artifacts contain no blinded legal-correctness labels, claim-level
+faithfulness labels, validated semantic judge, preferred
+answer/clarify/refuse labels, raw chain-of-thought, or reasoning-token
+accounting. Thus, no result is interpreted as proof of legal correctness,
+legal safety, citation entailment, or faithful reasoning merely because it
+improves a lexical, rank, citation-format, refusal-format, or latency metric.
+
+\subsubsection{Reproducibility ledger}
+
+Each condition is accompanied by a manifest, per-question output records,
+metric summary, and latency file. Derived analyses are versioned with their
+source artifacts under \url{ablation_study/} and \url{ablation_work/}; the
+reranker candidate reconstruction and paired analysis are in
+\url{ablation_work/reranker_choices/analyze_reranker_metrics.py}, while the
+generator post-hoc report is in
+\url{ablation_study/e2e_LLM_reasoning/results/report.md}. The report reads
+these frozen files and does not call a model during analysis.

@@ -1,0 +1,86 @@
+\begin{thebibliography}{13}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Asai et~al.(2024)Asai, Wu, Wang, Sil, and Hajishirzi}]{asai2023self}
+Akari Asai, Zeqiu Wu, Yizhong Wang, Avirup Sil, and Hannaneh Hajishirzi. 2024.
+\newblock Self-{RAG}: Learning to retrieve, generate, and critique through
+  self-reflection.
+\newblock In \emph{International Conference on Learning Representations}.
+
+\bibitem[{Chalkidis et~al.(2020)Chalkidis, Fergadiotis, Malakasiotis, Aletras,
+  and Androutsopoulos}]{chalkidis2020legal_bert}
+Ilias Chalkidis, Manos Fergadiotis, Prodromos Malakasiotis, Nikolaos Aletras,
+  and Ion Androutsopoulos. 2020.
+\newblock {LEGAL}-{BERT}: The muppets straight out of law school.
+\newblock In \emph{Findings of the Association for Computational Linguistics:
+  EMNLP 2020}, pages 2898--2904.
+
+\bibitem[{Chen et~al.(2024)Chen, Xiao et~al.}]{chen2024bge}
+Jianlv Chen, Shufang Xiao, et~al. 2024.
+\newblock {BGE} {M3}-embedding: Multi-lingual, multi-functionality,
+  multi-granularity text embeddings through self-knowledge distillation.
+\newblock arXiv preprint arXiv:2402.03216.
+
+\bibitem[{Cormack et~al.(2009)Cormack, Clarke, and
+  Buettcher}]{cormack2009reciprocal}
+Gordon~V. Cormack, Charles L.~A. Clarke, and Stefan Buettcher. 2009.
+\newblock Reciprocal rank fusion outperforms condorcet and individual rank
+  learning methods.
+\newblock In \emph{Proceedings of the 32nd International ACM SIGIR Conference
+  on Research and Development in Information Retrieval}, pages 758--759.
+
+\bibitem[{Edge et~al.(2024)Edge, Trinh, Cheng, Bradley, Chao, Mody, Truitt, and
+  Larson}]{edge2024graphrag}
+Douglas Edge, Ha~Trinh, Newey Cheng, Joshua Bradley, Alex Chao, Apurva Mody,
+  Robert Truitt, and Jonathan Larson. 2024.
+\newblock From local to global: A graph {RAG} approach to query-focused
+  summarization.
+\newblock \emph{arXiv preprint arXiv:2404.16130}.
+
+\bibitem[{{Jina AI}(2024)}]{jina2024jina}
+{Jina AI}. 2024.
+\newblock Jina reranker v2 for agentic {RAG}.
+\newblock Technical report.
+
+\bibitem[{Lewis et~al.(2020)Lewis, Perez, Piktus, Petroni, Karpukhin, Goyal,
+  Kuttler, Lewis, Yih, Rocktaschel, Riedel, and Kiela}]{lewis2020retrieval}
+Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir
+  Karpukhin, Naman Goyal, Heinrich Kuttler, Mike Lewis, Wen-tau Yih, Tim
+  Rocktaschel, Sebastian Riedel, and Douwe Kiela. 2020.
+\newblock Retrieval-augmented generation for knowledge-intensive nlp tasks.
+\newblock In \emph{Advances in Neural Information Processing Systems}.
+
+\bibitem[{Locke and Zuccon(2022)}]{locke2022legal}
+Daniel Locke and Guido Zuccon. 2022.
+\newblock Case law retrieval: Problems, methods, challenges and evaluations in
+  the last 20 years.
+\newblock \emph{arXiv preprint arXiv:2202.07209}.
+
+\bibitem[{Nogueira and Cho(2019)}]{nogueira2019passage}
+Rodrigo Nogueira and Kyungha Cho. 2019.
+\newblock Passage re-ranking with {BERT}.
+\newblock \emph{arXiv preprint arXiv:1901.04085}.
+
+\bibitem[{{Qwen Team}(2025)}]{qwen2025qwen3}
+{Qwen Team}. 2025.
+\newblock Qwen3 embedding: Advancing text embedding and reranking through
+  foundation models.
+\newblock arXiv preprint arXiv:2506.05176.
+
+\bibitem[{Wang et~al.(2022)Wang, Yang, Huang, Jiao et~al.}]{wang2022e5}
+Liang Wang, Nan Yang, Xiaolong Huang, Binbin Jiao, et~al. 2022.
+\newblock Text and code embeddings by contrastive pre-training.
+\newblock \emph{arXiv preprint arXiv:2201.10005}.
+
+\bibitem[{Xiao et~al.(2021)Xiao, Zhong, Zhang et~al.}]{xiao2021lawformer}
+Chaojun Xiao, Xueyu Zhong, Zijun Zhang, et~al. 2021.
+\newblock Lawformer: A pre-trained language model for chinese legal long
+  documents.
+\newblock \emph{arXiv preprint arXiv:2105.03887}.
+
+\bibitem[{Yan et~al.(2024)}]{yan2024corrective}
+Shiyu Yan et~al. 2024.
+\newblock Corrective retrieval augmented generation.
+\newblock \emph{arXiv preprint arXiv:2401.15884}.
+
+\end{thebibliography}

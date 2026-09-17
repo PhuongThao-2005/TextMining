@@ -1,0 +1,228 @@
+\relax 
+\bibstyle{acl_natbib}
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand*\HyPL@Entry[1]{}
+\providecommand \babel@aux [2]{\global \let \babel@toc \@gobbletwo }
+\@nameuse{bbl@beforestart}
+\HyPL@Entry{0<</S/D>>}
+\babel@aux{english}{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\newlabel{sec:introduction}{{1}{1}{Introduction}{section.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Background and Motivation}{1}{subsection.1.1}\protected@file@percent }
+\newlabel{sec:intro-motivation}{{1.1}{1}{Background and Motivation}{subsection.1.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Problem Statement}{1}{subsection.1.2}\protected@file@percent }
+\newlabel{sec:problem-statement}{{1.2}{1}{Problem Statement}{subsection.1.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Project Objectives}{2}{subsection.1.3}\protected@file@percent }
+\newlabel{sec:objectives}{{1.3}{2}{Project Objectives}{subsection.1.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}Scope of the System}{2}{subsection.1.4}\protected@file@percent }
+\newlabel{sec:scope}{{1.4}{2}{Scope of the System}{subsection.1.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.5}Main Contributions}{2}{subsection.1.5}\protected@file@percent }
+\newlabel{sec:contributions}{{1.5}{2}{Main Contributions}{subsection.1.5}{}}
+\citation{lewis2020retrieval}
+\citation{asai2023self}
+\citation{yan2024corrective}
+\citation{locke2022legal}
+\citation{chalkidis2020legal_bert}
+\citation{xiao2021lawformer}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.6}Report Organization}{3}{subsection.1.6}\protected@file@percent }
+\newlabel{sec:report-organization}{{1.6}{3}{Report Organization}{subsection.1.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Background and Related Work}{3}{section.2}\protected@file@percent }
+\newlabel{sec:related-work}{{2}{3}{Background and Related Work}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Retrieval-Augmented Generation}{3}{subsection.2.1}\protected@file@percent }
+\newlabel{sec:related-rag}{{2.1}{3}{Retrieval-Augmented Generation}{subsection.2.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Legal Information Retrieval}{3}{subsection.2.2}\protected@file@percent }
+\newlabel{sec:related-legal-ir}{{2.2}{3}{Legal Information Retrieval}{subsection.2.2}{}}
+\citation{wang2022e5}
+\citation{cormack2009reciprocal}
+\citation{edge2024graphrag}
+\citation{nogueira2019passage}
+\citation{chen2024bge}
+\citation{jina2024jina}
+\citation{qwen2025qwen3}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Dense, Sparse, and Hybrid Retrieval}{4}{subsection.2.3}\protected@file@percent }
+\newlabel{sec:related-hybrid}{{2.3}{4}{Dense, Sparse, and Hybrid Retrieval}{subsection.2.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Knowledge-Graph-Augmented Retrieval}{4}{subsection.2.4}\protected@file@percent }
+\newlabel{sec:related-graph}{{2.4}{4}{Knowledge-Graph-Augmented Retrieval}{subsection.2.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Reranking and Citation-Grounded Generation}{4}{subsection.2.5}\protected@file@percent }
+\newlabel{sec:related-reranking}{{2.5}{4}{Reranking and Citation-Grounded Generation}{subsection.2.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}Design Requirements for Legal RAG}{4}{subsection.2.6}\protected@file@percent }
+\newlabel{sec:related-requirements}{{2.6}{4}{Design Requirements for Legal RAG}{subsection.2.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Legal Dataset and Benchmark Construction}{5}{section.3}\protected@file@percent }
+\newlabel{sec:dataset-construction}{{3}{5}{Legal Dataset and Benchmark Construction}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Legal Corpus and Raw Data Sources}{5}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:raw-corpus}{{3.1}{5}{Legal Corpus and Raw Data Sources}{subsection.3.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Dataset Normalization and Cleaning}{5}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:dataset-normalization}{{3.2}{5}{Dataset Normalization and Cleaning}{subsection.3.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Relationship Processing and External References}{5}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:relationship-processing}{{3.3}{5}{Relationship Processing and External References}{subsection.3.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Quarantine and Data-Quality Verification}{5}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:quarantine}{{3.4}{5}{Quarantine and Data-Quality Verification}{subsection.3.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Legal Text Structuring}{5}{subsection.3.5}\protected@file@percent }
+\newlabel{sec:text-structuring}{{3.5}{5}{Legal Text Structuring}{subsection.3.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Processed Vietnamese legal corpus inventory.}}{6}{table.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:corpus-statistics}{{1}{6}{Processed Vietnamese legal corpus inventory}{table.caption.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Normalization rules applied before indexing.}}{6}{table.caption.2}\protected@file@percent }
+\newlabel{tab:normalization-rules}{{2}{6}{Normalization rules applied before indexing}{table.caption.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Relationship vocabulary used by the graph-ready corpus.}}{6}{table.caption.3}\protected@file@percent }
+\newlabel{tab:relationship-vocabulary}{{3}{6}{Relationship vocabulary used by the graph-ready corpus}{table.caption.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}QA Benchmark Construction}{6}{subsection.3.6}\protected@file@percent }
+\newlabel{sec:benchmark-construction}{{3.6}{6}{QA Benchmark Construction}{subsection.3.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Data-quality gates and their downstream effect.}}{6}{table.caption.4}\protected@file@percent }
+\newlabel{tab:data-quality-gates}{{4}{6}{Data-quality gates and their downstream effect}{table.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Question Categories and Answer Types}{6}{subsection.3.7}\protected@file@percent }
+\newlabel{sec:question-taxonomy}{{3.7}{6}{Question Categories and Answer Types}{subsection.3.7}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Benchmark category and answer-type inventory.}}{7}{table.caption.5}\protected@file@percent }
+\newlabel{tab:benchmark-taxonomy}{{5}{7}{Benchmark category and answer-type inventory}{table.caption.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Ground-Truth Evidence}{7}{subsection.3.8}\protected@file@percent }
+\newlabel{sec:ground-truth}{{3.8}{7}{Ground-Truth Evidence}{subsection.3.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.9}Dataset Statistics and Validation}{7}{subsection.3.9}\protected@file@percent }
+\newlabel{sec:dataset-validation}{{3.9}{7}{Dataset Statistics and Validation}{subsection.3.9}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}L\_RAG System Design and Methodology}{7}{section.4}\protected@file@percent }
+\newlabel{sec:system-design}{{4}{7}{L\_RAG System Design and Methodology}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}End-to-End System Architecture}{7}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:architecture}{{4.1}{7}{End-to-End System Architecture}{subsection.4.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Offline Data and Index Construction}{7}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:offline-construction}{{4.2}{7}{Offline Data and Index Construction}{subsection.4.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces End-to-end operational workflow of L\_RAG. The graph and reranker stages are optional branches whose effects are tested under separate frozen ablation controls.}}{8}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:architecture}{{1}{8}{End-to-end operational workflow of L\_RAG. The graph and reranker stages are optional branches whose effects are tested under separate frozen ablation controls}{figure.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Online Query-Processing Workflow}{8}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:online-query}{{4.3}{8}{Online Query-Processing Workflow}{subsection.4.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Knowledge Graph Construction}{8}{subsection.4.4}\protected@file@percent }
+\newlabel{sec:graph-construction}{{4.4}{8}{Knowledge Graph Construction}{subsection.4.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Retrieval and Ranking}{8}{subsection.4.5}\protected@file@percent }
+\newlabel{sec:retrieval-ranking}{{4.5}{8}{Retrieval and Ranking}{subsection.4.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Answer Generation}{9}{subsection.4.6}\protected@file@percent }
+\newlabel{sec:answer-generation}{{4.6}{9}{Answer Generation}{subsection.4.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}End-to-End Worked Example}{9}{subsection.4.7}\protected@file@percent }
+\newlabel{sec:worked-example}{{4.7}{9}{End-to-End Worked Example}{subsection.4.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Implementation and Experimental Setup}{9}{section.5}\protected@file@percent }
+\newlabel{sec:implementation-setup}{{5}{9}{Implementation and Experimental Setup}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Pipeline and Frozen Artifacts}{9}{subsection.5.1}\protected@file@percent }
+\newlabel{sec:software-architecture}{{5.1}{9}{Pipeline and Frozen Artifacts}{subsection.5.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Indexes, Graph, and Runtime Settings}{10}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:build-process}{{5.2}{10}{Indexes, Graph, and Runtime Settings}{subsection.5.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Benchmark and Metrics}{10}{subsection.5.3}\protected@file@percent }
+\newlabel{sec:evaluation-metrics}{{5.3}{10}{Benchmark and Metrics}{subsection.5.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Frozen configurations used by the completed run families. The five reported analyses include separate retrieval and graph views of the joint retrieval/graph family. A dash means that the component was disabled. Candidate/final values differ by family and are not pooled across rows.}}{11}{table.caption.7}\protected@file@percent }
+\newlabel{tab:configurations}{{6}{11}{Frozen configurations used by the completed run families. The five reported analyses include separate retrieval and graph views of the joint retrieval/graph family. A dash means that the component was disabled. Candidate/final values differ by family and are not pooled across rows}{table.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Pairing, Uncertainty, and Claim Boundaries}{11}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:experimental-protocol}{{5.4}{11}{Pairing, Uncertainty, and Claim Boundaries}{subsection.5.4}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.1}Reproducibility ledger}{11}{subsubsection.5.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Ablation Studies}{11}{section.6}\protected@file@percent }
+\newlabel{sec:ablation-study}{{6}{11}{Ablation Studies}{section.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Embedding Text Ablation: Chunk-Only versus Chunk+Metadata}{12}{subsection.6.1}\protected@file@percent }
+\newlabel{sec:ablation-chunk-meta}{{6.1}{12}{Embedding Text Ablation: Chunk-Only versus Chunk+Metadata}{subsection.6.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Retrieval Ablation: Dense versus Hybrid Retrieval}{12}{subsection.6.2}\protected@file@percent }
+\newlabel{sec:ablation-retrieval}{{6.2}{12}{Retrieval Ablation: Dense versus Hybrid Retrieval}{subsection.6.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Graph Ablation: With versus Without Graph Expansion}{12}{subsection.6.3}\protected@file@percent }
+\newlabel{sec:ablation-graph}{{6.3}{12}{Graph Ablation: With versus Without Graph Expansion}{subsection.6.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Reranker Ablation}{12}{subsection.6.4}\protected@file@percent }
+\newlabel{sec:ablation-reranking}{{6.4}{12}{Reranker Ablation}{subsection.6.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Embedding-text ablation diagnostics. The left panel shows success curves by retrieval depth; the right panel shows paired win, tie, and loss counts. Both plots use the shared answerable-question comparison.}}{13}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:embedding-ablation}{{2}{13}{Embedding-text ablation diagnostics. The left panel shows success curves by retrieval depth; the right panel shows paired win, tie, and loss counts. Both plots use the shared answerable-question comparison}{figure.caption.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Embedding-text ablation on 400 paired answerable questions. Values are percentages; document success means that a retrieved chunk from the gold document is present in the indicated context. Deltas are chunk+metadata minus chunk-only.}}{13}{table.caption.9}\protected@file@percent }
+\newlabel{tab:embedding-results}{{7}{13}{Embedding-text ablation on 400 paired answerable questions. Values are percentages; document success means that a retrieved chunk from the gold document is present in the indicated context. Deltas are chunk+metadata minus chunk-only}{table.caption.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}Generator Ablation: Base Prompt versus Chain-of-Thought Prompt}{13}{subsection.6.5}\protected@file@percent }
+\newlabel{sec:ablation-reasoning}{{6.5}{13}{Generator Ablation: Base Prompt versus Chain-of-Thought Prompt}{subsection.6.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.6}Performance by Question Category and Answer Type}{13}{subsection.6.6}\protected@file@percent }
+\newlabel{sec:breakdown-analysis}{{6.6}{13}{Performance by Question Category and Answer Type}{subsection.6.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.7}Evidence Coverage, Abstention, and Citation Analysis}{13}{subsection.6.7}\protected@file@percent }
+\newlabel{sec:evidence-analysis}{{6.7}{13}{Evidence Coverage, Abstention, and Citation Analysis}{subsection.6.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.8}Latency and Efficiency Comparison}{13}{subsection.6.8}\protected@file@percent }
+\newlabel{sec:ablation-efficiency}{{6.8}{13}{Latency and Efficiency Comparison}{subsection.6.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Dense versus hybrid retrieval. Retrieval values use 400 answerable questions; latency percentiles use all 500 cases. The fallback column is the fraction of 100 unanswerable outputs containing the family-specific Vietnamese fallback phrase.}}{14}{table.caption.10}\protected@file@percent }
+\newlabel{tab:dense-hybrid-results}{{8}{14}{Dense versus hybrid retrieval. Retrieval values use 400 answerable questions; latency percentiles use all 500 cases. The fallback column is the fraction of 100 unanswerable outputs containing the family-specific Vietnamese fallback phrase}{table.caption.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Reranker curves, answer-overlap diagnostics, latency breakdown, and headline metrics from the six-configuration run. The paired confidence intervals in Table~\ref {tab:reranker-paired} are the primary uncertainty analysis.}}{14}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:reranker-curves}{{3}{14}{Reranker curves, answer-overlap diagnostics, latency breakdown, and headline metrics from the six-configuration run. The paired confidence intervals in Table~\ref {tab:reranker-paired} are the primary uncertainty analysis}{figure.caption.15}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Paired hybrid-minus-dense differences.}}{14}{table.caption.11}\protected@file@percent }
+\newlabel{tab:dense-hybrid-paired}{{9}{14}{Paired hybrid-minus-dense differences}{table.caption.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.9}Qualitative Ablation Examples and Failure Cases}{14}{subsection.6.9}\protected@file@percent }
+\newlabel{sec:qualitative-ablation}{{6.9}{14}{Qualitative Ablation Examples and Failure Cases}{subsection.6.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Effect of graph expansion on top-10 gold evidence. Counts are over 400 answerable questions; graph-only gold is introduced by expansion and graph-missed gold was present before expansion but absent afterward. The fallback column is the fraction of 100 unanswerable outputs containing the family-specific Vietnamese fallback phrase.}}{15}{table.caption.12}\protected@file@percent }
+\newlabel{tab:graph-effect}{{10}{15}{Effect of graph expansion on top-10 gold evidence. Counts are over 400 answerable questions; graph-only gold is introduced by expansion and graph-missed gold was present before expansion but absent afterward. The fallback column is the fraction of 100 unanswerable outputs containing the family-specific Vietnamese fallback phrase}{table.caption.12}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Multi-reranker ablation over a shared 30-candidate pool and final top-10 context. Retrieval and overlap values are means over 400 answerable questions; recorded unanswerable accuracy and p50 latency use the complete 500-case runs.}}{15}{table.caption.13}\protected@file@percent }
+\newlabel{tab:reranker-results}{{11}{15}{Multi-reranker ablation over a shared 30-candidate pool and final top-10 context. Retrieval and overlap values are means over 400 answerable questions; recorded unanswerable accuracy and p50 latency use the complete 500-case runs}{table.caption.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.10}Summary of Ablation Findings}{15}{subsection.6.10}\protected@file@percent }
+\newlabel{sec:ablation-summary}{{6.10}{15}{Summary of Ablation Findings}{subsection.6.10}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Paired effects of each reranker relative to RRF-only. Deltas are in percentage points; intervals are 95\% percentile bootstrap CIs from 10,000 question-level resamples over the 400 answerable cases. A negative false refusal delta indicates fewer refusals on answerable questions.}}{16}{table.caption.14}\protected@file@percent }
+\newlabel{tab:reranker-paired}{{12}{16}{Paired effects of each reranker relative to RRF-only. Deltas are in percentage points; intervals are 95\% percentile bootstrap CIs from 10,000 question-level resamples over the 400 answerable cases. A negative false refusal delta indicates fewer refusals on answerable questions}{table.caption.14}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces End-to-end generator-reasoning run inventory. Lexical metrics are means over successful answerable cases; decision accuracy is the saved template-based answerability diagnostic.}}{16}{table.caption.16}\protected@file@percent }
+\newlabel{tab:llm-reasoning-runs}{{13}{16}{End-to-end generator-reasoning run inventory. Lexical metrics are means over successful answerable cases; decision accuracy is the saved template-based answerability diagnostic}{table.caption.16}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces Primary paired GPT-4o-mini Base-versus-CoT comparison on 400 answerable questions. Deltas are CoT minus Base in percentage points; CIs are percentile bootstrap intervals from 10,000 paired resamples.}}{16}{table.caption.17}\protected@file@percent }
+\newlabel{tab:llm-reasoning-paired}{{14}{16}{Primary paired GPT-4o-mini Base-versus-CoT comparison on 400 answerable questions. Deltas are CoT minus Base in percentage points; CIs are percentile bootstrap intervals from 10,000 paired resamples}{table.caption.17}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces Jina versus RRF-only on selected category and answer-type slices. Deltas are percentage points with 95\% paired-bootstrap CIs.}}{16}{table.caption.18}\protected@file@percent }
+\newlabel{tab:jina-slices}{{15}{16}{Jina versus RRF-only on selected category and answer-type slices. Deltas are percentage points with 95\% paired-bootstrap CIs}{table.caption.18}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {16}{\ignorespaces Structural evidence, abstention, and citation diagnostics for the paired GPT-4o-mini runs.}}{16}{table.caption.19}\protected@file@percent }
+\newlabel{tab:evidence-diagnostics}{{16}{16}{Structural evidence, abstention, and citation diagnostics for the paired GPT-4o-mini runs}{table.caption.19}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {17}{\ignorespaces Evidence-availability strata for the paired GPT-4o-mini reasoning comparison. Values are lexical means on the 400 paired answerable cases.}}{17}{table.caption.20}\protected@file@percent }
+\newlabel{tab:llm-reasoning-evidence}{{17}{17}{Evidence-availability strata for the paired GPT-4o-mini reasoning comparison. Values are lexical means on the 400 paired answerable cases}{table.caption.20}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {18}{\ignorespaces Recorded latency comparisons. Values are p50/p95 seconds unless noted; reranker p95 was not recorded. Cached BM25 means reranker rows are not full-online sparse-latency measurements.}}{17}{table.caption.21}\protected@file@percent }
+\newlabel{tab:latency-results}{{18}{17}{Recorded latency comparisons. Values are p50/p95 seconds unless noted; reranker p95 was not recorded. Cached BM25 means reranker rows are not full-online sparse-latency measurements}{table.caption.21}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {19}{\ignorespaces Decision summary for the completed ablation families. Quality claims are limited to the deterministic metrics available in the saved artifacts.}}{17}{table.caption.22}\protected@file@percent }
+\newlabel{tab:ablation-decision-summary}{{19}{17}{Decision summary for the completed ablation families. Quality claims are limited to the deterministic metrics available in the saved artifacts}{table.caption.22}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Discussion, Limitations, and Ethical Considerations}{18}{section.7}\protected@file@percent }
+\newlabel{sec:discussion-limitations-ethics}{{7}{18}{Discussion, Limitations, and Ethical Considerations}{section.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Interpretation of the Main Findings}{18}{subsection.7.1}\protected@file@percent }
+\newlabel{sec:interpretation-main-findings}{{7.1}{18}{Interpretation of the Main Findings}{subsection.7.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Retrieval Quality, Context Coverage, and Latency Trade-offs}{18}{subsection.7.2}\protected@file@percent }
+\newlabel{sec:retrieval-quality-tradeoffs}{{7.2}{18}{Retrieval Quality, Context Coverage, and Latency Trade-offs}{subsection.7.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Implications for Legal RAG Design}{18}{subsection.7.3}\protected@file@percent }
+\newlabel{sec:legal-rag-implications}{{7.3}{18}{Implications for Legal RAG Design}{subsection.7.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.4}Dataset and Coverage Limitations}{18}{subsection.7.4}\protected@file@percent }
+\newlabel{sec:dataset-coverage-limitations}{{7.4}{18}{Dataset and Coverage Limitations}{subsection.7.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.5}Knowledge Graph and Validity Limitations}{18}{subsection.7.5}\protected@file@percent }
+\newlabel{sec:graph-validity-limitations}{{7.5}{18}{Knowledge Graph and Validity Limitations}{subsection.7.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.6}Retrieval and Generation Limitations}{18}{subsection.7.6}\protected@file@percent }
+\newlabel{sec:retrieval-generation-limitations}{{7.6}{18}{Retrieval and Generation Limitations}{subsection.7.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.7}Evaluation Limitations}{19}{subsection.7.7}\protected@file@percent }
+\newlabel{sec:evaluation-limitations}{{7.7}{19}{Evaluation Limitations}{subsection.7.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.8}Ethical Considerations and Safe Use}{19}{subsection.7.8}\protected@file@percent }
+\newlabel{sec:ethical-safe-use}{{7.8}{19}{Ethical Considerations and Safe Use}{subsection.7.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Conclusion and Future Work}{19}{section.8}\protected@file@percent }
+\newlabel{sec:conclusion-future-work}{{8}{19}{Conclusion and Future Work}{section.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Summary of the Implemented System}{19}{subsection.8.1}\protected@file@percent }
+\newlabel{sec:summary-implemented-system}{{8.1}{19}{Summary of the Implemented System}{subsection.8.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Main Contributions}{19}{subsection.8.2}\protected@file@percent }
+\newlabel{sec:main-contributions}{{8.2}{19}{Main Contributions}{subsection.8.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Lessons Learned}{19}{subsection.8.3}\protected@file@percent }
+\newlabel{sec:lessons-learned}{{8.3}{19}{Lessons Learned}{subsection.8.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.4}Recommended System Configuration}{19}{subsection.8.4}\protected@file@percent }
+\newlabel{sec:recommended-configuration}{{8.4}{19}{Recommended System Configuration}{subsection.8.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.5}Future Improvements}{19}{subsection.8.5}\protected@file@percent }
+\newlabel{sec:future-improvements}{{8.5}{19}{Future Improvements}{subsection.8.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.6}Final Conclusion}{19}{subsection.8.6}\protected@file@percent }
+\newlabel{sec:final-conclusion}{{8.6}{19}{Final Conclusion}{subsection.8.6}{}}
+\bibdata{references}
+\bibcite{asai2023self}{{1}{2024}{{Asai et~al.}}{{Asai, Wu, Wang, Sil, and Hajishirzi}}}
+\bibcite{chalkidis2020legal_bert}{{2}{2020}{{Chalkidis et~al.}}{{Chalkidis, Fergadiotis, Malakasiotis, Aletras, and Androutsopoulos}}}
+\bibcite{chen2024bge}{{3}{2024}{{Chen et~al.}}{{Chen, Xiao et~al.}}}
+\bibcite{cormack2009reciprocal}{{4}{2009}{{Cormack et~al.}}{{Cormack, Clarke, and Buettcher}}}
+\bibcite{edge2024graphrag}{{5}{2024}{{Edge et~al.}}{{Edge, Trinh, Cheng, Bradley, Chao, Mody, Truitt, and Larson}}}
+\bibcite{jina2024jina}{{6}{2024}{{Jina AI}}{{}}}
+\bibcite{lewis2020retrieval}{{7}{2020}{{Lewis et~al.}}{{Lewis, Perez, Piktus, Petroni, Karpukhin, Goyal, Kuttler, Lewis, Yih, Rocktaschel, Riedel, and Kiela}}}
+\bibcite{locke2022legal}{{8}{2022}{{Locke and Zuccon}}{{}}}
+\bibcite{nogueira2019passage}{{9}{2019}{{Nogueira and Cho}}{{}}}
+\bibcite{qwen2025qwen3}{{10}{2025}{{Qwen Team}}{{}}}
+\bibcite{wang2022e5}{{11}{2022}{{Wang et~al.}}{{Wang, Yang, Huang, Jiao et~al.}}}
+\bibcite{xiao2021lawformer}{{12}{2021}{{Xiao et~al.}}{{Xiao, Zhong, Zhang et~al.}}}
+\bibcite{yan2024corrective}{{13}{2024}{{Yan et~al.}}{{}}}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Dataset and JSONL Schemas}{20}{appendix.A}\protected@file@percent }
+\newlabel{app:dataset-jsonl-schemas}{{A}{20}{Dataset and JSONL Schemas}{appendix.A}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Example Documents, Provisions, Chunks, and Edges}{20}{appendix.B}\protected@file@percent }
+\newlabel{app:example-objects}{{B}{20}{Example Documents, Provisions, Chunks, and Edges}{appendix.B}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {20}{\ignorespaces Core fields in the machine-readable report artifacts.}}{21}{table.caption.25}\protected@file@percent }
+\newlabel{tab:jsonl-schemas}{{20}{21}{Core fields in the machine-readable report artifacts}{table.caption.25}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {21}{\ignorespaces Graph relation conventions.}}{21}{table.caption.26}\protected@file@percent }
+\newlabel{tab:appendix-edge-vocabulary}{{21}{21}{Graph relation conventions}{table.caption.26}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {C}Graph Relationship Vocabulary}{21}{appendix.C}\protected@file@percent }
+\newlabel{app:graph-vocabulary}{{C}{21}{Graph Relationship Vocabulary}{appendix.C}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {D}Retrieval and Reranker Configurations}{21}{appendix.D}\protected@file@percent }
+\newlabel{app:retrieval-reranker-configurations}{{D}{21}{Retrieval and Reranker Configurations}{appendix.D}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {E}Prompt and Output Formats}{21}{appendix.E}\protected@file@percent }
+\newlabel{app:prompt-output-formats}{{E}{21}{Prompt and Output Formats}{appendix.E}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {F}Run Manifests and Additional Results}{21}{appendix.F}\protected@file@percent }
+\newlabel{app:run-manifests-results}{{F}{21}{Run Manifests and Additional Results}{appendix.F}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {22}{\ignorespaces System-wide component and model configuration reference.}}{22}{table.caption.27}\protected@file@percent }
+\newlabel{tab:appendix-config-reference}{{22}{22}{System-wide component and model configuration reference}{table.caption.27}{}}
+\gdef \@abspage@last{22}

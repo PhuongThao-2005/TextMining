@@ -20,7 +20,6 @@
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{multirow}
-\usepackage{placeins}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows, positioning}
 
@@ -42,23 +41,29 @@ Retrieval-Augmented Generation}
 \maketitle
 
 \begin{abstract}
-Legal question answering requires evidence that is semantically relevant,
-structurally complete, temporally appropriate, and traceable to an
-authoritative source. We present L\_RAG, a Vietnamese legal
-Retrieval-Augmented Generation pipeline that combines dense E5 retrieval,
-BM25, a knowledge-graph overlay, rank fusion, cross-encoder reranking, and
-citation-grounded generation. On a 500-question benchmark, we find that
-metadata-enriched embeddings improve document-level success but not exact
-chunk ranking; the tested hybrid and graph variants reduce retrieval coverage;
-and cross-encoder reranking consistently improves ranking at a measurable
-latency cost. Jina gives the strongest fixed-candidate retrieval result,
-whereas BGE gives the highest lexical answer-overlap scores and mMiniLM is the
-fastest reranker. In a completed generator-reasoning comparison, GPT-4o-mini
-chain-of-thought prompting lowers lexical overlap under fixed retrieved context
-while improving only template-based answerability diagnostics and adding
-latency. Human-validated legal correctness and citation faithfulness
-are not available, so the conclusions are bounded to deterministic retrieval,
-overlap, abstention, and recorded latency diagnostics.
+Legal question answering must retrieve evidence that is relevant, complete in
+its statutory context, valid at the relevant time, and traceable to an
+authoritative source. We evaluate L\_RAG, a Vietnamese legal
+retrieval-augmented generation pipeline that combines E5 dense retrieval,
+BM25, a knowledge-graph overlay, reciprocal-rank fusion, cross-encoder
+reranking, and citation-grounded generation. On a fixed 500-question
+benchmark (400 answerable and 100 unanswerable questions), we report five
+controlled ablation analyses grouped into four run families rather than a
+pooled factorial comparison: embedding text; dense, hybrid, and graph
+retrieval as one joint retrieval/graph run family; reranking within a shared
+candidate pool; and Base versus chain-of-thought (CoT) prompting. Metadata
+improves document success at depth 10 by 4.5 percentage
+points but reduces MRR. The tested BM25+RRF hybrid loses 5.98 Recall@10
+points to dense retrieval and increases median total latency from 5.483 to
+31.538 seconds. One-hop graph expansion loses 11.81--12.40 Recall@10 points,
+chiefly by replacing seed evidence. In a common 30-candidate pool, Jina
+reranking improves Recall@10 by 9.23 points and nDCG@10 by 11.85 points over
+RRF-only. Under fixed context, CoT decreases GPT-4o-mini Token F1 by 1.57
+points. Retrieval is scored against gold chunk identifiers; lexical answer
+overlap, template-based answerability behavior, structural citation fields,
+and recorded latency are separate diagnostics. These are benchmark-bounded
+engineering findings: they do not establish legal correctness, citation
+entailment, or faithful reasoning.
 \end{abstract}
 
 % The report body is modular so each experiment can be updated without
@@ -69,18 +74,17 @@ overlap, abstention, and recorded latency diagnostics.
 \input{sections/4_dataset_and_corpus}
 \input{sections/5_experimental_setup}
 \input{sections/6_ablation_study}
+\clearpage
 \input{sections/7_results}
 \input{sections/8_discussion}
-\input{sections/9_limitations}
-\input{sections/10_conclusion}
 
 \section*{Acknowledgments}
 The authors thank Dr. Le Thanh Tung for guidance on the course project and
-the contributors who prepared the Vietnamese legal benchmark and evaluation
-artifacts.
+the contributors who prepared the Vietnamese legal corpus, benchmark, and
+evaluation artifacts. We also acknowledge the open-source maintainers of the
+retrieval, embedding, reranking, and document-processing libraries used by
+the implementation.
 
-% ACL's style file selects acl_natbib automatically. References must appear
-% before the appendices, as required by the ACL manuscript layout.
 \bibliography{references}
 
 \input{appendix}

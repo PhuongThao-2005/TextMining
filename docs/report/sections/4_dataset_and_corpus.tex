@@ -1,107 +1,203 @@
 % ============================================================================
-%  Section 4: Dataset and Benchmark
+% Section 4: L_RAG System Design and Methodology
 % ============================================================================
-\section{Dataset and Benchmark}
-\label{sec:dataset-benchmark}
+\section{L\_RAG System Design and Methodology}
+\label{sec:system-design}
 
-This section describes the Vietnamese legal corpus, the structural design of the G-LRAG Knowledge Graph, and the 500-query legal QA benchmark dataset used to evaluate the L\_RAG system.
+L\_RAG turns the structured corpus and benchmark into an evidence-oriented
+retrieval and generation pipeline. Offline processing creates normalized
+records, graph artifacts, and vector or sparse indexes. Online processing
+resolves query scope, retrieves candidate chunks, optionally expands or
+filters them with the graph, reranks a bounded pool, and serializes the final
+context for a citation-grounded generator. The same document, provision, and
+chunk identifiers introduced in Section~\ref{sec:dataset-construction} are
+carried through every stage.
 
-\subsection{Corpus Description}
-\label{sec:corpus}
+\subsection{End-to-End System Architecture}
+\label{sec:architecture}
 
-The legal dataset comprises a massive collection of Vietnamese legal instruments, including National Assembly Laws, Government Decrees, Prime Minister Decisions, and Ministry Circulars. Raw legal documents undergo structured parsing to preserve document metadata, hierarchical provisions, and passage chunks.
+The architecture has five operational phases: (1) query and temporal-scope
+resolution, (2) dense and optional sparse retrieval, (3) graph filtering or
+context expansion, (4) rank fusion and candidate reranking, and (5) prompt
+construction, generation, and cited output. \hyperref[fig:architecture]{Figure~\ref*{fig:architecture}}
+shows the data flow and the point at which each family of ablations changes a
+component.
 
-Table~\ref{tab:corpus-stats} summarizes the core scale and statistics of the processed corpus.
-
-\begin{table*}[t]
+\begin{figure*}[t]
 \centering
-\small
-\caption{Overall Statistics of the Vietnamese Legal Corpus.}
-\label{tab:corpus-stats}
-\begin{tabular}{llr}
-\toprule
-\textbf{Entity Type} & \textbf{Description} & \textbf{Total Count} \\
-\midrule
-\textbf{Documents} & Full legal instruments (Laws, Decrees, etc.) & 151,624 \\
-\textbf{Provisions} & Hierarchical units (Articles, Clauses, Items) & 1,386,267 \\
-\textbf{Chunks} & Fixed/Structural text passages for retrieval & 1,513,376 \\
-\textbf{Document Edges} & Relationships (Amend, Replace, Cite, Repeal) & 883,256 \\
-\textbf{External Stubs} & Referenced external entities & 19,763 \\
-\bottomrule
-\end{tabular}
-\end{table*}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=1.45cm, auto,
+    block/.style={rectangle, draw=blue!80, fill=blue!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners},
+    kgblock/.style={rectangle, draw=green!60!black, fill=green!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners},
+    llmblock/.style={rectangle, draw=red!70, fill=red!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners},
+    line/.style={draw, -latex', thick}]
+    \node [block] (query) {User query $q$\\+(date/scope)};
+    \node [block, right=1.3cm of query] (retrieve) {Dense E5\\+ optional BM25};
+    \node [kgblock, below=1.15cm of retrieve] (graph) {G-LRAG overlay\\filter/expand};
+    \node [block, right=1.3cm of retrieve] (fuse) {RRF and\\candidate mask};
+    \node [block, right=1.3cm of fuse] (rank) {Cross-encoder\\reranking};
+    \node [llmblock, below=1.15cm of rank] (generate) {Grounded prompt\\gpt-4o-mini};
+    \node [block, left=1.3cm of generate] (output) {Answer +\\source citations};
+    \path [line] (query) -- (retrieve);
+    \path [line] (query) |- (graph);
+    \path [line] (retrieve) -- (fuse);
+    \path [line] (graph) -- (fuse);
+    \path [line] (fuse) -- (rank);
+    \path [line] (rank) -- (generate);
+    \path [line] (generate) -- (output);
+\end{tikzpicture}%
+}%
+\caption{End-to-end operational workflow of L\_RAG. The graph and reranker
+stages are optional branches whose effects are tested under separate frozen
+ablation controls.}
+\label{fig:architecture}
+\end{figure*}
 
-Each passage chunk is enriched with metadata prior to indexing:
+The component boundaries are deliberate. The retriever decides which chunks
+are available, the graph can alter that set under a fixed context budget, the
+reranker only reorders a candidate pool, and the generator sees a serialized
+top-10 context. This separation prevents a generation metric from being
+mistaken for evidence-retrieval quality.
+
+\subsection{Offline Data and Index Construction}
+\label{sec:offline-construction}
+
+Offline construction branches from the normalized records into three linked
+artifacts. The structured-text branch emits provisions and chunks with stable
+parent pointers. The graph branch emits document, provision, chunk, and
+relationship nodes plus validity and authority metadata. The retrieval branch
+embeds either chunk-only or header-plus-chunk text into a FAISS index and
+builds tokenized BM25 shards for configurations that enable sparse retrieval.
+
+The dense index uses L2-normalized vectors and inner-product search, which is
+equivalent to cosine ranking for normalized embeddings. For the completed
+hybrid runs, BM25 is built as 10 independent shards with shard-local IDF and
+average-document-length statistics; shard candidates are merged by BM25 score
+before RRF. The graph and index artifacts keep the same chunk IDs, so a
+retrieved vector row can be joined back to its document and provision without
+fuzzy matching. Frozen manifests record the corpus snapshot, model
+checkpoint, index path, configuration name, and benchmark version used to
+create each evaluation run.
+
+\subsection{Online Query-Processing Workflow}
+\label{sec:online-query}
+
+At query time, the system first preserves the raw Vietnamese question and any
+explicit date or scope constraint. The query encoder produces an E5 vector;
+the dense branch retrieves a broad seed set, while the optional BM25 branch
+searches tokenized shards. The branches are merged with RRF when hybrid mode
+is enabled. In the completed retrieval/graph family, a graph variant keeps
+the top five seeds, expands them within their parent provisions with
+\texttt{max\_hop=1}, and replaces the baseline top-10 context with at most
+ten expanded chunks. This is a complete context-selection policy: it uses
+broad validity filtering and does not apply a query-time validity overlay or
+reranking. The resulting candidates are trimmed to the family-specific
+budget, reranked only in the reranker family, and serialized as the final
+context.
+
+Insufficient evidence follows an observable fallback path. If no candidate
+survives a valid scope filter, if the context contains no usable text, or if
+the prompt's evidence threshold is not met, the retrieval/graph prompt asks
+the model to emit the Vietnamese fallback phrase
+\textit{``Không có đủ thông tin trong ngữ cảnh được cung cấp.''}; the
+fixed-context reasoning runs use the visible marker
+\texttt{INSUFFICIENT\_CONTEXT}. These strings are saved for evaluation and
+are not treated as proof that a question was legally unanswerable. Invalid
+filters and unresolved external references remain visible in the run record
+instead of being silently repaired.
+
+\subsection{Knowledge Graph Construction}
+\label{sec:graph-construction}
+
+The G-LRAG graph uses Document ($D$), Provision ($P$), Chunk ($C$), and
+ExternalStub nodes. Structural edges encode
+\texttt{DOCUMENT\_HAS\_PROVISION}, \texttt{PROVISION\_HAS\_CHUNK},
+\texttt{CHUNK\_NEXT}, and \texttt{PROVISION\_NEXT}. Legal-relation edges encode
+citations, amendments, replacements, and repeals. Each edge retains source
+provenance and is available to query-time traversal only after direction and
+endpoint checks.
+
+The overlay can fold validity fields relative to an \texttt{as\_of\_date}
+parameter and can sort candidates by authority rank. A simplified precedence
+ordering available to the system is
 \begin{equation}
-    \begin{aligned}
-        \text{Chunk\_Meta} = \{&\text{chunk\_id}, \\
-        &\text{doc\_id}, \text{provision\_id}, \\
-        &\text{title}, \text{issuing\_authority}, \\
-        &\text{effective\_date}\}
-    \end{aligned}
+\text{Constitution} \succ \text{Law/Code} \succ
+\text{Decree} \succ \text{Circular}.
 \end{equation}
+Reading-order traversal follows adjacent chunks or provisions to recover
+nearby context; hop 1 covers the seed provision and additional hops reach
+subsequent provisions. In the completed graph ablation, traversal is limited
+to five seeds and at most ten retained chunks, with no query-time validity
+overlay or reranking. This policy can replace strong seed evidence and is
+therefore evaluated as a change to the candidate set, not as a free context
+addition.
 
-\subsection{Knowledge Graph Structure (G-LRAG Schema)}
-\label{sec:kg-schema}
+\subsection{Retrieval and Ranking}
+\label{sec:retrieval-ranking}
 
-The G-LRAG Knowledge Graph models statutory entities as nodes and structural
-and legal dependencies as typed directed edges.
-
-\subsubsection{Node Schema}
-\begin{itemize}
-    \item \textbf{Document Node ($D$):} Represents a full legal instrument. Attributes: \texttt{doc\_id}, \texttt{title}, \texttt{authority\_rank}, \texttt{issuing\_body}, \texttt{effective\_date}, \texttt{validity\_status}.
-    \item \textbf{Provision Node ($P$):} Represents a logical statutory section (Article/Clause). Attributes: \texttt{provision\_id}, \texttt{header}, \texttt{provision\_type}.
-    \item \textbf{Chunk Node ($C$):} Represents an indexed passage. Attributes: \texttt{chunk\_id}, \texttt{text}, \texttt{sequence\_num}.
-\end{itemize}
-
-\subsubsection{Edge Schema}
-Relationships are divided into structural hierarchy and inter-document legal relationships:
-\begin{itemize}
-    \item \textbf{Structural Hierarchy Edges:} 
-    \begin{itemize}
-        \item \texttt{DOCUMENT\_HAS\_PROVISION}: Connects Document $D$ to child Provision $P$.
-        \item \texttt{PROVISION\_HAS\_CHUNK}: Connects Provision $P$ to child Chunk $C$.
-        \item \texttt{CHUNK\_NEXT}: Sequentially links adjacent sibling chunks $C_i \rightarrow C_{i+1}$ within reading order.
-        \item \texttt{PROVISION\_NEXT}: Sequentially links adjacent provisions $P_j \rightarrow P_{j+1}$.
-    \end{itemize}
-    \item \textbf{Legal Relationship Edges:}
-    \begin{itemize}
-        \item \texttt{AMENDS}: Indicates document $D_A$ amends provision/document $D_B$.
-        \item \texttt{REPLACES}: Indicates document $D_A$ replaces document $D_B$.
-        \item \texttt{CITES}: Indicates document $D_A$ references document $D_B$.
-    \end{itemize}
-\end{itemize}
-
-\subsubsection{Quarantine \& Verification Integrity Gating}
-To prevent graph poisoning, G-LRAG enforces two strict integrity rules:
-\begin{enumerate}
-    \item \textbf{Quarantine Gating:} Unverified or draft records are quarantined during ingestion.
-    \item \textbf{Verified-Only Traversal:} Path traversals only traverse edges where \texttt{direction\_verified == True}.
-\end{enumerate}
-
-\subsection{QA Benchmark Dataset}
-\label{sec:qa-benchmark}
-
-To evaluate legal retrieval and answer generation, we constructed a benchmark of \textbf{500 Vietnamese legal questions} from the processed G-LRAG corpus using a grounded synthetic QA pipeline.
-
-Questions were generated with \texttt{gemini-3.1-flash-lite} from context bundles containing approximately 3--5 related provisions and chunks. The model was instructed to formulate realistic Vietnamese legal questions using only the supplied evidence. Each candidate was subsequently evaluated in a separate verification pass for answer correctness, evidence sufficiency, hallucination avoidance, category correctness, and difficulty correctness. Only candidates passing all verification criteria were retained.
-
-The final generation run sampled 515 documents and 1,697 provisions and achieved a verifier pass rate of 72.41\%. After diversity filtering and deduplication, the final benchmark contains \textbf{500 questions}: 265 single-hop, 106 citation, 96 legal-validity, 21 multi-hop, and 12 cross-document questions.
-
-The dataset contains \textbf{400 answerable} and \textbf{100 unanswerable} questions. Answer types include abstractive, boolean, extractive, and unanswerable responses. Unanswerable questions are intentionally constructed without supporting corpus evidence to evaluate the system's ability to abstain from unsupported answers.
-
-\subsection{Ground Truth Construction}
-\label{sec:ground-truth}
-
-Each benchmark query contains the question, category, answer type, reference answer, and evidence provenance:
-
+The dense encoder is \texttt{intfloat/multilingual-e5-large}. For the
+metadata condition, the indexed string is
 \begin{equation}
 \begin{aligned}
-Q_i = \{&
-\mathrm{qa\_id}, \mathrm{question}, \mathrm{category}, \\
-&\mathrm{answer\_type}, \mathrm{reference\_answer}, \mathrm{ground\_truth}
-\}.
+\text{Text}_{\mathrm{embed}}={}&\text{DocumentTitle}
+\;\parallel\;\text{ProvisionHeader}\\
+&\;\parallel\;\text{ChunkContent}.
 \end{aligned}
 \end{equation}
+the chunk-only condition removes the first two fields. The FAISS index uses
+\texttt{IndexFlatIP}. Sparse retrieval uses \texttt{rank\_bm25} with
+\texttt{underthesea} tokenization and $k_1=1.5$, $b=0.75$. Dense and sparse
+lists are fused by
+\begin{equation}
+\mathrm{RRF}(d)=\sum_{m\in\{\mathrm{dense},\mathrm{BM25}\}}
+\frac{1}{60+r_m(d)}.
+\end{equation}
 
-The ground-truth object contains the supporting \texttt{document\_ids}, \texttt{provision\_ids}, and \texttt{chunk\_ids}. For answerable questions, the gold chunk identifiers are used to evaluate retrieval with Recall@$k$, Hit@$k$, MRR@$k$, and nDCG@$k$. For unanswerable questions, the ground-truth evidence sets are empty by design.
+The dense/hybrid/graph family retrieves 50 seeds and retains at most ten final
+chunks. The reranker family reconstructs a common RRF pool of 30 candidates
+($C_{30}$), then retains ten ($T_{10}$). mMiniLM, Qwen3, BGE, and Jina score
+the full query--candidate pair with a cross-encoder. Models are loaded,
+executed, and unloaded sequentially to avoid GPU memory interference. The
+reranker can improve ordering inside $C_{30}$, but it cannot recover evidence
+that never entered the pool.
+
+\subsection{Answer Generation}
+\label{sec:answer-generation}
+
+The context serializer writes each retained chunk with its chunk ID, document
+title, provision header, and passage text. All generators use temperature
+$0.0$, but output limits are family-specific: the retrieval/graph runs set no
+explicit client-side token cap, while the fixed-context reasoning comparison
+uses a 1,024-token limit. The retrieval/graph prompt asks for Vietnamese
+answers and uses the fallback phrase
+\textit{``Không có đủ thông tin trong ngữ cảnh được cung cấp.''} when the
+evidence is insufficient; the reasoning runs use the visible marker
+\texttt{INSUFFICIENT\_CONTEXT}. A citation should identify the governing
+article or instrument.
+
+The observable output record contains the final answer, citation markers,
+parser fields, refusal marker, latency, and the ordered context IDs. It does
+not contain hidden chain-of-thought, reasoning-token accounting, or a human
+claim-entailment annotation. Consequently, the evaluation can report output
+format and lexical overlap but cannot infer legal correctness from a fluent
+answer or a well-formed citation.
+
+\subsection{End-to-End Worked Example}
+\label{sec:worked-example}
+
+Consider a benchmark question asking whether a specified land-use action is
+permitted under a named Vietnamese instrument. The source record is first
+joined to its document ID and effective date. Its controlling article is
+represented as a provision, and the provision is split into ordered chunks
+whose IDs remain linked to the parent. The query encoder retrieves candidate
+chunks; the graph can add the adjacent clause or a cited instrument; RRF and
+the reranker order the retained candidates; and the serializer presents the
+top ten with their provenance.
+
+The generator then produces an answer in the requested format and attaches
+the document and provision identifiers used as citations. If the retrieved
+context contains only a related definition but not the operative condition,
+the intended output is \texttt{INSUFFICIENT\_CONTEXT}. The example illustrates
+why the report distinguishes document success from exact chunk recall and
+citation presence from citation entailment: each is a different observable
+stage in the same traceable workflow.
