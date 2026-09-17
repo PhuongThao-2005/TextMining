@@ -70,11 +70,14 @@ embeds either chunk-only or header-plus-chunk text into a FAISS index and
 builds tokenized BM25 shards for configurations that enable sparse retrieval.
 
 The dense index uses L2-normalized vectors and inner-product search, which is
-equivalent to cosine ranking for normalized embeddings. The graph and index
-artifacts keep the same chunk IDs, so a retrieved vector row can be joined
-back to its document and provision without fuzzy matching. Frozen manifests
-record the corpus snapshot, model checkpoint, index path, configuration name,
-and benchmark version used to create each evaluation run.
+equivalent to cosine ranking for normalized embeddings. For the completed
+hybrid runs, BM25 is built as 10 independent shards with shard-local IDF and
+average-document-length statistics; shard candidates are merged by BM25 score
+before RRF. The graph and index artifacts keep the same chunk IDs, so a
+retrieved vector row can be joined back to its document and provision without
+fuzzy matching. Frozen manifests record the corpus snapshot, model
+checkpoint, index path, configuration name, and benchmark version used to
+create each evaluation run.
 
 \subsection{Online Query-Processing Workflow}
 \label{sec:online-query}
@@ -83,16 +86,23 @@ At query time, the system first preserves the raw Vietnamese question and any
 explicit date or scope constraint. The query encoder produces an E5 vector;
 the dense branch retrieves a broad seed set, while the optional BM25 branch
 searches tokenized shards. The branches are merged with RRF when hybrid mode
-is enabled. A graph configuration can then apply an ID whitelist or expand
-five seeds by one hop along structural edges. The resulting candidates are
-trimmed to the family-specific budget, reranked when enabled, and serialized
-as the final ten chunks.
+is enabled. In the completed retrieval/graph family, a graph variant keeps
+the top five seeds, expands them within their parent provisions with
+\texttt{max\_hop=1}, and replaces the baseline top-10 context with at most
+ten expanded chunks. This is a complete context-selection policy: it uses
+broad validity filtering and does not apply a query-time validity overlay or
+reranking. The resulting candidates are trimmed to the family-specific
+budget, reranked only in the reranker family, and serialized as the final
+context.
 
 Insufficient evidence follows an observable fallback path. If no candidate
 survives a valid scope filter, if the context contains no usable text, or if
-the prompt's evidence threshold is not met, the generator is instructed to
-emit \texttt{INSUFFICIENT\_CONTEXT}. This marker is saved for evaluation; it
-is not treated as proof that the question was legally unanswerable. Invalid
+the prompt's evidence threshold is not met, the retrieval/graph prompt asks
+the model to emit the Vietnamese fallback phrase
+\textit{``Không có đủ thông tin trong ngữ cảnh được cung cấp.''}; the
+fixed-context reasoning runs use the visible marker
+\texttt{INSUFFICIENT\_CONTEXT}. These strings are saved for evaluation and
+are not treated as proof that a question was legally unanswerable. Invalid
 filters and unresolved external references remain visible in the run record
 instead of being silently repaired.
 
@@ -107,18 +117,20 @@ citations, amendments, replacements, and repeals. Each edge retains source
 provenance and is available to query-time traversal only after direction and
 endpoint checks.
 
-The overlay folds validity fields relative to an \texttt{as\_of\_date}
+The overlay can fold validity fields relative to an \texttt{as\_of\_date}
 parameter and can sort candidates by authority rank. A simplified precedence
-ordering used for filtering is
+ordering available to the system is
 \begin{equation}
 \text{Constitution} \succ \text{Law/Code} \succ
 \text{Decree} \succ \text{Circular}.
 \end{equation}
 Reading-order traversal follows adjacent chunks or provisions to recover
-nearby context. In the completed graph ablation, however, the traversal is
-limited to five seeds and at most ten retained chunks; this policy can replace
-strong seed evidence and is therefore evaluated as a change to the candidate
-set, not as a free context addition.
+nearby context; hop 1 covers the seed provision and additional hops reach
+subsequent provisions. In the completed graph ablation, traversal is limited
+to five seeds and at most ten retained chunks, with no query-time validity
+overlay or reranking. This policy can replace strong seed evidence and is
+therefore evaluated as a change to the candidate set, not as a free context
+addition.
 
 \subsection{Retrieval and Ranking}
 \label{sec:retrieval-ranking}
@@ -153,12 +165,15 @@ that never entered the pool.
 \label{sec:answer-generation}
 
 The context serializer writes each retained chunk with its chunk ID, document
-title, provision header, and passage text. The generator receives a fixed
-temperature of $0.0$, a maximum of 1,024 output tokens, and instructions to
-answer in the requested type: abstractive, boolean, extractive, or
-unanswerable. A citation should identify the governing article or instrument,
-and an insufficient context should produce the visible marker
-\texttt{INSUFFICIENT\_CONTEXT}.
+title, provision header, and passage text. All generators use temperature
+$0.0$, but output limits are family-specific: the retrieval/graph runs set no
+explicit client-side token cap, while the fixed-context reasoning comparison
+uses a 1,024-token limit. The retrieval/graph prompt asks for Vietnamese
+answers and uses the fallback phrase
+\textit{``Không có đủ thông tin trong ngữ cảnh được cung cấp.''} when the
+evidence is insufficient; the reasoning runs use the visible marker
+\texttt{INSUFFICIENT\_CONTEXT}. A citation should identify the governing
+article or instrument.
 
 The observable output record contains the final answer, citation markers,
 parser fields, refusal marker, latency, and the ordered context IDs. It does

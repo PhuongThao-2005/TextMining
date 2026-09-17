@@ -13,7 +13,7 @@ subsections.
 
 | ID   | Section / subsection                                             | Source file                             | Teammate                | Status      | Writing focus                                                                                    |
 | ---- | ---------------------------------------------------------------- | --------------------------------------- | ----------------------- | ----------- | ------------------------------------------------------------------------------------------------ |
-| F1   | **Abstract**                                                     | `ablation_report.tex`                   | My                      | Not started | State the scope, benchmark, five ablation families, headline findings, and claim boundaries.     |
+| F1   | **Abstract**                                                     | `ablation_report.tex`                   | My                      | Not started | State the scope, benchmark, five reported analyses grouped into four run families, headline findings, and claim boundaries.     |
 | F2   | **Acknowledgments**                                              | `ablation_report.tex`                   | My                      | Not started | Add supervision, dataset/software, institutional, and funding acknowledgments.                   |
 | F3   | **References**                                                   | `ablation_report.tex`, `references.bib` | My                      | Not started | Complete and clean the bibliography for every citation used in the report.                       |
 | S1   | **1. Introduction**                                              | `sections/1_introduction.tex`           | My                      | Not started | Section framing and transitions.                                                                 |
@@ -92,5 +92,5 @@ subsections.
 
 - Teammates 1 and 2 can draft in parallel.
 - Sections 5 and 6 should use the terminology and frozen values agreed in Sections 3 and 4.
-- The final editor should check that every result sentence links to the relevant table or figure and that the abstract consistently reports five completed ablation families.
+- The final editor should check that every result sentence links to the relevant table or figure and that the abstract consistently reports five analyses grouped into four run families.
 - `sections/9_limitations.tex` and `sections/10_conclusion.tex` are legacy files and are not included by `ablation_report.tex`.

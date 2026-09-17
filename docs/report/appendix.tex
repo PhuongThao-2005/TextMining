@@ -129,14 +129,14 @@ that are useful when reproducing an individual run.
 \textbf{Component} & \textbf{Model/checkpoint} & \textbf{Key settings} & \textbf{Role and convention} \\
 \midrule
 Dense retriever & \texttt{intfloat/multilingual-e5-large} & 560M parameters; normalized inner product & Encodes chunk-only or title+header+chunk text in FAISS \texttt{IndexFlatIP}. \\
-Sparse retriever & BM25 (\texttt{rank\_bm25}) & $k_1=1.5$, $b=0.75$; \texttt{underthesea} & Sharded lexical search over Vietnamese tokens. \\
+Sparse retriever & BM25 (\texttt{rank\_bm25}) & $k_1=1.5$, $b=0.75$; \texttt{underthesea}; 10 shards & Sharded lexical search with shard-local IDF/length statistics; candidates merged by score. \\
 Fusion & RRF & $k=60$; $C_{30}$ where enabled & Combines dense and BM25 ranks before reranking. \\
-Graph overlay & G-LRAG & \texttt{as\_of\_date}; one-hop test & Validity filtering and reading-order expansion with a ten-chunk cap. \\
+Graph overlay & G-LRAG & five seeds; \texttt{max\_hop=1}; ten-chunk cap & Structural expansion within parent provisions; retrieval/graph runs use broad validity filtering without query-time overlay or reranking. \\
 mMiniLM & \texttt{mmarco-mMiniLMv2-L12-H384-v1} & 117M; FP32 & Lightweight cross-encoder baseline. \\
 BGE & \texttt{BAAI/bge-reranker-v2-m3} & 567M; multilingual & Cross-encoder with highest observed lexical overlap. \\
 Jina & \texttt{jinaai/jina-reranker-v2-base-multilingual} & 278M; position patch & Strongest observed fixed-pool retrieval scores. \\
 Qwen3 & \texttt{Qwen/Qwen3-Reranker-0.6B} & 0.6B; FP16 & CausalLM-based reranker with OOM retry handling. \\
-Generator & \texttt{gpt-4o-mini} & $T=0.0$; max 1024 tokens; $T_{10}$ & Grounded answer, provision citation, or \texttt{INSUFFICIENT\_CONTEXT}. \\
+Generator & \texttt{gpt-4o-mini} & $T=0.0$; family-specific cap; $T_{10}$ & Retrieval/graph: no explicit client cap and Vietnamese fallback phrase; reasoning: 1,024 tokens and \texttt{INSUFFICIENT\_CONTEXT}. \\
 \bottomrule
 \end{tabular}%
 }
@@ -146,7 +146,9 @@ Generator & \texttt{gpt-4o-mini} & $T=0.0$; max 1024 tokens; $T_{10}$ & Grounded
 \label{app:prompt-output-formats}
 
 The Base and CoT conditions use the same retrieved context and output budget
-in the primary GPT-4o-mini comparison. The Base prompt asks for a concise
+in the primary GPT-4o-mini comparison. The retrieval/graph family instead sets
+no explicit client-side output-token cap and uses the Vietnamese fallback phrase
+\textit{``Không có đủ thông tin trong ngữ cảnh được cung cấp.''}. The Base prompt asks for a concise
 answer supported by the supplied passages and provision-level citations. The
 CoT prompt adds an explicit reasoning instruction, but the saved artifacts
 retain only the final answer and observable diagnostics, not hidden reasoning.

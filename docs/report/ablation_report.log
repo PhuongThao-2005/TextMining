@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex 2026.9.7)  16 SEP 2026 21:01
+This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex 2026.7.13)  17 SEP 2026 16:44
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -815,26 +815,26 @@ Package babel Info: The following font families will use the default
 )
 \openout1 = `ablation_report.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: xetex
@@ -873,18 +873,18 @@ LaTeX Font Info:    ... okay on input line 41.
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: hyperref package is loaded.
 Package caption Info: End \AtBeginDocument code.
-Package hyperref Info: Link coloring ON on input line 41.
+Package hyperref Info: Link coloring ON on input line 40.
 (./ablation_report.out) (./ablation_report.out)
 \@outlinefile=\write4
 \openout4 = `ablation_report.out'.
 
-LaTeX Info: Redefining \microtypecontext on input line 41.
-Package microtype Info: Applying patch `item' on input line 41.
-Package microtype Info: Applying patch `toc' on input line 41.
-Package microtype Info: Applying patch `eqnum' on input line 41.
-Package microtype Info: Applying patch `footnote' on input line 41.
-Package microtype Info: Applying patch `verbatim' on input line 41.
-LaTeX Info: Redefining \microtypesetup on input line 41.
+LaTeX Info: Redefining \microtypecontext on input line 40.
+Package microtype Info: Applying patch `item' on input line 40.
+Package microtype Info: Applying patch `toc' on input line 40.
+Package microtype Info: Applying patch `eqnum' on input line 40.
+Package microtype Info: Applying patch `footnote' on input line 40.
+Package microtype Info: Applying patch `verbatim' on input line 40.
+LaTeX Info: Redefining \microtypesetup on input line 40.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using default protrusion set `alltext'.
 Package microtype Info: No adjustment of tracking.
@@ -901,70 +901,70 @@ Package fontspec Info:
 
 \symlegacymaths=\mathgroup7
 LaTeX Font Info:    Overwriting symbol font `legacymaths' in version `bold'
-(Font)                  OT1/cmr/m/n --> OT1/cmr/bx/n on input line 41.
-LaTeX Font Info:    Redeclaring math accent \acute on input line 41.
-LaTeX Font Info:    Redeclaring math accent \grave on input line 41.
-LaTeX Font Info:    Redeclaring math accent \ddot on input line 41.
-LaTeX Font Info:    Redeclaring math accent \tilde on input line 41.
-LaTeX Font Info:    Redeclaring math accent \bar on input line 41.
-LaTeX Font Info:    Redeclaring math accent \breve on input line 41.
-LaTeX Font Info:    Redeclaring math accent \check on input line 41.
-LaTeX Font Info:    Redeclaring math accent \hat on input line 41.
-LaTeX Font Info:    Redeclaring math accent \dot on input line 41.
-LaTeX Font Info:    Redeclaring math accent \mathring on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \Gamma on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \Delta on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \Theta on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \Lambda on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \Xi on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \Pi on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \Sigma on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \Upsilon on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \Phi on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \Psi on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \Omega on input line 41.
-LaTeX Font Info:    Redeclaring math symbol \mathdollar on input line 41.
-LaTeX Font Info:    Redeclaring symbol font `operators' on input line 41.
+(Font)                  OT1/cmr/m/n --> OT1/cmr/bx/n on input line 40.
+LaTeX Font Info:    Redeclaring math accent \acute on input line 40.
+LaTeX Font Info:    Redeclaring math accent \grave on input line 40.
+LaTeX Font Info:    Redeclaring math accent \ddot on input line 40.
+LaTeX Font Info:    Redeclaring math accent \tilde on input line 40.
+LaTeX Font Info:    Redeclaring math accent \bar on input line 40.
+LaTeX Font Info:    Redeclaring math accent \breve on input line 40.
+LaTeX Font Info:    Redeclaring math accent \check on input line 40.
+LaTeX Font Info:    Redeclaring math accent \hat on input line 40.
+LaTeX Font Info:    Redeclaring math accent \dot on input line 40.
+LaTeX Font Info:    Redeclaring math accent \mathring on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \Gamma on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \Delta on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \Theta on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \Lambda on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \Xi on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \Pi on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \Sigma on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \Upsilon on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \Phi on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \Psi on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \Omega on input line 40.
+LaTeX Font Info:    Redeclaring math symbol \mathdollar on input line 40.
+LaTeX Font Info:    Redeclaring symbol font `operators' on input line 40.
 LaTeX Font Info:    Encoding `OT1' has changed to `TU' for symbol font
-(Font)              `operators' in the math version `normal' on input line 41.
+(Font)              `operators' in the math version `normal' on input line 40.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
 (Font)                  OT1/cmr/m/n --> TU/TimesNewRoman(0)/m/n on input line 4
-1.
+0.
 LaTeX Font Info:    Encoding `OT1' has changed to `TU' for symbol font
-(Font)              `operators' in the math version `bold' on input line 41.
+(Font)              `operators' in the math version `bold' on input line 40.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
 (Font)                  OT1/cmr/bx/n --> TU/TimesNewRoman(0)/m/n on input line 
-41.
+40.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
 (Font)                  TU/TimesNewRoman(0)/m/n --> TU/TimesNewRoman(0)/m/n on 
-input line 41.
+input line 40.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
 (Font)                  OT1/cmr/m/it --> TU/TimesNewRoman(0)/m/it on input line
- 41.
+ 40.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
 (Font)                  OT1/cmr/bx/n --> TU/TimesNewRoman(0)/b/n on input line 
-41.
+40.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `normal'
-(Font)                  OT1/cmss/m/n --> TU/lmss/m/n on input line 41.
+(Font)                  OT1/cmss/m/n --> TU/lmss/m/n on input line 40.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `normal'
-(Font)                  OT1/cmtt/m/n --> TU/lmtt/m/n on input line 41.
+(Font)                  OT1/cmtt/m/n --> TU/lmtt/m/n on input line 40.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
 (Font)                  TU/TimesNewRoman(0)/m/n --> TU/TimesNewRoman(0)/b/n on 
-input line 41.
+input line 40.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
 (Font)                  OT1/cmr/bx/it --> TU/TimesNewRoman(0)/b/it on input lin
-e 41.
+e 40.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
-(Font)                  OT1/cmss/bx/n --> TU/lmss/b/n on input line 41.
+(Font)                  OT1/cmss/bx/n --> TU/lmss/b/n on input line 40.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
-(Font)                  OT1/cmtt/m/n --> TU/lmtt/b/n on input line 41.
-LaTeX Font Info:    Trying to load font information for U+lasy on input line 42
+(Font)                  OT1/cmtt/m/n --> TU/lmtt/b/n on input line 40.
+LaTeX Font Info:    Trying to load font information for U+lasy on input line 41
 .
 
 (/usr/local/texlive/2026basic/texmf-dist/tex/latex/base/ulasy.fd
 File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 )
-LaTeX Font Info:    Trying to load font information for U+msa on input line 42.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 41.
 
 
 (/usr/local/texlive/2026basic/texmf-dist/tex/latex/amsfonts/umsa.fd
@@ -973,7 +973,7 @@ File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 (/usr/local/texlive/2026basic/texmf-dist/tex/latex/microtype/mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 42.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 41.
 
 
 (/usr/local/texlive/2026basic/texmf-dist/tex/latex/amsfonts/umsb.fd
@@ -986,34 +986,54 @@ File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman 
 (RS)
 )
-Underfull \hbox (badness 1173) in paragraph at lines 45--64
-\TU/TimesNewRoman(0)/m/n/10 Jina achieves the strongest retrieval scores,
+Underfull \hbox (badness 1558) in paragraph at lines 44--67
+\TU/TimesNewRoman(0)/m/n/10 uate L_RAG, a Vietnamese legal retrieval-
  []
 
 
-Underfull \hbox (badness 2837) in paragraph at lines 45--64
-\TU/TimesNewRoman(0)/m/n/10 A separate, fixed-context prompt compari-
+Underfull \hbox (badness 1609) in paragraph at lines 44--67
+\TU/TimesNewRoman(0)/m/n/10 swerable and 100 unanswerable questions),
+ []
+
+
+Underfull \hbox (badness 1400) in paragraph at lines 44--67
+\TU/TimesNewRoman(0)/m/n/10 we report five controlled ablation analyses
+ []
+
+
+Underfull \hbox (badness 1590) in paragraph at lines 44--67
+\TU/TimesNewRoman(0)/m/n/10 grouped into four run families rather than
+ []
+
+
+Underfull \hbox (badness 1454) in paragraph at lines 44--67
+\TU/TimesNewRoman(0)/m/n/10 a pooled factorial comparison: embedding
+ []
+
+
+Underfull \hbox (badness 1092) in paragraph at lines 44--67
+\TU/TimesNewRoman(0)/m/n/10 text; dense, hybrid, and graph retrieval as
+ []
+
+
+Underfull \hbox (badness 2591) in paragraph at lines 44--67
+\TU/TimesNewRoman(0)/m/n/10 decreases GPT-4o-mini Token F1 by 1.57
  []
 
 (./sections/1_introduction.tex
-Underfull \hbox (badness 2426) in paragraph at lines 31--35
+Underfull \hbox (badness 2894) in paragraph at lines 29--38
+[]\TU/TimesNewRoman(0)/m/n/10.95 For example, a Vietnamese question about
+ []
+
+
+Underfull \hbox (badness 4832) in paragraph at lines 45--49
+[]\TU/TimesNewRoman(0)/b/n/10.95 Vocabulary mismatch. \TU/TimesNewRoman(0)/m/n/
+10.95 Users describe
+ []
+
+
+Underfull \hbox (badness 2426) in paragraph at lines 45--49
 \TU/TimesNewRoman(0)/m/n/10.95 a legal problem in everyday Vietnamese,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 35--39
-[]\TU/TimesNewRoman(0)/b/n/10.95 Lost statutory context. \TU/TimesNewRoman(0)/m
-/n/10.95 Laws are
- []
-
-
-Underfull \hbox (badness 5504) in paragraph at lines 35--39
-\TU/TimesNewRoman(0)/m/n/10.95 hierarchical—from a legal instrument to
- []
-
-
-Underfull \hbox (badness 1286) in paragraph at lines 35--39
-\TU/TimesNewRoman(0)/m/n/10.95 chapters, articles, clauses, and items. A
  []
 
 [1
@@ -1021,870 +1041,780 @@ Underfull \hbox (badness 1286) in paragraph at lines 35--39
 
 
 ]
-Underfull \hbox (badness 1796) in paragraph at lines 55--58
+Underfull \hbox (badness 10000) in paragraph at lines 49--52
+[]\TU/TimesNewRoman(0)/b/n/10.95 Lost statutory context. \TU/TimesNewRoman(0)/m
+/n/10.95 Laws are
+ []
+
+
+Underfull \hbox (badness 5504) in paragraph at lines 49--52
+\TU/TimesNewRoman(0)/m/n/10.95 hierarchical—from a legal instrument to
+ []
+
+
+Underfull \hbox (badness 1360) in paragraph at lines 63--68
+\TU/TimesNewRoman(0)/m/n/10.95 with a graph overlay, a shared candidate-pool
+ []
+
+
+Underfull \hbox (badness 1796) in paragraph at lines 75--78
 \TU/TimesNewRoman(0)/m/n/10.95 pipeline using dense E5 retrieval, BM25,
  []
 
 
-Underfull \hbox (badness 7540) in paragraph at lines 58--60
+Underfull \hbox (badness 7540) in paragraph at lines 78--80
 []\TU/TimesNewRoman(0)/m/n/10.95 represent legal hierarchy, reading order,
  []
 
 
-Underfull \hbox (badness 2229) in paragraph at lines 62--64
+Underfull \hbox (badness 3240) in paragraph at lines 80--82
+[]\TU/TimesNewRoman(0)/m/n/10.95 compare embedding text, retrieval mode,
+ []
+
+
+Underfull \hbox (badness 2229) in paragraph at lines 82--84
 []\TU/TimesNewRoman(0)/m/n/10.95 evaluate retrieval, answer-overlap, absten-
  []
 
-) (./sections/2_related_work.tex
-Underfull \hbox (badness 10000) in paragraph at lines 7--8
-\TU/TimesNewRoman(0)/m/n/10.95 This section reviews existing literature and
+
+Underfull \hbox (badness 10000) in paragraph at lines 124--127
+[]\TU/TimesNewRoman(0)/m/n/10.95 an end-to-end retrieval and generation
  []
 
 
-Underfull \hbox (badness 6001) in paragraph at lines 7--8
-\TU/TimesNewRoman(0)/m/n/10.95 foundational paradigms relevant to Retrieval-
+Underfull \hbox (badness 10000) in paragraph at lines 124--127
+\TU/TimesNewRoman(0)/m/n/10.95 pipeline combining E5 dense retrieval,
  []
 
 
-Underfull \hbox (badness 2689) in paragraph at lines 7--8
-\TU/TimesNewRoman(0)/m/n/10.95 Augmented Generation, domain-specific Legal
+Underfull \hbox (badness 10000) in paragraph at lines 124--127
+\TU/TimesNewRoman(0)/m/n/10.95 optional BM25/RRF, graph expansion,
  []
 
 
-Package natbib Warning: Citation `lewis2020retrieval' on page 2 undefined on in
-put line 12.
-
-
-Package natbib Warning: Citation `asai2023self' on page 2 undefined on input li
-ne 14.
-
-
-Package natbib Warning: Citation `yan2024corrective' on page 2 undefined on inp
-ut line 14.
-
-
-Package natbib Warning: Citation `locke2022legal' on page 2 undefined on input 
-line 19.
-
-
-Underfull \hbox (badness 1281) in paragraph at lines 23--24
-[]\TU/TimesNewRoman(0)/b/n/10.95 High Precision Requirements: \TU/TimesNewRoman
-(0)/m/n/10.95 A single
+Underfull \hbox (badness 1946) in paragraph at lines 124--127
+\TU/TimesNewRoman(0)/m/n/10.95 cross-encoder reranking, and cited output
  []
 
 [2]
-
-Package natbib Warning: Citation `chalkidis2020legal_bert' on page 3 undefined 
-on input line 28.
-
-
-Package natbib Warning: Citation `xiao2021lawformer' on page 3 undefined on inp
-ut line 28.
-
-
-Package natbib Warning: Citation `cormack2009reciprocal' on page 3 undefined on
- input line 33.
-
-
-Package natbib Warning: Citation `wang2022e5' on page 3 undefined on input line
- 33.
-
-
-Underfull \hbox (badness 1721) in paragraph at lines 33--34
-\TU/TimesNewRoman(0)/m/n/10.95 bines both modalities (\TU/TimesNewRoman(0)/b/n/
-10.95 ?\TU/TimesNewRoman(0)/m/n/10.95 ). Sparse algorithms
+Underfull \hbox (badness 3088) in paragraph at lines 127--130
+\TU/TimesNewRoman(0)/m/n/10.95 document discovery from exact evidence
  []
 
 
-Package natbib Warning: Citation `cormack2009reciprocal' on page 3 undefined on
- input line 35.
+Underfull \hbox (badness 3189) in paragraph at lines 127--130
+\TU/TimesNewRoman(0)/m/n/10.95 and separate observable prompt behavior
+ []
 
-
-Package natbib Warning: Citation `nogueira2019passage' on page 3 undefined on i
-nput line 41.
-
-
-Package natbib Warning: Citation `chen2024bge' on page 3 undefined on input lin
-e 41.
-
-
-Package natbib Warning: Citation `jina2024jina' on page 3 undefined on input li
-ne 41.
-
-
-Package natbib Warning: Citation `qwen2025qwen3' on page 3 undefined on input l
-ine 41.
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 41--42
-[]\TU/TimesNewRoman(0)/m/n/10.95 Following initial retrieval, cross-encoder
+) (./sections/2_related_work.tex
+Underfull \hbox (badness 1436) in paragraph at lines 141--4
+\TU/TimesNewRoman(0)/m/n/10.95 RAG, legal information retrieval, hybrid rank-
  []
 
 
-Underfull \hbox (badness 4699) in paragraph at lines 41--42
-\TU/TimesNewRoman(0)/m/n/10.95 bi-encoders, which compute separate vectors,
+Underfull \hbox (badness 1163) in paragraph at lines 56--62
+\TU/TimesNewRoman(0)/m/n/10.95 former ([][]Xiao et al.[][], [][]2021[][]) show 
+how domain-
+ []
+
+[3]
+Underfull \hbox (badness 1117) in paragraph at lines 66--72
+\TU/TimesNewRoman(0)/m/n/10.95 Dense bi-encoders are effective for paraphrase
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 41--42
-\TU/TimesNewRoman(0)/m/n/10.95 state-of-the-art multilingual rerankers include
+Underfull \hbox (badness 1057) in paragraph at lines 66--72
+\TU/TimesNewRoman(0)/m/n/10.95 L_RAG; BM25 supplies a lexical complement
  []
 
 
-Package natbib Warning: Citation `edge2024graphrag' on page 3 undefined on inpu
-t line 46.
+Underfull \hbox (badness 10000) in paragraph at lines 88--94
+\TU/TimesNewRoman(0)/m/n/10.95 Knowledge graphs represent entities and
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 88--94
+\TU/TimesNewRoman(0)/m/n/10.95 explicit relationships as triples $\OT1/cmr/m/n/
+10.95 (\OML/cmm/m/it/10.95 e[]; r; e[]\OT1/cmr/m/n/10.95 )$\TU/TimesNewRoman(0)
+/m/n/10.95 .
+ []
+
+
+Underfull \hbox (badness 6691) in paragraph at lines 88--94
+\TU/TimesNewRoman(0)/m/n/10.95 GraphRAG ([][]Edge et al.[][], [][]2024[][]) sho
+ws how
+ []
+
+
+Underfull \hbox (badness 2951) in paragraph at lines 88--94
+\TU/TimesNewRoman(0)/m/n/10.95 graph structure can support query-focused re-
+ []
+
+
+Underfull \hbox (badness 1609) in paragraph at lines 88--94
+\TU/TimesNewRoman(0)/m/n/10.95 a provision to its chunks, adjacent chunks in
+ []
+
+
+Underfull \hbox (badness 2435) in paragraph at lines 88--94
+\TU/TimesNewRoman(0)/m/n/10.95 reading order, and one instrument to another
+ []
+
+
+Underfull \hbox (badness 2689) in paragraph at lines 88--94
+\TU/TimesNewRoman(0)/m/n/10.95 through citation, amendment, replacement, or
+ []
+
+
+Underfull \hbox (badness 4713) in paragraph at lines 136--138
+[]\TU/TimesNewRoman(0)/b/n/10.95 Controlled comparisons: \TU/TimesNewRoman(0)/m
+/n/10.95 each ablation
+ []
+
+
+Underfull \hbox (badness 1661) in paragraph at lines 138--141
+[]\TU/TimesNewRoman(0)/b/n/10.95 Separate diagnostics: \TU/TimesNewRoman(0)/m/n
+/10.95 retrieval coverage,
+ []
+
+[4]) (./sections/3_system_overview.tex
+Underfull \hbox (badness 4726) in paragraph at lines 25--31
+\TU/TimesNewRoman(0)/m/n/10.95 chunks, 883,256 document-level relationships,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 53--59
+\TU/TimesNewRoman(0)/m/n/10.95 Normalization converts heterogeneous source
+ []
+
+
+Underfull \hbox (badness 1014) in paragraph at lines 53--59
+\TU/TimesNewRoman(0)/m/n/10.95 becoming empty passages. The normalization
+ []
 
 Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `lmtt' (encoding: TU).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
-) (./sections/3_system_overview.tex
-Underfull \hbox (badness 3128) in paragraph at lines 12--20
-\TU/TimesNewRoman(0)/m/n/10.95 L_RAG connects corpus indexing, hybrid re-
+
+Underfull \hbox (badness 3780) in paragraph at lines 88--95
+\TU/TimesNewRoman(0)/m/n/10.95 Relationship processing separates resolved in-
  []
 
 
-Underfull \hbox (badness 1377) in paragraph at lines 12--20
-\TU/TimesNewRoman(0)/m/n/10.95 core operational phases: (1) query scope and
+Underfull \hbox (badness 1939) in paragraph at lines 124--130
+\TU/TimesNewRoman(0)/m/n/10.95 Quality verification runs before a record con-
  []
 
 
-Underfull \hbox (badness 1242) in paragraph at lines 12--20
-\TU/TimesNewRoman(0)/m/n/10.95 sparse retrieval (E5 + BM25), (3) knowledge-
+Underfull \hbox (badness 1389) in paragraph at lines 124--130
+\TU/TimesNewRoman(0)/m/n/10.95 tributes to the retrieval index or graph. The
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 59--60
-\TU/TimesNewRoman(0)/m/n/10.95 Dense retrieval is powered by
+Underfull \hbox (badness 4013) in paragraph at lines 140--140
+[]\TU/TimesNewRoman(0)/m/n/7 Identifier and parent in-
  []
 
 
-Underfull \hbox (badness 1377) in paragraph at lines 59--60
-\TU/lmtt/m/n/10.95 intfloat/multilingual-e5-large\TU/TimesNewRoman(0)/m/n/10.95
- , a 560M
+Underfull \hbox (badness 2903) in paragraph at lines 141--142
+[]\TU/TimesNewRoman(0)/m/n/7 Quarantine empty or unparseable pas-
  []
 
 
-Underfull \hbox (badness 1975) in paragraph at lines 59--60
-\TU/TimesNewRoman(0)/m/n/10.95 parameter transformer embedding model. To
+Underfull \hbox (badness 10000) in paragraph at lines 145--146
+[]\TU/TimesNewRoman(0)/m/n/7 Block export until docu-
+ []
+
+[5]
+Underfull \hbox (badness 1019) in paragraph at lines 182--190
+\TU/TimesNewRoman(0)/m/n/10.95 The benchmark contains 500 Vietnamese legal
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 59--60
-\TU/TimesNewRoman(0)/m/n/10.95 solve the structural blindness of standalone
- []
-
-[3]
-Underfull \hbox (badness 3746) in paragraph at lines 83--84
-\TU/TimesNewRoman(0)/m/n/10.95 pointers (\TU/lmtt/m/n/10.95 CHUNK_NEXT\TU/Times
-NewRoman(0)/m/n/10.95 , \TU/lmtt/m/n/10.95 PROVISION_NEXT\TU/TimesNewRoman(0)/m
-/n/10.95 )
- []
-
-
-Underfull \hbox (badness 1436) in paragraph at lines 92--93
-\TU/TimesNewRoman(0)/m/n/10.95 per query. To maximize precision, candidate
- []
-
-
-Underfull \hbox (badness 1383) in paragraph at lines 92--93
-\TU/TimesNewRoman(0)/m/n/10.95 lists pass through a specialized Cross-Encoder
- []
-
-LaTeX Font Info:    Font shape `TU/lmtt/bx/n' in size <10.95> not available
-(Font)              Font shape `TU/lmtt/b/n' tried instead on input line 96.
-
-Overfull \hbox (102.84023pt too wide) in paragraph at lines 96--97
-[]\TU/lmtt/b/n/10.95 mMiniLMv2\TU/TimesNewRoman(0)/b/n/10.95 : [][]\TU/lmtt/m/n
-/10.95 cross-encoder/mmarco-mMiniLMv2-L12-H384-v1[][]
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 97--98
-[]\TU/lmtt/b/n/10.95 BGE-Reranker-v2-m3\TU/TimesNewRoman(0)/b/n/10.95 :
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 97--98
-[][]\TU/lmtt/m/n/10.95 BAAI/bge-reranker-v2-m3[][] \TU/TimesNewRoman(0)/m/n/10.
-95 (Multilin-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 98--99
-[]\TU/lmtt/b/n/10.95 Jina-Reranker-v2\TU/TimesNewRoman(0)/b/n/10.95 :
- []
-
-
-Overfull \hbox (38.51254pt too wide) in paragraph at lines 98--99
-[][]\TU/lmtt/m/n/10.95 jinaai/jina-reranker-v2-base-multilingual[][]
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 99--100
-[]\TU/lmtt/b/n/10.95 Qwen3-Reranker\TU/TimesNewRoman(0)/b/n/10.95 :
- []
-
-
-Underfull \hbox (badness 4279) in paragraph at lines 99--100
-[][]\TU/lmtt/m/n/10.95 Qwen/Qwen3-Reranker-0.6B[][] \TU/TimesNewRoman(0)/m/n/10
-.95 (CausalLM-
- []
-
-
-Underfull \hbox (badness 1270) in paragraph at lines 99--100
-\TU/TimesNewRoman(0)/m/n/10.95 based 0.6B parameter model evaluated in
- []
-
-
-Underfull \hbox (badness 1502) in paragraph at lines 117--118
-\TU/TimesNewRoman(0)/m/n/10.95 explicitly cite governing statutory sources
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 118--119
-\TU/TimesNewRoman(0)/m/n/10.95 should output \TU/lmtt/m/n/10.95 INSUFFICIENT_CO
-NTEXT
- []
-
-[4]) (./sections/4_dataset_and_corpus.tex
-Underfull \hbox (badness 2229) in paragraph at lines 38--40
-[]\TU/TimesNewRoman(0)/m/n/10.95 Before indexing, each passage receives the
- []
-
-
-Overfull \hbox (31.29337pt too wide) detected at line 47
-[][][][][]
- []
-
-
-Underfull \hbox (badness 1762) in paragraph at lines 52--57
-\TU/TimesNewRoman(0)/m/n/10.95 The G-LRAG graph makes statutory structure
- []
-
-
-Underfull \hbox (badness 3179) in paragraph at lines 52--57
-\TU/TimesNewRoman(0)/m/n/10.95 documents ($\OML/cmm/m/it/10.95 D$\TU/TimesNewRo
-man(0)/m/n/10.95 ), provisions ($\OML/cmm/m/it/10.95 P$\TU/TimesNewRoman(0)/m/n
-/10.95 ), and indexed
- []
-
-
-Underfull \hbox (badness 4156) in paragraph at lines 79--86
-\TU/TimesNewRoman(0)/m/n/10.95 The benchmark contains \TU/TimesNewRoman(0)/b/n/
-10.95 500 Vietnamese le-
- []
-
-
-Underfull \hbox (badness 1616) in paragraph at lines 79--86
-\TU/TimesNewRoman(0)/b/n/10.95 gal questions\TU/TimesNewRoman(0)/m/n/10.95 : 40
-0 answerable questions and
- []
-
-
-Underfull \hbox (badness 1014) in paragraph at lines 87--94
+Underfull \hbox (badness 1014) in paragraph at lines 191--197
 []\TU/TimesNewRoman(0)/m/n/10.95 The final generation run sampled 515 docu-
  []
 
 
-Underfull \hbox (badness 1303) in paragraph at lines 87--94
-\TU/TimesNewRoman(0)/m/n/10.95 abstractive, boolean, extractive, and unanswer-
+Underfull \hbox (badness 1092) in paragraph at lines 228--232
+[]\TU/TimesNewRoman(0)/m/n/10.95 The category counts sum to 500, while the
+ []
+
+[6]) (./sections/4_dataset_and_corpus.tex [7]
+Underfull \hbox (badness 1852) in paragraph at lines 72--81
+\TU/TimesNewRoman(0)/m/n/10.95 the completed hybrid runs, BM25 is built as
  []
 
 
-Overfull \hbox (21.00568pt too wide) detected at line 105
-[][][][][]
- []
-
-) (./sections/5_experimental_setup.tex [5]
-Underfull \hbox (badness 2698) in paragraph at lines 22--24
-\TU/TimesNewRoman(0)/m/n/10.95 coverage or ranking over dense retrieval
+Underfull \hbox (badness 1237) in paragraph at lines 98--108
+\TU/TimesNewRoman(0)/m/n/10.95 retrieval/graph prompt asks the model to emit
  []
 
 
-Underfull \hbox (badness 1067) in paragraph at lines 26--28
-\TU/TimesNewRoman(0)/m/n/10.95 against inference cost when the candidate
+Underfull \hbox (badness 1024) in paragraph at lines 98--108
+\TU/TimesNewRoman(0)/m/n/10.95 the Vietnamese fallback phrase \TU/TimesNewRoman
+(0)/m/it/10.95 “Không có đủ
  []
 
 
-Underfull \hbox (badness 5607) in paragraph at lines 36--44
-\TU/TimesNewRoman(0)/m/n/10.95 For answerable questions, retrieval is evalu-
+Underfull \hbox (badness 10000) in paragraph at lines 112--119
+\TU/TimesNewRoman(0)/m/n/10.95 The G-LRAG graph uses Document
  []
 
 
-Underfull \hbox (badness 1072) in paragraph at lines 36--44
-\TU/TimesNewRoman(0)/m/n/10.95 ated against the annotated gold chunk IDs us-
+Underfull \hbox (badness 10000) in paragraph at lines 112--119
+\TU/TimesNewRoman(0)/m/n/10.95 ($\OML/cmm/m/it/10.95 D$\TU/TimesNewRoman(0)/m/n
+/10.95 ), Provision ($\OML/cmm/m/it/10.95 P$\TU/TimesNewRoman(0)/m/n/10.95 ), C
+hunk ($\OML/cmm/m/it/10.95 C$\TU/TimesNewRoman(0)/m/n/10.95 ), and
  []
 
 
-Underfull \hbox (badness 1424) in paragraph at lines 36--44
-\TU/TimesNewRoman(0)/m/n/10.95 variant can return fewer chunks and therefore
+Underfull \hbox (badness 10000) in paragraph at lines 112--119
+\TU/TimesNewRoman(0)/m/n/10.95 ExternalStub nodes. Structural edges
  []
 
 
-Underfull \hbox (badness 1515) in paragraph at lines 45--53
-\TU/TimesNewRoman(0)/m/n/10.95 token-level F1, and ROUGE-L on answerable
+Underfull \hbox (badness 10000) in paragraph at lines 112--119
+\TU/TimesNewRoman(0)/m/n/10.95 encode \TU/lmtt/m/n/10.95 DOCUMENT_HAS_PROVISION
+\TU/TimesNewRoman(0)/m/n/10.95 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 62--73
-\TU/TimesNewRoman(0)/m/n/10.95 All completed runs use
+Underfull \hbox (badness 10000) in paragraph at lines 112--119
+\TU/lmtt/m/n/10.95 PROVISION_HAS_CHUNK\TU/TimesNewRoman(0)/m/n/10.95 , \TU/lmtt
+/m/n/10.95 CHUNK_NEXT\TU/TimesNewRoman(0)/m/n/10.95 , and
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 62--73
-\TU/lmtt/m/n/10.95 intfloat/multilingual-e5-large \TU/TimesNewRoman(0)/m/n/10.9
-5 for
+Underfull \hbox (badness 1314) in paragraph at lines 112--119
+\TU/lmtt/m/n/10.95 PROVISION_NEXT\TU/TimesNewRoman(0)/m/n/10.95 . Legal-relatio
+n edges encode
  []
 
 
-Underfull \hbox (badness 2173) in paragraph at lines 62--73
-\TU/TimesNewRoman(0)/m/n/10.95 varies the generator model and prompt mode
+Underfull \hbox (badness 10000) in paragraph at lines 138--140
+\TU/TimesNewRoman(0)/m/n/10.95 The dense encoder is
  []
 
 
-Underfull \hbox (badness 1400) in paragraph at lines 62--73
-\TU/TimesNewRoman(0)/m/n/10.95 tion uses raw FAISS top-10 retrieval with no
+Underfull \hbox (badness 10000) in paragraph at lines 138--140
+\TU/lmtt/m/n/10.95 intfloat/multilingual-e5-large\TU/TimesNewRoman(0)/m/n/10.95
+ . For
+ []
+
+[8]
+Underfull \hbox (badness 1596) in paragraph at lines 146--151
+\TU/TimesNewRoman(0)/m/n/10.95 fields. The FAISS index uses \TU/lmtt/m/n/10.95 
+IndexFlatIP\TU/TimesNewRoman(0)/m/n/10.95 .
  []
 
 
-Underfull \hbox (badness 2478) in paragraph at lines 62--73
-\TU/TimesNewRoman(0)/m/n/10.95 dense/hybrid/graph ablation retrieves 50 seeds
+Underfull \hbox (badness 10000) in paragraph at lines 146--151
+\TU/TimesNewRoman(0)/m/n/10.95 Sparse retrieval uses \TU/lmtt/m/n/10.95 rank_bm
+25 \TU/TimesNewRoman(0)/m/n/10.95 with
  []
 
 
-Underfull \hbox (badness 2253) in paragraph at lines 62--73
-\TU/TimesNewRoman(0)/m/n/10.95 and supplies at most 10 final chunks; graph
+Underfull \hbox (badness 4886) in paragraph at lines 146--151
+\TU/lmtt/m/n/10.95 underthesea \TU/TimesNewRoman(0)/m/n/10.95 tokenization and 
+$\OML/cmm/m/it/10.95 k[] \OT1/cmr/m/n/10.95 = 1\OML/cmm/m/it/10.95 :\OT1/cmr/m/
+n/10.95 5$\TU/TimesNewRoman(0)/m/n/10.95 ,
  []
 
 
-Underfull \hbox (badness 1057) in paragraph at lines 62--73
-\TU/TimesNewRoman(0)/m/n/10.95 maximum graph context of 10. The reranker
- []
-
-[6]
-Underfull \hbox (badness 1803) in paragraph at lines 82--94
-\TU/TimesNewRoman(0)/m/n/10.95 mode for the generator. The primary paired
+Underfull \hbox (badness 3792) in paragraph at lines 156--163
+[]\TU/TimesNewRoman(0)/m/n/10.95 The dense/hybrid/graph family retrieves 50
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 82--94
-\TU/TimesNewRoman(0)/m/n/10.95 comparison uses the complete GPT-4o-mini
+Underfull \hbox (badness 1067) in paragraph at lines 156--163
+\TU/TimesNewRoman(0)/m/n/10.95 of 30 candidates ($\OML/cmm/m/it/10.95 C[]$\TU/T
+imesNewRoman(0)/m/n/10.95 ), then retains ten ($\OML/cmm/m/it/10.95 T[]$\TU/Tim
+esNewRoman(0)/m/n/10.95 ).
  []
 
 
-Underfull \hbox (badness 1852) in paragraph at lines 82--94
-\TU/TimesNewRoman(0)/m/n/10.95 answerable pairs); their saved contexts match
+Underfull \hbox (badness 1168) in paragraph at lines 178--184
+\TU/TimesNewRoman(0)/m/n/10.95 nal answer, citation markers, parser fields, re-
+
  []
 
 
-Underfull \hbox (badness 1558) in paragraph at lines 82--94
-\TU/TimesNewRoman(0)/m/n/10.95 snapshots, timeouts, and retry limits, so their
+Underfull \hbox (badness 1062) in paragraph at lines 178--184
+\TU/TimesNewRoman(0)/m/n/10.95 fusal marker, latency, and the ordered context
+ []
+
+) (./sections/5_experimental_setup.tex
+Underfull \hbox (badness 10000) in paragraph at lines 17--24
+\TU/TimesNewRoman(0)/m/n/10.95 The evaluated pipeline has five
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 82--94
-$[][][] [] [][][] [] [][][][][][][][][] [] [][][][][][][] [] [][][][][][] [] []
-[]$[][]
+Underfull \hbox (badness 10000) in paragraph at lines 17--24
+\TU/TimesNewRoman(0)/m/n/10.95 stages: query embedding with
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 82--94
-\TU/TimesNewRoman(0)/m/n/10.95 and [][]$[][][][][][][][] [] [][][][] [] [][][] 
-[] [][][] [] [][][][][][][][][] []$
+Underfull \hbox (badness 10000) in paragraph at lines 17--24
+\TU/lmtt/m/n/10.95 intfloat/multilingual-e5-large\TU/TimesNewRoman(0)/m/n/10.95
+ ; dense
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 112--115
- []\TU/TimesNewRoman(0)/b/n/10.95 Primary metrics.[] \TU/TimesNewRoman(0)/m/n/1
-0.95 The primary generated-
+Underfull \hbox (badness 2818) in paragraph at lines 17--24
+\TU/TimesNewRoman(0)/m/n/10.95 chunks into a grounded prompt; and answer
+ []
+
+[9]
+Underfull \hbox (badness 1158) in paragraph at lines 48--59
+\TU/TimesNewRoman(0)/m/n/10.95 searches ten independently built BM25 shards,
  []
 
 
-Underfull \hbox (badness 8132) in paragraph at lines 112--115
-\TU/TimesNewRoman(0)/m/n/10.95 answer metrics are computed on successful
+Underfull \hbox (badness 1852) in paragraph at lines 60--67
+[]\TU/TimesNewRoman(0)/m/n/10.95 The reranker family fixes a 30-chunk RRF
  []
 
 
-Underfull \hbox (badness 4846) in paragraph at lines 112--115
-\TU/TimesNewRoman(0)/m/n/10.95 normalized prediction and $\OML/cmm/m/it/10.95 r
-[]$ \TU/TimesNewRoman(0)/m/n/10.95 the normalized
+Underfull \hbox (badness 2689) in paragraph at lines 123--126
+\TU/TimesNewRoman(0)/m/n/10.95 Token F1 uses token overlap $\OML/cmm/m/it/10.95
+ O[]$ \TU/TimesNewRoman(0)/m/n/10.95 and predic-
  []
 
 
-Underfull \hbox (badness 6510) in paragraph at lines 162--165
- []\TU/TimesNewRoman(0)/b/n/10.95 Additional diagnostics.[] \TU/TimesNewRoman(0
-)/m/n/10.95 These measures de-
+Underfull \hbox (badness 6316) in paragraph at lines 134--148
+\TU/TimesNewRoman(0)/m/n/10.95 based answer/refuse diagnostic. In the re-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 175--179
-[]\TU/TimesNewRoman(0)/b/n/10.95 Decision accuracy. \TU/TimesNewRoman(0)/m/n/10
-.95 The persisted
+Underfull \hbox (badness 2253) in paragraph at lines 149--154
+\TU/TimesNewRoman(0)/m/n/10.95 punctuation-to-space replacement. Scores are
  []
 
-[7]
-Underfull \hbox (badness 2205) in paragraph at lines 196--203
-\TU/TimesNewRoman(0)/m/n/10.95 Here $\OML/cmm/m/it/10.95 A[]$ \TU/TimesNewRoman
-(0)/m/n/10.95 is the number of successful an-
+[10]
+Underfull \hbox (badness 2818) in paragraph at lines 158--166
+\TU/TimesNewRoman(0)/m/n/10.95 deltas use the shared answerable intersection;
+ []
+
+
+Underfull \hbox (badness 1147) in paragraph at lines 167--172
+\TU/TimesNewRoman(0)/m/n/10.95 top-10 chunk-ID sequences for every question.
+ []
+
+
+Underfull \hbox (badness 5787) in paragraph at lines 173--178
+[]\TU/TimesNewRoman(0)/m/n/10.95 Output limits are family-specific: the re-
+ []
+
+
+Underfull \hbox (badness 3769) in paragraph at lines 173--178
+\TU/TimesNewRoman(0)/m/n/10.95 token cap, while the fixed-context generator-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 179--185
+[]\TU/TimesNewRoman(0)/m/n/10.95 The artifacts contain no blinded legal-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 179--185
+\TU/TimesNewRoman(0)/m/n/10.95 correctness labels, claim-level faithfulness
+ []
+
+
+Underfull \hbox (badness 1540) in paragraph at lines 179--185
+\TU/TimesNewRoman(0)/m/n/10.95 labels, validated semantic judge, preferred an-
+ []
+
+
+Underfull \hbox (badness 3108) in paragraph at lines 179--185
+\TU/TimesNewRoman(0)/m/n/10.95 safety, citation entailment, or faithful reason-
+
  []
 
 ) (./sections/6_ablation_study.tex
-Underfull \hbox (badness 1910) in paragraph at lines 271--4
-\TU/TimesNewRoman(0)/m/n/10.95 Each run is accompanied by a manifest, per-
+Underfull \hbox (badness 1331) in paragraph at lines 188--4
+\TU/TimesNewRoman(0)/m/n/10.95 Each condition is accompanied by a manifest,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 271--4
-\TU/TimesNewRoman(0)/m/n/10.95 question outputs, metric summary, and la-
+Underfull \hbox (badness 1354) in paragraph at lines 188--4
+\TU/TimesNewRoman(0)/m/n/10.95 their source artifacts under [][]$[][][][][][][]
+[] [] [][][][][][]$[][]
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 271--4
-\TU/TimesNewRoman(0)/m/n/10.95 alongside the source outputs: the embed-
+Underfull \hbox (badness 10000) in paragraph at lines 188--4
+\TU/TimesNewRoman(0)/m/n/10.95 and [][]$[][][][][][][][] [] [][][][][]$[][]; th
+e reranker candi-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 271--4
-\TU/TimesNewRoman(0)/m/n/10.95 ding comparison is in [][]$[][][][][][][][] [] [
-][][][][] []$
+Underfull \hbox (badness 10000) in paragraph at lines 188--4
+\TU/TimesNewRoman(0)/m/n/10.95 date reconstruction and paired analysis are
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 271--4
-$[][][][][][][][][] [] [][] [] [][][][][][][][][][][][][] [] [][][][][][][][]$[
-][]\TU/TimesNewRoman(0)/m/n/10.95 ,
+Underfull \hbox (badness 10000) in paragraph at lines 188--4
+\TU/TimesNewRoman(0)/m/n/10.95 in [][]$[][][][][][][][] [] [][][][] [] [][][][]
+[][][][] [] [][][][][][][] []$
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 271--4
-\TU/TimesNewRoman(0)/m/n/10.95 the dense/hybrid/graph comparison is in
+Underfull \hbox (badness 10000) in paragraph at lines 188--4
+$[][][][][][][] [] [][][][][][][][] [] [][][][][][][] [] [][]$[][]\TU/TimesNewR
+oman(0)/m/n/10.95 , while the
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 271--4
-[][]$[][][][][][][][] [] [][][][][] [] [][][][][] [] [][] [] [][][][][][] [] []
+Underfull \hbox (badness 10000) in paragraph at lines 188--4
+$[][][] [] [][][] [] [][][][][][][][][] [] [][][][][][][] [] [][][][][][] [] []
+[]$[][]\TU/TimesNewRoman(0)/m/n/10.95 .
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 7--14
+\TU/TimesNewRoman(0)/m/n/10.95 This chapter follows the ablation plan in
+ []
+
+
+Underfull \hbox (badness 1014) in paragraph at lines 7--14
+\TU/TimesNewRoman(0)/m/n/10.95 pleted ablation analyses grouped into four run
+ []
+
+
+Underfull \hbox (badness 1424) in paragraph at lines 7--14
+\TU/TimesNewRoman(0)/m/n/10.95 families: embedding text; dense, hybrid, and
+ []
+
+
+Underfull \hbox (badness 3769) in paragraph at lines 7--14
+\TU/TimesNewRoman(0)/m/n/10.95 are made within a family because candidate
+ []
+
+
+Underfull \hbox (badness 2644) in paragraph at lines 7--14
+\TU/TimesNewRoman(0)/m/n/10.95 latency accounting differ; the results are not
+ []
+
+[11]
+Underfull \hbox (badness 1314) in paragraph at lines 18--30
+\TU/TimesNewRoman(0)/m/n/10.95 metadata leaves exact chunk Recall@10 effec-
+ []
+
+File: ../../ablation_study/chunkOnly_vs_chunkMetadata/results/success_at_k_curv
+e.png Graphic file (type bmp)
+<../../ablation_study/chunkOnly_vs_chunkMetadata/results/success_at_k_curve.png
+>
+File: ../../ablation_study/chunkOnly_vs_chunkMetadata/results/paired_win_tie_lo
+ss.png Graphic file (type bmp)
+<../../ablation_study/chunkOnly_vs_chunkMetadata/results/paired_win_tie_loss.pn
+g>
+
+Underfull \hbox (badness 5681) in paragraph at lines 67--81
+\TU/TimesNewRoman(0)/m/n/10.95 The dense/hybrid comparison uses the same
+ []
+
+
+Underfull \hbox (badness 1997) in paragraph at lines 67--81
+\TU/TimesNewRoman(0)/m/n/10.95 generator. Hybrid retrieval adds ten sharded
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 67--81
+\TU/TimesNewRoman(0)/m/n/10.95 BM25 indexes and reciprocal rank fusion.
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 67--81
+\TU/TimesNewRoman(0)/m/n/10.95 DenseOnly outperforms HybridOnly on Re-
+ []
+
+
+Underfull \hbox (badness 2150) in paragraph at lines 67--81
+\TU/TimesNewRoman(0)/m/n/10.95 The hybrid total includes 26.990 seconds per
+ []
+
+
+Underfull \hbox (badness 1231) in paragraph at lines 67--81
+\TU/TimesNewRoman(0)/m/n/10.95 this accounting is distinct from online request
+ []
+
+
+Underfull \hbox (badness 1377) in paragraph at lines 181--192
+\TU/TimesNewRoman(0)/m/n/10.95 ative to RRF-only, it improves Recall@10 by
+ []
+
+File: ../../ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v
+2/charts.png Graphic file (type bmp)
+<../../ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v2/cha
+rts.png>
+
+Underfull \hbox (badness 1112) in paragraph at lines 260--268
+\TU/TimesNewRoman(0)/m/n/10.95 and share 400 answerable question IDs. The
+ []
+
+
+Underfull \vbox (badness 5388) has occurred while \output is active []
+
+ [12]
+Underfull \hbox (badness 2846) in paragraph at lines 269--277
+\TU/TimesNewRoman(0)/m/n/10.95 decreases Token F1 from 24.72% to 23.15%
+ []
+
+
+Underfull \hbox (badness 1168) in paragraph at lines 269--277
+\TU/TimesNewRoman(0)/m/n/10.95 unchanged (14.00% to 13.75%, $\OMS/cmsy/m/n/10.9
+5 ^^@\OT1/cmr/m/n/10.95 0\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 25$ \TU/TimesN
+ewRoman(0)/m/n/10.95 points).
+ []
+
+
+Underfull \hbox (badness 1320) in paragraph at lines 431--442
+\TU/TimesNewRoman(0)/m/n/10.95 Efficiency differences are substantial. Hybrid
+ []
+
+
+Underfull \hbox (badness 1365) in paragraph at lines 431--442
+\TU/TimesNewRoman(0)/m/n/10.95 not online request latency. Among rerankers,
+ []
+
+[13]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [14]
+Underfull \hbox (badness 1394) in paragraph at lines 495--506
+\TU/TimesNewRoman(0)/m/n/10.95 mary generator pair, CoT lowers lexical over-
+ []
+
+
+Underfull \hbox (badness 1546) in paragraph at lines 495--506
+\TU/TimesNewRoman(0)/m/n/10.95 lap under fixed context while improving only
+ []
+
+) [15
+
+] [16] [17] (./sections/7_results.tex [18
+
+
+]
+Underfull \hbox (badness 1460) in paragraph at lines 103--109
+\TU/TimesNewRoman(0)/m/n/10.95 that any configuration is legally more correct,
+ []
+
+) (./sections/8_discussion.tex
+Underfull \hbox (badness 1377) in paragraph at lines 45--56
+\TU/TimesNewRoman(0)/m/n/10.95 evidence path is dense retrieval with the Jina
+ []
+
+
+Underfull \hbox (badness 4416) in paragraph at lines 60--66
+\TU/TimesNewRoman(0)/m/n/10.95 C30; and (5) temporal-validity and external-
+ []
+
+) [19] (./ablation_report.bbl
+Underfull \hbox (badness 10000) in paragraph at lines 19--23
+\TU/TimesNewRoman(0)/m/n/10 embedding: Multi-lingual, multi-functionality,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 19--23
+\TU/TimesNewRoman(0)/m/n/10 multi-granularity text embeddings through
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 19--23
+\TU/TimesNewRoman(0)/m/n/10 self-knowledge distillation.  arXiv preprint
+ []
+
+
+Underfull \hbox (badness 3471) in paragraph at lines 34--39
+[]\TU/TimesNewRoman(0)/m/n/10 Douglas Edge, Ha Trinh, Newey Cheng, Joshua
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 47--52
+[]\TU/TimesNewRoman(0)/m/n/10 Patrick Lewis, Ethan Perez, Aleksandra Piktus,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 47--52
+\TU/TimesNewRoman(0)/m/n/10 Heinrich Kuttler, Mike Lewis, Wen-tau Yih,
+ []
+
+
+Underfull \hbox (badness 1796) in paragraph at lines 47--52
+\TU/TimesNewRoman(0)/m/n/10 Tim Rocktaschel, Sebastian Riedel, and Douwe
+ []
+
+
+Underfull \hbox (badness 1142) in paragraph at lines 47--52
+\TU/TimesNewRoman(0)/m/n/10 knowledge-intensive nlp tasks.  In \TU/TimesNewRoma
+n(0)/m/it/10 Advances in
+ []
+
+
+Underfull \hbox (badness 3271) in paragraph at lines 54--58
+\TU/TimesNewRoman(0)/m/n/10 uations in the last 20 years.  \TU/TimesNewRoman(0)
+/m/it/10 arXiv preprint
+ []
+
+
+Underfull \hbox (badness 1189) in paragraph at lines 60--63
+[]\TU/TimesNewRoman(0)/m/n/10 Rodrigo Nogueira and Kyungha Cho. 2019.  Pas-
+ []
+
+
+Underfull \hbox (badness 5345) in paragraph at lines 60--63
+\TU/TimesNewRoman(0)/m/n/10 sage re-ranking with BERT.  \TU/TimesNewRoman(0)/m/
+it/10 arXiv preprint
+ []
+
+
+Underfull \hbox (badness 1838) in paragraph at lines 76--80
+[]\TU/TimesNewRoman(0)/m/n/10 Chaojun Xiao, Xueyu Zhong, Zijun Zhang, et al.
+ []
+
+) (./appendix.tex
+Underfull \hbox (badness 3657) in paragraph at lines 9--13
+\TU/TimesNewRoman(0)/m/n/10.95 The corpus and evaluation artifacts use line-
+ []
+
+
+Underfull \hbox (badness 1377) in paragraph at lines 60--63
+[]\TU/TimesNewRoman(0)/m/n/10.95 The visible passage can be shortened for a
+ []
+
+
+Underfull \hbox (badness 3895) in paragraph at lines 60--63
+\TU/TimesNewRoman(0)/m/n/10.95 prompt, but its parent identifiers remain un-
+ []
+
+[20]
+Underfull \hbox (badness 1184) in paragraph at lines 99--100
+[]\TU/TimesNewRoman(0)/m/n/7 Citing instrument to cited instru-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 142--142
+[]\TU/TimesNewRoman(0)/m/n/7 Retrieval/graph: no explicit client cap and Viet-
+ []
+
+
+Underfull \hbox (badness 4072) in paragraph at lines 142--142
+\TU/TimesNewRoman(0)/m/n/7 namese fallback phrase; reasoning: 1,024 tokens and
+ []
+
+
+Underfull \hbox (badness 1442) in paragraph at lines 148--155
+\TU/TimesNewRoman(0)/m/n/10.95 GPT-4o-mini comparison. The retrieval/graph
+ []
+
+
+Underfull \hbox (badness 1127) in paragraph at lines 167--172
+\TU/TimesNewRoman(0)/m/n/10.95 factual sentences, invalid markers, and refusal
+ []
+
+
+Underfull \hbox (badness 1038) in paragraph at lines 176--180
+\TU/TimesNewRoman(0)/m/n/10.95 maries; large raw per-question outputs and re-
+ []
+
+
+Underfull \hbox (badness 4832) in paragraph at lines 182--183
+[]\TU/TimesNewRoman(0)/m/n/10.95 Embedding-text comparison: [][]$[][][][][][][]
 [] []$
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 271--4
-$[][][][][][][][][][] [] [][][][] [] [][][][][][][][][] [] [][][][][][][][] []$
-
+Underfull \hbox (badness 10000) in paragraph at lines 182--183
+$[][][][][] [] [][][][][][][][][] [] [][] [] [][][][][][][][][][][][][] []$
  []
 
 
-Underfull \hbox (badness 2096) in paragraph at lines 271--4
-\TU/TimesNewRoman(0)/m/n/10.95 candidate pool and produces its paired analy-
+Underfull \hbox (badness 10000) in paragraph at lines 183--184
+[]\TU/TimesNewRoman(0)/m/n/10.95 Dense, hybrid, and graph comparison:
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 271--4
-\TU/TimesNewRoman(0)/m/n/10.95 sis is [][]$[][][][][][][][] [] [][][][] [] [][]
-[][][][][][] [] [][][][][][][] []$
+Underfull \hbox (badness 10000) in paragraph at lines 183--184
+[][]$[][][][][][][][] [] [][][][][] [] [][][][][] [] [][] [] [][][][][][] [] []
+[] []$
  []
 
-[8] [9]
-Underfull \hbox (badness 10000) in paragraph at lines 88--95
-\TU/TimesNewRoman(0)/m/n/10.95 For GPT-4o-mini, CoT lowers Token F1
- []
-
-
-Underfull \hbox (badness 1616) in paragraph at lines 88--95
-\TU/TimesNewRoman(0)/m/n/10.95 from 24.72% to 23.15% ($\OMS/cmsy/m/n/10.95 ^^@\
-OT1/cmr/m/n/10.95 1\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 57$ \TU/TimesNewRoma
-n(0)/m/n/10.95 pp; 95% CI
+[21]
+Underfull \hbox (badness 10000) in paragraph at lines 184--185
+$[][][][] [] [][][][][][][][] [] [][][][][][][] [] [][][][][][][][][][] []$
  []
 
 
-Underfull \hbox (badness 3503) in paragraph at lines 88--95
-\TU/TimesNewRoman(0)/m/n/10.95 [$\OMS/cmsy/m/n/10.95 ^^@\OT1/cmr/m/n/10.95 2\OM
-L/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 24\OML/cmm/m/it/10.95 ; \OMS/cmsy/m/n/10.9
-5 ^^@\OT1/cmr/m/n/10.95 0\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 92$\TU/TimesNe
-wRoman(0)/m/n/10.95 ]) and ROUGE-L from 21.60%
+Underfull \hbox (badness 10000) in paragraph at lines 184--185
+$[][][][] [] [][][][][][][][][] [] [][][][][][][][] [] [][][]$[][] \TU/TimesNew
+Roman(0)/m/n/10.95 and
  []
 
 
-Underfull \hbox (badness 3354) in paragraph at lines 88--95
-\TU/TimesNewRoman(0)/m/n/10.95 and end-to-end latency, and 1.21 seconds to
+Underfull \hbox (badness 10000) in paragraph at lines 184--185
+[][]$[][][][][][][][] [] [][][][] [] [][][][][][][][] [] [][][][][][][] []$
  []
 
 
-Underfull \hbox (badness 1852) in paragraph at lines 98--107
-\TU/TimesNewRoman(0)/m/n/10.95 Because retrieval is fixed, Recall, MRR, and
+Underfull \hbox (badness 2221) in paragraph at lines 185--186
+[]\TU/TimesNewRoman(0)/m/n/10.95 Generator-reasoning analysis: [][]$[][][][][][
+][][] []$
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 110--118
-\TU/TimesNewRoman(0)/m/n/10.95 The saved field historically called
+Underfull \hbox (badness 10000) in paragraph at lines 185--186
+$[][][][][] [] [][][] [] [][][] [] [][][][][][][][][] [] [][][][][][][] []$
  []
 
 
-Underfull \hbox (badness 2310) in paragraph at lines 110--118
-\TU/lmtt/m/n/10.95 unanswerable_accuracy \TU/TimesNewRoman(0)/m/n/10.95 is a te
-mplate-based
- []
-
-
-Underfull \hbox (badness 1067) in paragraph at lines 110--118
-\TU/TimesNewRoman(0)/m/n/10.95 answer/refuse check over both answerable and
- []
-
-
-Underfull \hbox (badness 1701) in paragraph at lines 110--118
-\TU/TimesNewRoman(0)/m/n/10.95 of refusal quality. Both GPT prompt modes
- []
-
-
-Underfull \hbox (badness 1603) in paragraph at lines 110--118
-\TU/TimesNewRoman(0)/m/n/10.95 refuse 98 of the 100 unanswerable cases and
- []
-
-
-Underfull \hbox (badness 1635) in paragraph at lines 110--118
-\TU/TimesNewRoman(0)/m/n/10.95 cation decision, so the result cannot establish
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 156--164
-[]\TU/TimesNewRoman(0)/m/n/10.95 The other model pairs are descriptive
- []
-
-
-Underfull \hbox (badness 3942) in paragraph at lines 156--164
-\TU/TimesNewRoman(0)/m/n/10.95 checks, not additional primary tests. Their
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 156--164
-\TU/TimesNewRoman(0)/m/n/10.95 CoT-minus-Base Token-F1 changes are
- []
-
-
-Underfull \hbox (badness 4686) in paragraph at lines 156--164
-$\OMS/cmsy/m/n/10.95 ^^@\OT1/cmr/m/n/10.95 1\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/1
-0.95 33$ \TU/TimesNewRoman(0)/m/n/10.95 pp for DeepSeek-V3.1-Thinking (95%
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 156--164
-\TU/TimesNewRoman(0)/m/n/10.95 CI [$\OMS/cmsy/m/n/10.95 ^^@\OT1/cmr/m/n/10.95 1
-\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 96\OML/cmm/m/it/10.95 ; \OMS/cmsy/m/n/1
-0.95 ^^@\OT1/cmr/m/n/10.95 0\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 73$\TU/Time
-sNewRoman(0)/m/n/10.95 ]), $\OMS/cmsy/m/n/10.95 ^^@\OT1/cmr/m/n/10.95 0\OML/cmm
-/m/it/10.95 :\OT1/cmr/m/n/10.95 68$ \TU/TimesNewRoman(0)/m/n/10.95 pp for GLM-5
-
- []
-
-
-Underfull \hbox (badness 1571) in paragraph at lines 156--164
-\TU/TimesNewRoman(0)/m/n/10.95 ([$\OMS/cmsy/m/n/10.95 ^^@\OT1/cmr/m/n/10.95 2\O
-ML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 77\OML/cmm/m/it/10.95 ; \OMS/cmsy/m/n/10.
-95 ^^@\OT1/cmr/m/n/10.95 1\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 15$\TU/TimesN
-ewRoman(0)/m/n/10.95 ]). Four DeepSeek cases have
- []
-
-
-Underfull \hbox (badness 3568) in paragraph at lines 166--175
-\TU/TimesNewRoman(0)/m/n/10.95 structural citation fields, and latency records.
-
- []
-
-
-Underfull \hbox (badness 3128) in paragraph at lines 166--175
-\TU/TimesNewRoman(0)/m/n/10.95 They do not contain legal correctness labels,
- []
-
-
-Underfull \hbox (badness 1014) in paragraph at lines 166--175
-\TU/TimesNewRoman(0)/m/n/10.95 narrow conclusion: GPT-4o-mini CoT reduces
- []
-
-) (./sections/7_results.tex [10]
-Underfull \hbox (badness 1102) in paragraph at lines 84--90
-\TU/TimesNewRoman(0)/m/n/10.95 swerable accuracy also rises (0.38 to 0.41 for
- []
-
-
-Underfull \hbox (badness 1418) in paragraph at lines 84--90
-\TU/TimesNewRoman(0)/m/n/10.95 Token F1 changes are small and inconclusive.
- []
-
-[11]) (./sections/8_discussion.tex
-Underfull \hbox (badness 1297) in paragraph at lines 218--4
-\TU/TimesNewRoman(0)/m/n/10.95 Jina is intermediate (1.278 s), BGE is slower
- []
-
-
-Underfull \hbox (badness 6252) in paragraph at lines 35--41
- []\TU/TimesNewRoman(0)/b/n/10.95 Reranking is the clearest robust improve-
- []
-
-
-Underfull \hbox (badness 1852) in paragraph at lines 44--51
- []\TU/TimesNewRoman(0)/b/n/10.95 Reasoning prompts change output behavior,
- []
-
-
-Underfull \hbox (badness 1454) in paragraph at lines 44--51
-\TU/TimesNewRoman(0)/m/n/10.95 controlled GPT-4o-mini comparison, CoT low-
- []
-
-
-Underfull \hbox (badness 4096) in paragraph at lines 44--51
-\TU/TimesNewRoman(0)/m/n/10.95 detected false refusals and increases citation-
- []
-
-
-Underfull \hbox (badness 1067) in paragraph at lines 44--51
-\TU/TimesNewRoman(0)/m/n/10.95 is therefore operational: this CoT prompt has
- []
-
-[12]
-Underfull \hbox (badness 4660) in paragraph at lines 62--68
-\TU/TimesNewRoman(0)/m/n/10.95 augmentation should be introduced as a tar-
- []
-
-
-Underfull \hbox (badness 2253) in paragraph at lines 84--91
-[]\TU/TimesNewRoman(0)/m/n/10.95 The reranker and reasoning safety analyses
- []
-
-) (./sections/9_limitations.tex
-Underfull \hbox (badness 1248) in paragraph at lines 92--4
-[]\TU/TimesNewRoman(0)/m/n/10.95 Finally, cached BM25 candidates mean that
- []
-
-
-Underfull \hbox (badness 4279) in paragraph at lines 92--4
-\TU/TimesNewRoman(0)/m/n/10.95 reranker latency is not full-online hybrid la-
- []
-
-
-Underfull \hbox (badness 2753) in paragraph at lines 92--4
-\TU/TimesNewRoman(0)/m/n/10.95 tency; p95 latency, peak GPU memory, and
- []
-
-
-Underfull \hbox (badness 1122) in paragraph at lines 92--4
-\TU/TimesNewRoman(0)/m/n/10.95 controlled throughput are not available for ev-
- []
-
-
-Underfull \hbox (badness 7256) in paragraph at lines 92--4
-\TU/TimesNewRoman(0)/m/n/10.95 ery configuration. The graph corpus also
- []
-
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
- [13])
-(./sections/10_conclusion.tex
-Underfull \hbox (badness 1132) in paragraph at lines 7--16
-\TU/TimesNewRoman(0)/m/n/10.95 This controlled ablation study identifies where
- []
-
-
-Underfull \hbox (badness 2903) in paragraph at lines 17--21
-\TU/TimesNewRoman(0)/m/n/10.95 prompting lowers Token F1 by 1.57 pp and
- []
-
-
-Underfull \hbox (badness 1377) in paragraph at lines 22--26
-[]\TU/TimesNewRoman(0)/m/n/10.95 Taken together, the results support a dense-
+Underfull \hbox (badness 10000) in paragraph at lines 185--186
+$[][][][][][] [] [][]$[][] \TU/TimesNewRoman(0)/m/n/10.95 and [][]$[][][][][][]
+[][] [] [][][][] [] [][][] []$
  []
 
 )
-Underfull \hbox (badness 1675) in paragraph at lines 30--78
-\TU/TimesNewRoman(0)/m/n/10.95 The next phase should add blinded expert la-
+Underfull \hbox (badness 10000) in paragraph at lines 189--91
+[]\TU/TimesNewRoman(0)/m/n/10.95 The detailed graph displacement counts,
  []
 
 
-Underfull \hbox (badness 1005) in paragraph at lines 30--78
-\TU/TimesNewRoman(0)/m/n/10.95 It should also measure full-online p95 latency,
- []
-
-
-Underfull \hbox (badness 2376) in paragraph at lines 30--78
-\TU/TimesNewRoman(0)/m/n/10.95 pool size, RRF, and graph budget; and vali-
- []
-
-
-Underfull \hbox (badness 1852) in paragraph at lines 30--78
-\TU/TimesNewRoman(0)/m/n/10.95 date graph relation direction against authorita-
-
- []
-
-[14]
-No file ablation_report.bbl.
-(./appendix.tex
-Underfull \hbox (badness 5374) in paragraph at lines 9--19
-\TU/TimesNewRoman(0)/m/n/10.95 uments, hierarchical provisions, and indexed
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 9--19
-\TU/TimesNewRoman(0)/m/n/10.95 issuing authority, effective-date and validity
- []
-
-
-Underfull \hbox (badness 2837) in paragraph at lines 9--19
-\TU/TimesNewRoman(0)/m/n/10.95 metadata; a provision stores its article/clause
- []
-
-
-Underfull \hbox (badness 2564) in paragraph at lines 9--19
-\TU/TimesNewRoman(0)/m/n/10.95 containment edges \TU/lmtt/m/n/10.95 DOCUMENT_HA
-S_PROVISION
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 9--19
-\TU/TimesNewRoman(0)/m/n/10.95 and \TU/lmtt/m/n/10.95 PROVISION_HAS_CHUNK\TU/Ti
-mesNewRoman(0)/m/n/10.95 , reading-order
- []
-
-
-Underfull \hbox (badness 1424) in paragraph at lines 9--19
-\TU/TimesNewRoman(0)/m/n/10.95 ment, replacement, repeal, and citation. The
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 20--24
-[]\TU/TimesNewRoman(0)/m/n/10.95 The processed corpus summary contains
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 20--24
-\TU/TimesNewRoman(0)/m/n/10.95 151,624 documents, 1,386,267 provisions,
- []
-
-
-Underfull \hbox (badness 2409) in paragraph at lines 20--24
-\TU/TimesNewRoman(0)/m/n/10.95 1,513,376 chunks, 883,256 document relation-
- []
-
-
-Underfull \hbox (badness 1845) in paragraph at lines 20--24
-\TU/TimesNewRoman(0)/m/n/10.95 and validity fields require direction validation
+Underfull \hbox (badness 2221) in paragraph at lines 189--91
+\TU/TimesNewRoman(0)/m/n/10.95 reranker paired intervals, category slices, evi-
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 66--67
-[]\TU/TimesNewRoman(0)/m/n/10.95 Embedding text: [][]$[][][][][][][][] [] [][][
-][] []$
+Underfull \hbox (badness 2547) in paragraph at lines 189--91
+\TU/TimesNewRoman(0)/m/n/10.95 in the relevant result sentences of Section [][]
+6[][].
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 67--69
-[]\TU/TimesNewRoman(0)/m/n/10.95 Dense/hybrid/graph: [][]$[][][][][][][][] [] [
-][][][] []$
+Underfull \hbox (badness 1776) in paragraph at lines 189--91
+\TU/TimesNewRoman(0)/m/n/10.95 For example, the graph summary reports one
  []
 
+[22
 
-Underfull \hbox (badness 10000) in paragraph at lines 67--69
-$[][][][][][][][][] [] [][] [] [][][][][][][][][][][]$[][] \TU/TimesNewRoman(0)
-/m/n/10.95 and
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 67--69
-[][]$[][][][][][][][] [] [][][][] [] [][][][][][][][][][] [] [][] []$
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 69--71
-[]\TU/TimesNewRoman(0)/m/n/10.95 Reranker source and derived anal-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 69--71
-\TU/TimesNewRoman(0)/m/n/10.95 ysis: [][]$[][][][][][][][] [] [][][][] [] [][][
-][][][][][] []$
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 69--71
-$[][][][][][][] [] [][][][][][][][][][] [] [][][][] [] [][][][][][][][][] []$
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 71--73
-$[][][][][][][][] [] [][][][][][][] [] [][][][][][][] [] [][][][][][][][] []$
- []
-
-
-Underfull \hbox (badness 5681) in paragraph at lines 73--76
-[]\TU/TimesNewRoman(0)/m/n/10.95 Generator-reasoning source runs and de-
- []
-
-
-Underfull \hbox (badness 3333) in paragraph at lines 73--76
-\TU/TimesNewRoman(0)/m/n/10.95 rived report: [][]$[][][][][][][][] [] [][][][] 
-[] [][][] [] [][][] []$
- []
-
-
-Underfull \hbox (badness 4531) in paragraph at lines 73--76
-$[][][][][][][][][][]$[][] \TU/TimesNewRoman(0)/m/n/10.95 and [][]$[][][][][][]
-[][] [] [][][][][] [] [][][] []$
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 76--78
-[]\TU/TimesNewRoman(0)/m/n/10.95 Generator-reasoning analysis script:
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 76--78
-[][]$[][][][][][][][] [] [][][][] [] [][][] [] [][][] [] [][][][][][][][][] []$
-
- []
-
-
-Underfull \hbox (badness 2293) in paragraph at lines 78--80
-[]\TU/TimesNewRoman(0)/m/n/10.95 Human-evaluation scaffold: generated lo-
- []
-
-
-Underfull \hbox (badness 2205) in paragraph at lines 78--80
-\TU/TimesNewRoman(0)/m/n/10.95 cally for the pending semantic-evaluation
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 115--115
-[]\TU/TimesNewRoman(0)/m/n/7 Synthesizes grounded answers from top-10 evidence
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 115--115
-\TU/TimesNewRoman(0)/m/n/7 chunks with explicit provision-level citation and
- []
-
-)
-
-Package natbib Warning: There were undefined citations.
-
-[15] [16] (./ablation_report.aux)
+] (./ablation_report.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
 Package rerunfilecheck Info: File `ablation_report.out' has not changed.
-(rerunfilecheck)             Checksum: 6217F5946C9FD95E6CCB71FCFF18EF7A;10324.
+(rerunfilecheck)             Checksum: 93DD35CE854FB6793E0A6C177DE4E330;15851.
  ) 
 Here is how much of TeX's memory you used:
- 28837 strings out of 469709
- 588163 string characters out of 5466024
- 1082589 words of memory out of 5000000
- 56981 multiletter control sequences out of 15000+600000
- 638116 words of font info for 117 fonts, out of 8000000 for 9000
+ 28919 strings out of 469709
+ 591874 string characters out of 5466023
+ 1096852 words of memory out of 5000000
+ 57063 multiletter control sequences out of 15000+600000
+ 638100 words of font info for 115 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
- 87i,13n,99p,1012b,854s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 87i,11n,99p,1012b,854s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on ablation_report.pdf (16 pages).
+Output written on ablation_report.xdv (22 pages, 889128 bytes).

@@ -5,9 +5,11 @@
 \label{sec:ablation-study}
 
 This chapter follows the ablation plan in
-\texttt{report\_structure.md}. We report five completed experiment families
-and retain the deterministic evidence available for each one. Comparisons are
-made within a family because candidate construction and context budgets differ;
+\texttt{report\_structure.md}. We report five completed ablation analyses
+grouped into four run families: embedding text; dense, hybrid, and graph
+retrieval as one joint retrieval/graph family; reranking; and generator
+prompting. Comparisons are made within a family because candidate
+construction, context budgets, output limits, and latency accounting differ;
 the results are not treated as one pooled factorial experiment.
 
 \subsection{Embedding Text Ablation: Chunk-Only versus Chunk+Metadata}
@@ -64,30 +66,36 @@ Delta & $-3.8$ & $-2.2$ & $-6.5$ & $+2.8$ & $-0.2$ & $+0.1$ & $-5.9$ & $+4.5$ \\
 
 The dense/hybrid comparison uses the same header-plus-chunk dense index,
 50-seed retrieval budget, 10-chunk final context, benchmark, and generator.
-Hybrid retrieval adds BM25 and reciprocal rank fusion. DenseOnly outperforms
+Hybrid retrieval adds ten sharded BM25 indexes and reciprocal rank fusion.
+DenseOnly outperforms
 HybridOnly on Recall@10 (48.55\% versus 42.57\%) and nDCG@10 (0.2813 versus
 0.2638); the full comparison is in
 \hyperref[tab:dense-hybrid-results]{Table~\ref*{tab:dense-hybrid-results}}.
 The paired Recall@10 difference is $-5.98$ points with a 95\% CI of
 [$-9.71,-2.21$]. Hybrid retrieval also raises recorded total median latency
-from 5.483 seconds to 31.538 seconds; paired uncertainty is reported in
+from 5.483 seconds to 31.538 seconds. The hybrid total includes 26.990 seconds
+per query amortized from 13,495 seconds of BM25 batch precomputation over the
+500-question batch; this accounting is distinct from online request latency.
+Paired uncertainty is reported in
 \hyperref[tab:dense-hybrid-paired]{Table~\ref*{tab:dense-hybrid-paired}}.
 
 \begin{table*}[t]
 \centering
 \scriptsize
 \caption{Dense versus hybrid retrieval. Retrieval values use 400 answerable
-questions; latency percentiles use all 500 cases.}
+questions; latency percentiles use all 500 cases. The fallback column is the
+fraction of 100 unanswerable outputs containing the family-specific Vietnamese
+fallback phrase.}
 \label{tab:dense-hybrid-results}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrrrr}
+\begin{tabular}{lrrrrrrr}
 \toprule
 \textbf{Method} & \textbf{Recall@5} & \textbf{Recall@10} &
 \textbf{MRR@10} & \textbf{nDCG@10} & \textbf{Retrieval p50/p95} &
-\textbf{Total p50/p95} \\
+\textbf{Total p50/p95} & \textbf{Fallback} \\
 \midrule
-DenseOnly & 0.3678 & 0.4855 & 0.2267 & 0.2813 & 0.797/0.856 & 5.483/9.946 \\
-HybridOnly & 0.3140 & 0.4257 & 0.2252 & 0.2638 & 27.855/27.924 & 31.538/33.623 \\
+DenseOnly & 0.3678 & 0.4855 & 0.2267 & 0.2813 & 0.797/0.856 & 5.483/9.946 & 0.38 \\
+HybridOnly & 0.3140 & 0.4257 & 0.2252 & 0.2638 & 27.855/27.924 & 31.538/33.623 & 0.38 \\
 \bottomrule
 \end{tabular}%
 }
@@ -112,8 +120,12 @@ nDCG@10 & $-0.0175$ & $[-0.0437,+0.0085]$ \\
 \subsection{Graph Ablation: With versus Without Graph Expansion}
 \label{sec:ablation-graph}
 
-Graph variants expand five seed chunks by one hop and retain at most 10
-chunks. Graph expansion currently displaces more evidence than it adds.
+Graph variants expand the top five seed chunks within their parent provisions
+with \texttt{max\_hop=1}, replace the baseline top-10 context, and retain at
+most 10 chunks. They use broad validity filtering without a query-time
+validity overlay or reranking, so this comparison evaluates the complete
+context-selection policy rather than graph traversal in isolation. Graph
+expansion currently displaces more evidence than it adds.
 Relative to DenseOnly, DenseGraph changes Recall@10 by $-12.40$ points and
 loses at least one previously retrieved gold chunk for 61 questions while
 adding a graph-only gold chunk for only one question. The HybridOnly to
@@ -124,26 +136,32 @@ and six gaining one; the displacement counts and rank deltas are summarized in
 Graph contexts are denser because they contain fewer chunks on average (5.605
 for DenseGraph and 6.305 for HybridGraph), and their identity precision is
 higher. This is a precision--coverage trade-off, not evidence of an overall
-retrieval-quality improvement.
+retrieval-quality improvement. Of the 65 gold-chunk occurrences lost by
+DenseGraph, 60 were outside the original top-five seeds; for HybridGraph, 52
+of 60 were outside the original top five. The counts support seed-preserving
+expansion as the next controlled graph test.
 
 \begin{table*}[t]
 \centering
 \scriptsize
 \caption{Effect of graph expansion on top-10 gold evidence. Counts are over
 400 answerable questions; graph-only gold is introduced by expansion and
-graph-missed gold was present before expansion but absent afterward.}
+graph-missed gold was present before expansion but absent afterward. The
+fallback column is the fraction of 100 unanswerable outputs containing the
+family-specific Vietnamese fallback phrase.}
 \label{tab:graph-effect}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrrrrr}
+\begin{tabular}{lrrrrrrrr}
 \toprule
 \textbf{Base} & \textbf{$\Delta$ Recall@10} & \textbf{$\Delta$ MRR@10} &
 \textbf{$\Delta$ nDCG@10} & \textbf{Graph-only gold} &
-\textbf{Graph-missed gold} & \textbf{Avg. chunks} & \textbf{ID precision} \\
+\textbf{Graph-missed gold} & \textbf{Avg. chunks} & \textbf{ID precision} &
+\textbf{Fallback} \\
 \midrule
 DenseOnly $\rightarrow$ DenseGraph & $-0.1240$ & $-0.0222$ & $-0.0439$ &
-1 query (0.25\%) & 61 queries (15.25\%) & 5.605 & 0.0800 \\
+1 query (0.25\%) & 61 queries (15.25\%) & 5.605 & 0.0800 & 0.41 \\
 HybridOnly $\rightarrow$ HybridGraph & $-0.1181$ & $-0.0240$ & $-0.0411$ &
-6 queries (1.50\%) & 59 queries (14.75\%) & 6.305 & 0.0641 \\
+6 queries (1.50\%) & 59 queries (14.75\%) & 6.305 & 0.0641 & 0.47 \\
 \bottomrule
 \end{tabular}%
 }
@@ -411,8 +429,10 @@ No support retrieved & 233 & 22.53 & 21.23 & $-1.30$ & 19.29 & 17.92 & $-1.37$ \
 \label{sec:ablation-efficiency}
 
 Efficiency differences are substantial. Hybrid retrieval reports a one-time
-BM25 precomputation cost of about 13,495 seconds and a much larger per-query
-retrieval cost. Among rerankers, mMiniLM is fastest, Jina is intermediate,
+BM25 precomputation cost of about 13,495 seconds, which contributes 26.990
+amortized seconds per query to the reported hybrid totals, and a much larger
+per-query retrieval cost. This batch accounting is not online request latency.
+Among rerankers, mMiniLM is fastest, Jina is intermediate,
 BGE is slower, and Qwen3 is much slower. The generator CoT prompt raises
 generation p50/p95 from 2.92/5.74 seconds to 3.68/6.17 seconds, and total
 p50/p95 from 13.99/17.21 to 14.74/18.42 seconds. Reranker p95, peak GPU
@@ -472,7 +492,7 @@ illustrative examples auditable rather than anecdotal.
 \subsection{Summary of Ablation Findings}
 \label{sec:ablation-summary}
 
-The completed evidence supports conditional engineering decisions. Metadata
+The five reported analyses support conditional engineering decisions. Metadata
 helps document-level retrieval but not exact chunk ranking. The tested hybrid
 configuration reduces exact-chunk coverage and adds latency. One-hop graph
 expansion increases context density while displacing more gold evidence than

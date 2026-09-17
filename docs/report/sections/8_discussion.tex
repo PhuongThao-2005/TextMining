@@ -10,9 +10,9 @@
 L\_RAG combines a Vietnamese legal chunk corpus, dense FAISS retrieval,
 optional BM25/RRF fusion, graph expansion, cross-encoder reranking, grounded
 generation, and saved per-question evaluation records. The ablation report
-isolates five component choices---embedding text, retrieval mode, graph policy,
-reranking, and generator prompting---using fixed question sets and paired
-metrics.
+isolates five reported component analyses---embedding text, retrieval mode,
+graph policy, reranking, and generator prompting---grouped into four run
+families and evaluated with fixed question sets and paired metrics.
 
 \subsection{Main Contributions}
 \label{sec:main-contributions}
@@ -33,20 +33,26 @@ hybrid retrieval, graph expansion, CoT, and cited output are not quality
 guarantees. Candidate control and paired question-level deltas reveal effects
 obscured by aggregate scores: metadata can improve document discovery while
 delaying exact chunks, graph expansion increases density while removing
-evidence, and rerankers can only improve what has entered C30. Frozen manifests
-and complete row alignment are essential before interpreting a difference as
-causal.
+evidence, and rerankers can only improve what has entered C30. The graph loss
+also reflects a replacement policy that starts from five seeds and retains at
+most ten expanded chunks; preserving the original seeds is the next targeted
+test. Frozen manifests and complete row alignment are essential before
+interpreting a difference as causal.
 
 \subsection{Recommended System Configuration}
 \label{sec:recommended-configuration}
 
 For the evaluated benchmark, the recommended evidence path is dense retrieval
 with the Jina reranker when its latency is acceptable, a 10-chunk final
-context, and the Base prompt. Use the graph branch only after seed-preserving
-expansion is validated; do not select the current hybrid branch as a default.
-This is a benchmark-bounded configuration, not a deployment approval. A real
-deployment requires corpus-validity checks, source display, monitored latency,
-privacy controls, abstention handling, and legal expert review.
+context, and the Base prompt. Jina is promising within the tested dense--BM25
+RRF $C_{30}$ pool; its performance on a dense-only candidate pool remains
+unmeasured. Use the graph branch only after seed-preserving expansion is
+validated, and do not select the current hybrid branch as a default. Its
+reported latency includes amortized sharded-BM25 batch computation, so online
+latency must be measured separately. This is a benchmark-bounded configuration,
+not a deployment approval. A real deployment requires corpus-validity checks,
+source display, monitored latency, privacy controls, abstention handling, and
+legal expert review.
 
 \subsection{Future Improvements}
 \label{sec:future-improvements}

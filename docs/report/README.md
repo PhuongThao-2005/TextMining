@@ -4,9 +4,11 @@ ablation_report.tex is the canonical ACL-style manuscript entry point for the
 report. Its section order follows report_structure.md: Sections 1--8 and
 Appendices A--F use the prescribed headings. The current tree combines the
 substantive system, dataset, protocol, and discussion prose from the earlier
-report with the detailed, inline-linked five-family ablation analysis in
-Section 6. The legacy Sections 9 and 10 remain as compatibility files but are
-not included by the canonical entry point.
+report with the detailed, inline-linked five-analysis ablation report in
+Section 6. The five analyses are grouped into four run families because the
+dense, hybrid, and graph comparisons share one retrieval/graph execution
+family. The legacy Sections 9 and 10 remain as compatibility files but are not
+included by the canonical entry point.
 
 The ablation branch keeps compact manifests, aggregate metrics, derived
 reports, analysis code, and the compiled manuscript. Raw per-query outputs,
@@ -37,7 +39,7 @@ anonymous, line-numbered ACL review layout.
 | sections/3_system_overview.tex | Legal Dataset and Benchmark Construction |
 | sections/4_dataset_and_corpus.tex | L_RAG System Design and Methodology |
 | sections/5_experimental_setup.tex | Controls, metrics, configurations, and reproducibility |
-| sections/6_ablation_study.tex | Completed ablation evidence in the planned 6.1--6.10 layout |
+| sections/6_ablation_study.tex | Completed five-analysis evidence in the planned 6.1--6.10 layout, with retrieval/graph runs grouped as one family |
 | sections/7_results.tex | Discussion, limitations, and ethical considerations |
 | sections/8_discussion.tex | Conclusion and future work |
 | sections/9_limitations.tex | Legacy guidance file; not included |

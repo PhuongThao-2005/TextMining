@@ -7,8 +7,8 @@
 \scriptsize
 \begin{enumerate}
   \item \textbf{Metadata changes the level of success:} it improves document identification, but can push the exact gold chunk lower in the ranking.
-  \item \textbf{Current hybrid retrieval is not a good default:} its paired recall loss and large latency cost outweigh the observed benefit under the tested settings.
-  \item \textbf{Current graph expansion trades coverage for density:} adjacent passages can replace high-confidence seed evidence within a fixed context budget.
+  \item \textbf{Hybrid results guide refinement:} lower exact-chunk recall motivates tuning shard statistics and fusion; timings include amortized batch computation.
+  \item \textbf{Graph context selection trades coverage for density:} replacing top 10 with expansion from five seeds motivates evidence-preserving policies.
   \item \textbf{Reranking is the clearest positive result:} every tested cross-encoder improves Recall, MRR, and nDCG over RRF-only at a fixed candidate pool.
   \item \textbf{Explicit CoT is not automatically better:} under identical retrieved context, GPT-4o-mini CoT lowers lexical overlap, adds latency, and improves only template-based output diagnostics.
 \end{enumerate}
@@ -18,7 +18,7 @@ These findings apply to the tested index, tokenization, fusion constant, candida
 \end{block}
 \end{frame}
 
-\begin{frame}{Recommended Engineering Direction}
+\begin{frame}{Proposed Configuration for the Next Evaluation}
 \small
 \centering
 \resizebox{0.96\linewidth}{!}{
@@ -43,9 +43,9 @@ These findings apply to the tested index, tokenization, fusion constant, candida
 \vspace{0.35cm}
 \begin{columns}[T]
   \column{0.48\textwidth}
-    \textbf{Default path}
+    \textbf{Candidate path to validate}
     \begin{itemize}
-      \item Dense retrieval followed by Jina.
+      \item Dense + Jina: validate on a dense-only pool.
       \item mMiniLM when latency is the priority.
       \item BGE when lexical overlap is preferred.
     \end{itemize}
@@ -87,7 +87,7 @@ These findings apply to the tested index, tokenization, fusion constant, candida
 \begin{frame}{Conclusion and Future Work}
 \scriptsize
 \begin{block}{Final conclusion}
-The controlled study supports \textbf{dense retrieval followed by a cross-encoder}, with \textbf{Jina} as the current quality--latency candidate. Metadata helps at document level; the tested hybrid and graph policies require redesign; GPT-4o-mini CoT does not improve lexical answer quality under fixed context.
+The study motivates testing \textbf{dense retrieval followed by Jina}; the measured Jina gains use a \textbf{dense--BM25 RRF pool}. Metadata helps document discovery, while Hybrid and graph results guide fusion and seed-retention refinements. GPT-4o-mini CoT does not improve lexical overlap under fixed context.
 \end{block}
 \vspace{0.2cm}
 \textbf{Next experiments}

@@ -48,10 +48,11 @@ retrieval-augmented generation pipeline that combines E5 dense retrieval,
 BM25, a knowledge-graph overlay, reciprocal-rank fusion, cross-encoder
 reranking, and citation-grounded generation. On a fixed 500-question
 benchmark (400 answerable and 100 unanswerable questions), we report five
-controlled ablation families rather than a pooled factorial comparison:
-embedding text, dense versus hybrid retrieval, graph expansion, reranking
-within a shared candidate pool, and Base versus chain-of-thought (CoT)
-prompting. Metadata improves document success at depth 10 by 4.5 percentage
+controlled ablation analyses grouped into four run families rather than a
+pooled factorial comparison: embedding text; dense, hybrid, and graph
+retrieval as one joint retrieval/graph run family; reranking within a shared
+candidate pool; and Base versus chain-of-thought (CoT) prompting. Metadata
+improves document success at depth 10 by 4.5 percentage
 points but reduces MRR. The tested BM25+RRF hybrid loses 5.98 Recall@10
 points to dense retrieval and increases median total latency from 5.483 to
 31.538 seconds. One-hop graph expansion loses 11.81--12.40 Recall@10 points,
@@ -84,7 +85,6 @@ evaluation artifacts. We also acknowledge the open-source maintainers of the
 retrieval, embedding, reranking, and document-processing libraries used by
 the implementation.
 
-\section*{References}
 \bibliography{references}
 
 \input{appendix}

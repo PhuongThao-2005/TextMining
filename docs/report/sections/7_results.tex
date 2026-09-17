@@ -28,9 +28,20 @@ DenseOnly is the preferred retrieval baseline in the dense/hybrid study: it
 achieves Recall@10 of 0.4855 at 0.797-second retrieval p50. HybridOnly falls
 to 0.4257 and takes 27.855 seconds when amortized BM25 time is included
 (\hyperref[tab:dense-hybrid-results]{Table~\ref*{tab:dense-hybrid-results}}).
+That hybrid figure allocates 26.990 seconds per query from a 13,495-second
+BM25 batch over 500 questions; it should not be read as measured online
+request latency. The graph runs use ten baseline chunks versus five retained
+seeds before expansion, so their higher identity precision accompanies a
+smaller context rather than a free addition of evidence.
 Graph contexts appear more identity-precise because they contain only
 5.605--6.305 chunks on average, but their reduced context size also removes
 gold coverage (\hyperref[tab:graph-effect]{Table~\ref*{tab:graph-effect}}).
+The template-based fallback detector also rises from 0.38 to 0.41 for Dense
+and from 0.38 to 0.47 for Hybrid on the 100 unanswerable questions
+(baseline rates in \hyperref[tab:dense-hybrid-results]{Table~\ref*{tab:dense-hybrid-results}};
+graph rates in \hyperref[tab:graph-effect]{Table~\ref*{tab:graph-effect}}). This
+is an observable refusal-format change, not a validated abstention-quality
+gain.
 The reranker result has a different interpretation: it operates after a fixed
 candidate ceiling, so Jina's gain is a ranking gain rather than proof that the
 underlying candidate retriever finds more evidence.
@@ -62,9 +73,14 @@ and external legal references may all limit transfer beyond the data snapshot.
 \subsection{Knowledge Graph and Validity Limitations}
 \label{sec:graph-validity-limitations}
 
-The graph study evaluates a specific policy--five seeds, one hop, and ten
-retained chunks--rather than graph information in general. Its failures point
-to an engineering hypothesis: expansion substitutes for seeds too early.
+The graph study evaluates a specific policy--five seeds within parent
+provisions, \texttt{max\_hop=1}, broad validity filtering, no query-time
+validity overlay or reranking, and ten retained chunks--rather than graph
+information in general. Its failures point to an engineering hypothesis:
+expansion substitutes for seeds too early. Of the 65 gold-chunk occurrences
+lost by DenseGraph, 60 were outside the original top five; the corresponding
+count for HybridGraph was 52 of 60. These counts and the graph-only recoveries
+are linked in \hyperref[tab:graph-effect]{Table~\ref*{tab:graph-effect}}.
 Future graph experiments should preserve high-ranked seeds, separately budget
 neighbors, verify relationship direction and validity semantics, and measure
 whether graph-only evidence is legally useful rather than merely novel.
@@ -74,10 +90,12 @@ whether graph-only evidence is legally useful rather than merely novel.
 
 The index, BM25 tokenization, RRF parameter, candidate budgets, rerankers,
 generator, prompt, and final context size are fixed settings, not optimized
-universally. Reranker timings use cached BM25 candidates and omit full-online
-sparse retrieval. Lexical overlap may reward reference phrasing rather than
-legal adequacy. Structural citations measure marker presence or parser coverage,
-not the relationship between a claim and the cited authority.
+universally. The hybrid branch uses shard-local BM25 statistics, and the
+reported 26.990-second-per-query sparse cost is batch amortization rather than
+online latency. Reranker timings use cached BM25 candidates and omit
+full-online sparse retrieval. Lexical overlap may reward reference phrasing
+rather than legal adequacy. Structural citations measure marker presence or
+parser coverage, not the relationship between a claim and the cited authority.
 
 \subsection{Evaluation Limitations}
 \label{sec:evaluation-limitations}
