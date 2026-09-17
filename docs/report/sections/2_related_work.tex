@@ -6,18 +6,24 @@
 
 This section positions L\_RAG at the intersection of retrieval-augmented
 generation, legal information retrieval, hybrid ranking, knowledge-graph
-retrieval, and citation-grounded generation. The purpose is not to claim that
-one paradigm solves legal QA by itself, but to make explicit which prior
-ideas motivate each component and why the report tests them separately.
+retrieval, reranking, and citation-grounded generation. It first establishes
+the standard RAG workflow, then identifies the legal properties that ordinary
+text retrieval does not capture. The purpose is not to claim that one
+paradigm solves legal QA by itself, but to make explicit which prior ideas
+motivate each component and which evaluation check tests the corresponding
+design assumption.
 
 \subsection{Retrieval-Augmented Generation}
 \label{sec:related-rag}
 
 Retrieval-Augmented Generation (RAG)~\cite{lewis2020retrieval} supplements a
 language model's parameters with documents retrieved at query time. A
-standard pipeline embeds a query, retrieves passages from an indexed corpus,
-serializes the top passages into a prompt, and asks a generator to produce an
-answer. The external context can reduce dependence on stale parametric
+standard pipeline contains five logical stages: (1) represent the query and
+retrieve candidates from an indexed corpus; (2) select, order, and possibly
+expand a bounded context; (3) serialize that context with provenance into a
+prompt; (4) generate an answer conditioned on the prompt; and (5) check
+whether the answer is supported by, and correctly attributes, the supplied
+evidence. The external context can reduce dependence on stale parametric
 knowledge and gives a user sources to inspect, but it does not guarantee that
 the selected passages are sufficient or that the generated claims follow from
 them.
@@ -64,11 +70,14 @@ identifiers and graph relations alongside the embedded text.
 \label{sec:related-hybrid}
 
 Dense bi-encoders are effective for paraphrase and vocabulary variation,
-whereas sparse methods such as BM25 are strong at exact codes, names,
-numbers, and technical terminology. E5~\cite{wang2022e5} motivates the dense
-component in L\_RAG; BM25 supplies a lexical complement when a question uses a
-statutory phrase verbatim. The trade-off is empirical: adding a modality can
-also change candidate ordering, tokenization behavior, and latency.
+whereas sparse methods such as BM25~\cite{robertson2009probabilistic} reward
+exact term overlap and remain strong for document codes, names, numbers, and
+technical terminology. E5~\cite{wang2022e5} motivates the dense component in
+L\_RAG; BM25 supplies a lexical complement when a question uses a statutory
+phrase verbatim. The two methods fail differently, but complementarity does
+not imply that every fusion configuration will improve the final ranking.
+Adding a modality can change candidate ordering, tokenization behavior, and
+latency, so the trade-off must be established empirically.
 
 Reciprocal Rank Fusion (RRF)~\cite{cormack2009reciprocal} combines ranked
 lists without requiring calibrated scores. For a candidate $d$ and retrieval
@@ -115,33 +124,62 @@ effect interpretable as evidence promotion rather than new evidence access.
 
 Citation-grounded generation adds source identifiers or provision references
 to the answer format and asks the generator to abstain when context is
-insufficient. These controls improve inspectability, but a citation marker is
-not the same as claim-to-source entailment. The report consequently treats
-citation presence, structural coverage, and refusal markers as observable
-diagnostics and does not convert them into legal-correctness labels.
+insufficient. Work on attributed generation distinguishes whether citations
+are present from whether they entail the associated claims and collectively
+cover the answer~\cite{gao2023enabling}. These controls improve
+inspectability, but a citation marker is not the same as claim-to-source
+entailment. The report consequently treats citation presence, structural
+coverage, and refusal markers as observable diagnostics and does not convert
+them into legal-correctness labels.
 
 \subsection{Design Requirements for Legal RAG}
 \label{sec:related-requirements}
 
-The related work implies six requirements for a defensible legal RAG
-evaluation:
+The literature above implies six requirements for a defensible legal RAG
+system. Table~\ref{tab:legal-rag-requirements} maps each requirement to an
+implemented L\_RAG design response and to the evaluation evidence used in
+this report. This mapping prevents an architectural feature from being
+presented as a benefit before its effect has been measured.
 
-\begin{enumerate}
-    \item \textbf{Provenance:} every passage must retain document, provision,
-    and chunk identifiers so a result can be inspected;
-    \item \textbf{Context preservation:} hierarchy and reading order must be
-    available without assuming that a single chunk is self-contained;
-    \item \textbf{Validity awareness:} temporal status, authority, and
-    relationship direction must be explicit and auditable;
-    \item \textbf{Controlled comparisons:} each ablation must freeze its
-    benchmark, candidate pool, context budget, and generator conditions;
-    \item \textbf{Separate diagnostics:} retrieval coverage, lexical overlap,
-    abstention, citation structure, and efficiency must not be collapsed into
-    one unsupported quality score; and
-    \item \textbf{Safe interpretation:} automatic metrics must be reported
-    with the missing human labels and must not be presented as legal advice.
-\end{enumerate}
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Legal RAG requirements, corresponding L\_RAG design choices, and
+evaluation checks. Automatic checks diagnose system behavior; they do not
+replace expert assessment of legal correctness.}
+\label{tab:legal-rag-requirements}
+\begin{tabular}{@{}p{0.18\textwidth}p{0.36\textwidth}p{0.36\textwidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{L\_RAG design response} &
+\textbf{Evaluation check} \\
+\midrule
+Traceable provenance & Stable document, provision, and chunk identifiers;
+source markers retained through generation & Gold-ID Recall@$k$/Hit@$k$ and
+citation-marker validity \\
+Context preservation & Metadata-enriched embedding text plus containment and
+reading-order graph edges & Chunk-only versus chunk+metadata ablation and
+seed-preserving/lost-evidence analysis for graph expansion \\
+Legal applicability & Authority and effective-date metadata, validity
+timeline, quarantine, and direction-verification gates & Document-identity
+precision and graph-result audit; semantic validity remains a human-label gap
+\\
+Complementary access & E5 dense retrieval, Vietnamese-tokenized BM25, and RRF
+candidate fusion & Paired DenseOnly versus HybridOnly Recall, MRR, nDCG, and
+latency \\
+Evidence prioritization & Cross-encoder reranking of a shared candidate pool
+before context construction & Candidate Recall@30 ceiling versus final
+Recall/MRR/nDCG@10 and reranker latency \\
+Grounded failure behavior & Evidence-constrained prompting, source markers,
+and explicit insufficient-context response & Answerability decisions,
+citation presence/structure, completion, and latency, reported separately
+from legal correctness \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
-L\_RAG implements these requirements through structured corpus records, the
-G-LRAG overlay, frozen per-question artifacts, and paired analyses. The
-dataset and benchmark that make the requirements testable are described next.
+L\_RAG operationalizes these requirements through structured corpus records,
+the G-LRAG overlay, frozen per-question artifacts, and paired analyses. It also
+makes the remaining evidence gaps explicit: the current automatic checks do
+not validate temporal applicability, claim-level citation entailment, or the
+substantive legal correctness of generated answers. The dataset and benchmark
+that make the implemented checks reproducible are described next.

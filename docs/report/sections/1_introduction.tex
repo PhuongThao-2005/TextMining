@@ -91,20 +91,21 @@ implemented module and a report artifact:
     \item \textbf{Build traceable retrieval units from Vietnamese legal data.}
     Normalize documents into provisions and chunks with stable document,
     provision, and chunk identifiers and retained metadata. Corpus scale and
-    graph integrity are reported in Section~\ref{sec:dataset-benchmark}.
+    graph integrity are reported in Sections~\ref{sec:dataset-construction}
+    and~\ref{sec:dataset-validation}.
 
     \item \textbf{Implement comparable evidence-retrieval paths.} Provide
     dense E5 retrieval, Vietnamese-tokenized BM25 retrieval, Reciprocal Rank
     Fusion (RRF), and graph-based filtering or expansion behind a shared
     pipeline. Their behavior is measured using Recall@$k$, Hit@$k$, MRR@$k$,
-    nDCG@$k$, precision, and latency in Sections~\ref{sec:experimental-setup}--
-    \ref{sec:results}.
+    nDCG@$k$, precision, and latency in
+    Sections~\ref{sec:implementation-setup} and~\ref{sec:ablation-study}.
 
     \item \textbf{Model legal structure and inter-document relations.} Build
     document, provision, and chunk nodes with containment, reading-order, and
     cross-document edges, while retaining provenance and verification gates.
     The schema and traversal role are specified in
-    Sections~\ref{sec:system-overview} and~\ref{sec:kg-schema}.
+    Sections~\ref{sec:system-design} and~\ref{sec:graph-construction}.
 
     \item \textbf{Improve final-context ranking under a fixed evidence
     ceiling.} Compare RRF-only ordering with mMiniLM, Qwen3, BGE, and Jina
@@ -136,7 +137,7 @@ fusion, graph-assisted context selection, cross-encoder reranking, prompt
 construction, citation-grounded generation, and offline evaluation. The
 experimental scope is limited to the available corpus and frozen benchmark,
 the recorded index and graph versions, the tested retrieval budgets, and the
-models and prompts listed in Section~\ref{sec:configurations}.
+    models and prompts documented in Section~\ref{sec:implementation-setup}.
 
 The project does not claim exhaustive coverage of Vietnamese law, real-time
 synchronization with authoritative legal databases, resolution of every
@@ -182,12 +183,13 @@ This work makes five main contributions:
 The report follows a Problem $\rightarrow$ Data $\rightarrow$ Methodology
 $\rightarrow$ Evaluation $\rightarrow$ Discussion progression.
 Section~\ref{sec:related-work} positions the problem within RAG, legal IR,
-hybrid retrieval, and graph-augmented retrieval. Sections~\ref{sec:system-overview}
-and~\ref{sec:dataset-benchmark} describe the L\_RAG architecture, processed
-corpus, graph schema, and QA benchmark. Section~\ref{sec:experimental-setup}
-defines the research questions, metrics, controls, and reproducibility
-protocol. Sections~\ref{sec:ablation-study} and~\ref{sec:results} present the
-four ablation families and their results. Section~\ref{sec:discussion}
-interprets the findings and threats to validity; Section~\ref{sec:limitations}
-states technical and ethical boundaries; and Section~\ref{sec:conclusion}
-summarizes the evidence and identifies future work.
+hybrid retrieval, and graph-augmented retrieval.
+Section~\ref{sec:dataset-construction} describes the processed corpus and QA
+benchmark, while Section~\ref{sec:system-design} presents the L\_RAG
+architecture and methodology. Section~\ref{sec:implementation-setup} defines
+the implementation, metrics, controls, and reproducibility protocol.
+Section~\ref{sec:ablation-study} presents the controlled ablations and their
+results. Section~\ref{sec:discussion-limitations-ethics} interprets the
+findings and states the technical and ethical boundaries, and
+Section~\ref{sec:conclusion-future-work} summarizes the evidence and
+identifies future work.
