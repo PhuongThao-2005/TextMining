@@ -1,0 +1,70 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!80!black,
+    urlcolor=blue!80!black,
+    citecolor=blue!80!black
+}
+
+\title{\textbf{\Large L\_RAG Presentation Slide Modifications Report}}
+\author{\textbf{Text Mining Final Project Presentation Updates}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Summary of Modifications}
+
+This document summarizes the exact updates applied to the presentation deck \texttt{Text\_Mining.pdf} during the current prompt session. All changes align with the official ablation report (\texttt{ablation\_report.pdf}) and incorporate feedback regarding Knowledge Graph schema construction, multi-stage pipeline breakdown, and cross-attention reranking insights.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{lp{3.2cm}p{7.5cm}}
+\toprule
+\textbf{Slide \#} & \textbf{Action} & \textbf{Summary of Change} \\
+\midrule
+Slide 6 & \textbf{INSERTED (NEW)} & \textbf{L\_RAG Pipeline: Stage-by-Stage Processing}: Breaks down the 4 runtime stages (Indexing, KG Overlay Joiner, RRF Fusion \& Rerank, Grounded LLM Gen). \\
+Slide 7 & \textbf{INSERTED (NEW)} & \textbf{G-LRAG Knowledge Graph: Schema \& Construction}: Details node hierarchy (Docs, Provisions, Chunks), edge types, and ingested scale (151k docs, 1.38M provisions, 1.51M chunks). \\
+Slide 14 & \textbf{MODIFIED (UPDATED)} & \textbf{Key Reranker Insight}: Replaced placeholder \textit{"Additional diagnostics"} box with technical cross-attention interaction insight. \\
+\bottomrule
+\end{tabular}
+\caption{Summary table of slide deck modifications.}
+\end{table}
+
+\section*{Detailed Breakdown of New Slides}
+
+\subsection*{1. Slide 6: Stage-by-Stage Pipeline Processing (Inserted after Slide 5)}
+\begin{itemize}
+    \item \textbf{Stage 1 (Indexing):} Metadata enrichment (\texttt{Title $\parallel$ Header $\parallel$ Passage}) + \texttt{underthesea} BM25 term tokenization.
+    \item \textbf{Stage 2 (KG Overlay):} Dynamic \texttt{id\_str\_filter} validity masking + 1-hop \texttt{CHUNK\_NEXT} reading-order expansion.
+    \item \textbf{Stage 3 (Fusion \& Rerank):} RRF ($k=60$) candidate fusion ($K=30$) + GPU load-run-unload Cross-Encoder reranking ($N=10$).
+    \item \textbf{Stage 4 (Generation):} \texttt{gpt-4o-mini} ($T=0.0$) with statutory citation grounding and \texttt{INSUFFICIENT\_CONTEXT} abstention.
+\end{itemize}
+
+\subsection*{2. Slide 7: Knowledge Graph Schema and Construction (Inserted after Slide 6)}
+\begin{itemize}
+    \item \textbf{Graph Node Hierarchy:} Formalizes Document ($D$), Provision ($P$), and Chunk ($C$) entity nodes.
+    \item \textbf{Edge Schema:} Distinguishes Structural edges (\texttt{DOC\_HAS\_PROVISION}, \texttt{PROVISION\_HAS\_CHUNK}, \texttt{CHUNK\_NEXT}, \texttt{PROVISION\_NEXT}) from Legal Relations (amend, replace, cite, repeal).
+    \item \textbf{Ingested Scale Table:} Embeds the formal corpus statistics table (151,624 Documents, 1,386,267 Provisions, 1,513,376 Chunks, and 883,256 Document Edges).
+    \item \textbf{Validity Rule:} Highlights dynamic \texttt{as\_of\_date} whitelisting and quarantining of unverified records.
+\end{itemize}
+
+\section*{Detail of Slide Update (Slide 14)}
+Replaced the low-priority placeholder \textit{"Additional diagnostics"} box with the core technical justification:
+\begin{quote}
+\textit{“Rerankers jointly score each query–candidate pair, capturing richer cross-attention interactions than comparing separately encoded query and document vectors.”}
+\end{quote}
+
+\section*{Verification and Compilation}
+The updated slide source file \texttt{docs/slide/Text\_Mining.tex} was recompiled cleanly using \texttt{xelatex}. The total slide count expanded from 19 to 21 slides without modifying any existing subsequent slides.
+
+\end{document}
