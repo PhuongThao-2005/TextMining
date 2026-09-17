@@ -1,159 +1,97 @@
 % ==============================================================
-%  Section 4: Dataset and Benchmark
+% Section 4: Dataset and Benchmark
 % ==============================================================
 \section{Dataset and Benchmark}
 
-\begin{frame}{Vietnamese Legal Corpus at a Glance}
-\small
-\centering
-\begin{tabular}{lr}
-\toprule
-\textbf{Entity} & \textbf{Count} \\
-\midrule
-Legal documents & 151,624 \\
-Hierarchical provisions & 1,386,267 \\
-Retrieval chunks & 1,513,376 \\
-Document relationships & 883,256 \\
-External referenced stubs & 19,763 \\
-\bottomrule
-\end{tabular}
-\vspace{0.35cm}
-\begin{block}{Corpus coverage}
-The collection includes National Assembly laws, Government decrees, Prime Minister decisions, and ministry circulars.
-\end{block}
-\vspace{0.15cm}
-Each chunk retains document identity, provision identity, title, issuing authority, effective date, and provenance for retrieval and citation.
-\end{frame}
-
-\begin{frame}{Corpus Preparation Pipeline}
-\centering
-\includegraphics[width=0.96\linewidth]{imgs/Data_pipeline.png}
-\vspace{0.1cm}
-
+\begin{frame}{Dataset \& Benchmark: Evaluation Substrate}
 \scriptsize
-Raw metadata, relationships, and HTML content are normalized, structured into legal units, enriched with overlays, and exported for vector and graph indexing.
-\end{frame}
-
-\begin{frame}{Document and Chunk Characteristics}
-\begin{columns}[T]
-  \column{0.50\textwidth}
-    \centering
-    \includegraphics[width=\linewidth,height=0.43\textheight,keepaspectratio]{imgs/document_type.png}
-    \scriptsize Document-type distribution
-  \column{0.50\textwidth}
-    \centering
-    \includegraphics[width=\linewidth,height=0.43\textheight,keepaspectratio]{imgs/Chunk.png}
-    \scriptsize Chunk-length distribution
-\end{columns}
-\vspace{0.15cm}
-\begin{block}{Chunk design}
-The processed corpus contains 1.51M structural retrieval chunks. Chunk text is enriched with document title and provision header before embedding.
-\end{block}
-\end{frame}
-
-\begin{frame}{Knowledge Graph Schema}
-\small
-\begin{columns}[T]
-  \column{0.42\textwidth}
-    \textbf{Node types}
-    \begin{itemize}
-      \item \textbf{Document}: authority, issuer, effective date, validity.
-      \item \textbf{Provision}: article/clause header and unit type.
-      \item \textbf{Chunk}: retrieval text and sequence number.
-      \item \textbf{External stub}: referenced entity outside the corpus.
-    \end{itemize}
-  \column{0.55\textwidth}
-    \textbf{Edge types}
-    \begin{itemize}
-      \item Containment: document $\rightarrow$ provision $\rightarrow$ chunk.
-      \item Reading order: \texttt{CHUNK\_NEXT}, \texttt{PROVISION\_NEXT}.
-      \item Legal dependencies: \texttt{AMENDS}, \texttt{REPLACES}, \texttt{CITES}.
-      \item Only verified directions may be traversed.
-    \end{itemize}
-\end{columns}
-\vspace{0.15cm}
-\begin{alertblock}{Integrity gating}
-Quarantined records and unverified edge directions are excluded from trusted traversal to reduce graph poisoning.
-\end{alertblock}
-\end{frame}
-
-\begin{frame}{500-Query Legal QA Benchmark}
-\scriptsize
-\begin{columns}[T]
-  \column{0.48\textwidth}
-    \begin{block}{Answerability}
-      \textbf{400 answerable} + \textbf{100 unanswerable}. The latter test abstention when corpus evidence is absent.
-    \end{block}
-    \textbf{Answer types:} abstractive, boolean, extractive, and unanswerable.
-  \column{0.49\textwidth}
-    \begin{block}{Question categories}
+\begin{columns}[T,onlytextwidth]
+  \column{0.47\textwidth}
+    \begin{block}{Vietnamese legal corpus}
+      \centering
       \begin{tabular}{lr}
-      Single-hop & 265 \\
-      Citation & 106 \\
-      Legal validity & 96 \\
-      Multi-hop & 21 \\
-      Cross-document & 12
+        \toprule
+        \textbf{Entity} & \textbf{Count} \\
+        \midrule
+        Legal documents & 151,624 \\
+        Hierarchical provisions & 1,386,267 \\
+        Retrieval chunks & 1,513,376 \\
+        Document relationships & 883,256 \\
+        External referenced stubs & 19,763 \\
+        \bottomrule
       \end{tabular}
     \end{block}
+    \vspace{0.08cm}
+    Laws, decrees, decisions, and circulars are normalized into citation-ready chunks retaining document, provision, authority, date, and provenance metadata.
 
-    \textbf{Generation model:} \texttt{gemini-3.1-flash-lite}
-
+  \column{0.49\textwidth}
+    \begin{block}{500-query legal QA benchmark}
+      \textbf{Answerability:} 400 answerable + 100 unanswerable\\[0.05cm]
+      \textbf{Answer types:} abstractive, boolean, extractive, unanswerable\\[0.05cm]
+      \begin{tabular}{lr}
+        Single-hop & 265 \\
+        Citation & 106 \\
+        Legal validity & 96 \\
+        Multi-hop & 21 \\
+        Cross-document & 12
+      \end{tabular}
+    \end{block}
+    \vspace{0.08cm}
+    Generated from 3--5-provision bundles, independently verified, diversity-filtered, and deduplicated; verifier pass rate: \textbf{72.41\%}.
 \end{columns}
-\vspace{0.15cm}
-\begin{block}{Grounded QA construction}
-\scriptsize
-Bundles of 3--5 provisions $\rightarrow$ generate with Gemini $\rightarrow$ independently verify correctness, evidence sufficiency, hallucination, category, and difficulty $\rightarrow$ diversity filter and deduplicate. Sampled: 515 documents / 1,697 provisions; verifier pass rate: \textbf{72.41\%}.
+
+\vspace{-0.02cm}
+\begin{block}{Evaluation contract}
+Each query stores a reference answer and gold document/provision/chunk IDs. Retrieval uses Recall, Hit, MRR, nDCG, and Precision; generation uses Exact Match, F1/ROUGE-L, answerability, and citation coverage.
 \end{block}
 \end{frame}
 
-\begin{frame}{Ground Truth and Evaluation Contract}
-\scriptsize
-
-Each benchmark query stores metadata, a reference answer, and evidence provenance:
-
-\[
-Q_i =
-\{
-\texttt{qa\_id},
-\texttt{question},
-\texttt{category},
-\texttt{answer\_type},
-\texttt{reference\_answer},
-\texttt{ground\_truth}
-\}
-\]
-
-\[
-G_i =
-\{
-\texttt{document\_ids},
-\texttt{provision\_ids},
-\texttt{chunk\_ids}
-\}
-\]
-\vspace{-0.5em}
-\begin{columns}[T]
+\begin{frame}{Evaluation Metrics: Quality, Evidence \& Cost}
+\tiny
+\setlength{\itemsep}{0.02cm}
+\begin{columns}[T,onlytextwidth]
   \column{0.48\textwidth}
-    \begin{block}{Retrieval metrics}
+    \begin{block}{Primary answer metrics}
       \begin{itemize}
-        \item Recall@$k$ and Hit@$k$
-        \item MRR@$k$ and nDCG@$k$
-        \item Precision@$k$
+        \item \textbf{Exact Match (EM):} normalized prediction equals normalized reference:
+        \(\mathrm{EM}_i=\mathbf{1}[y_i=r_i]\).
+        \item \textbf{Token F1:} with multiset overlap \(O\),
+        \(P=O/L_y\), \(R=O/L_r\), and
+        \(F_1=2PR/(P+R)\).
+        \item \textbf{ROUGE-L:} the same F-score using the token-level longest
+        common subsequence (LCS).
+        \item \textbf{Paired delta:}
+        \(\Delta_i(m)=m_{\mathrm{CoT},i}-m_{\mathrm{Base},i}\);
+        averaged over shared valid \texttt{qa\_id}s with a paired-bootstrap
+        95\% CI.
       \end{itemize}
     \end{block}
-  \column{0.48\textwidth}
+    \vspace{0.04cm}
+    \emph{Scope:} lexical metrics use successful answerable outputs; paired
+    statistics use only IDs valid in both runs.
 
-    \begin{block}{Generation diagnostics}
+  \column{0.49\textwidth}
+    \begin{block}{Additional diagnostics}
       \begin{itemize}
-        \item Exact Match
-        \item Token F1 and ROUGE-L
-        \item Answerability decision
-        \item Citation presence / source coverage
+        \item \textbf{Context Recall@$k$:}
+        \(\lvert G\cap R_k\rvert/\lvert G\rvert\), the fraction of gold chunks
+        retrieved.
+        \item \textbf{Decision accuracy:} correct answer/refuse decisions
+        divided by scheduled rows (500) or valid rows.
+        \item \textbf{Citation presence:} successful answerable answers with a
+        marker divided by successful answerable answers.
+        \item \textbf{Structural coverage:} mean share of scored factual
+        sentences carrying a marker.
+        \item \textbf{Invalid markers:} invalid markers divided by all markers.
+        \item \textbf{Completion:} successful rows / scheduled rows.
+        \textbf{Latency:} mean, p50, and p95; milliseconds / 1000 = seconds.
       \end{itemize}
     \end{block}
 \end{columns}
-\vspace{0.15cm}
-\centering
-\hi{Retrieval metrics use gold chunk IDs on the 400 answerable questions; unanswerable questions have empty evidence sets.}
-
+\vspace{0.04cm}
+\begin{alertblock}{Interpretation boundary}
+These are automatic overlap, abstention, citation-structure, and efficiency
+diagnostics---not human judgments of legal correctness, citation entailment, or
+reasoning quality.
+\end{alertblock}
 \end{frame}

@@ -4,8 +4,7 @@
 \section{Ablation Studies}
 \label{sec:ablation-study}
 
-This chapter follows the ablation plan in
-\texttt{report\_structure.md}. We report five completed ablation analyses
+We report five completed ablation analyses
 grouped into four run families: embedding text; dense, hybrid, and graph
 retrieval as one joint retrieval/graph family; reranking; and generator
 prompting. Comparisons are made within a family because candidate
@@ -18,13 +17,21 @@ the results are not treated as one pooled factorial experiment.
 This comparison holds the dense encoder, generator, benchmark, seed, and raw
 FAISS evaluation path fixed. Only the indexed text changes from the chunk body
 to a header-plus-chunk representation. On 400 paired answerable questions,
-metadata leaves exact chunk Recall@10 effectively unchanged (48.5\% versus
-48.5\%) but increases document-level success from 65.8\% to 70.2\%. The
-paired document-success gain is +4.5 percentage points (95\% CI
-[+0.5,+8.8]), whereas the MRR@10 change is $-5.9$ points (95\% CI
-[$-9.1,-2.7$]). Metadata therefore improves document identification while
-making the first exact gold chunk appear later; the complete scores are in
-\hyperref[tab:embedding-results]{Table~\ref*{tab:embedding-results}} and the
+exact chunk Recall@10 is effectively unchanged: both variants round to
+48.5\%, with an unrounded metadata-minus-chunk-only difference of only
++0.08 percentage points (reported as +0.1 pp in
+\hyperref[tab:embedding-results]{Table~\ref*{tab:embedding-results}}).
+Metadata nevertheless increases document-level success at rank 10 from
+65.8\% to 70.2\%, a paired gain of +4.5 pp (95\% CI [+0.5,+8.8]), while
+MRR@10 decreases by 5.9 pp (95\% CI [$-9.1,-2.7$]).
+
+Because the metadata representation includes both document titles and
+provision headers, we additionally report provision-level success. At rank
+10, provision success is 53.8\% for chunk-only retrieval and 53.5\% for
+chunk+metadata, a negligible $-0.25$ pp difference (95\% CI
+[$-5.0,+4.5$]). At rank 5, provision success decreases from 44.3\% to
+40.3\%. Thus, the observed metadata gain is concentrated at document
+discovery rather than provision identification or exact chunk ranking. The
 retrieval curves and paired outcomes are shown in
 \hyperref[fig:embedding-ablation]{Figure~\ref*{fig:embedding-ablation}}.
 
@@ -43,20 +50,23 @@ counts. Both plots use the shared answerable-question comparison.}
 \centering
 \scriptsize
 \caption{Embedding-text ablation on 400 paired answerable questions. Values
-are percentages; document success means that a retrieved chunk from the gold
-document is present in the indicated context. Deltas are chunk+metadata minus
-chunk-only.}
+are percentages. Document and provision success denote retrieval of at least one
+chunk from a gold document or gold provision, respectively. Deltas are
+chunk+metadata minus chunk-only. Recall@10 values in the two rows both round
+to 48.5\%; the unrounded difference is +0.08 pp.}
 \label{tab:embedding-results}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrrrrrr}
+\begin{tabular}{lrrrrrrrrrr}
 \toprule
 \textbf{Variant} & \textbf{Hit@5} & \textbf{Recall@5} & \textbf{MRR@5} &
-\textbf{Doc.@5} & \textbf{Hit@10} & \textbf{Recall@10} &
-\textbf{MRR@10} & \textbf{Doc.@10} \\
+\textbf{Doc@5} & \textbf{Prov@5} & \textbf{Hit@10} &
+\textbf{Recall@10} & \textbf{MRR@10} & \textbf{Doc@10} &
+\textbf{Prov@10} \\
 \midrule
-Chunk-only & 44.0 & 39.0 & 27.4 & 59.0 & 53.5 & 48.5 & 28.6 & 65.8 \\
-Chunk+metadata & 40.2 & 36.8 & 20.9 & 61.8 & 53.2 & 48.5 & 22.7 & 70.2 \\
-Delta & $-3.8$ & $-2.2$ & $-6.5$ & $+2.8$ & $-0.2$ & $+0.1$ & $-5.9$ & $+4.5$ \\
+Chunk-only & 44.0 & 39.0 & 27.4 & 59.0 & 44.3 & 53.5 & 48.5 & 28.6 & 65.8 & 53.8 \\
+Chunk+metadata & 40.2 & 36.8 & 20.9 & 61.8 & 40.3 & 53.2 & 48.5 & 22.7 & 70.2 & 53.5 \\
+Delta & $-3.8$ & $-2.2$ & $-6.5$ & $+2.8$ & $-4.0$ & $-0.2$ &
+$+0.1$ & $-5.9$ & $+4.5$ & $-0.3$ \\
 \bottomrule
 \end{tabular}%
 }
@@ -486,11 +496,14 @@ safety.
 \subsection{Performance by Question Category and Answer Type}
 \label{sec:breakdown-analysis}
 
-The largest Jina gains occur for legal-validity and citation questions, while
-the smaller extractive slice is inconclusive. The multi-hop slice has only 20
-questions and is exploratory; hard and cross-document slices are too small for
-a main conclusion. The table reports Jina versus RRF-only deltas on answerable
-cases with 2,000 paired-bootstrap resamples; see
+This subgroup analysis is restricted to the 400 answerable questions and
+compares Jina against RRF-only within the shared reranker candidate pool.
+Consequently, the slice counts differ from the full benchmark inventory in
+Section~\ref{sec:question-taxonomy}, which also includes 100 unanswerable
+questions. The largest observed gains occur for legal-validity and citation
+questions. The extractive and multi-hop slices have wider intervals, and the
+cross-document and hard subsets are too small for stable subgroup estimates.
+The reported intervals use 2,000 paired-bootstrap resamples; see
 \hyperref[tab:jina-slices]{Table~\ref*{tab:jina-slices}}.
 
 \subsection{Evidence Coverage, Abstention, and Citation Analysis}
@@ -622,21 +635,23 @@ noted; reranker p95 was not recorded. Cached BM25 means reranker rows are not
 full-online sparse-latency measurements.}
 \label{tab:latency-results}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrl}
+\begin{tabular}{llll}
 \toprule
-\textbf{Configuration} & \textbf{Stage p50/p95} & \textbf{Total p50/p95} &
-\textbf{Stage} \\
+\textbf{Configuration} & \textbf{Stage p50/p95} &
+\textbf{Total p50/p95} & \textbf{Measurement scope} \\
 \midrule
-DenseOnly & 0.797/0.856 & 5.483/9.946 & retrieval \\
-HybridOnly & 27.855/27.924 & 31.538/33.623 & retrieval \\
-DenseGraph & 0.798/0.860 & 4.998/9.750 & retrieval + graph \\
-HybridGraph & 27.858/27.929 & 31.180/33.312 & retrieval + graph \\
-GPT-4o-mini Base & 2.92/5.74 & 13.99/17.21 & generation \\
-GPT-4o-mini CoT & 3.68/6.17 & 14.74/18.42 & generation \\
-mMiniLM & 0.385/N/A & 3.343/N/A & reranker \\
-Qwen3 & 9.695/N/A & 13.007/N/A & reranker \\
-BGE & 2.872/N/A & 5.848/N/A & reranker \\
-Jina & 1.278/N/A & 4.158/N/A & reranker \\
+DenseOnly & 0.797/0.856 & 5.483/9.946 & measured retrieval + total \\
+DenseGraph & 0.798/0.860 & 4.998/9.750 & measured retrieval/graph + total \\
+HybridOnly & 27.855/27.924 & 31.538/33.623 & measured + amortized BM25 batch cost \\
+HybridGraph & 27.858/27.929 & 31.180/33.312 & measured + amortized BM25 batch cost \\
+\midrule
+mMiniLM & 0.385/N/A & 3.343/N/A & cached candidate-pool reranking \\
+Jina & 1.278/N/A & 4.158/N/A & cached candidate-pool reranking \\
+BGE & 2.872/N/A & 5.848/N/A & cached candidate-pool reranking \\
+Qwen3 & 9.695/N/A & 13.007/N/A & cached candidate-pool reranking \\
+\midrule
+GPT-4o-mini Base & 2.92/5.74 & 13.99/17.21 & fixed-context generation \\
+GPT-4o-mini CoT & 3.68/6.17 & 14.74/18.42 & fixed-context generation \\
 \bottomrule
 \end{tabular}%
 }
