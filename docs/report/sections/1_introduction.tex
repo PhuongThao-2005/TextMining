@@ -1,54 +1,156 @@
 % ============================================================================
-% Section 1: Introduction scaffold
+% Section 1: Introduction
 % ============================================================================
 \section{Introduction}
 \label{sec:introduction}
 
-\textit{Guidance: Introduce the Vietnamese legal QA problem, motivate
-traceable evidence, and preview the report contributions. Keep this chapter
-focused on why the problem matters; reserve implementation details for
-Sections~\ref{sec:system-design} and~\ref{sec:implementation-setup}.}
+Legal information systems must do more than return text that appears related
+to a question. A useful answer must be grounded in an authoritative
+provision, retain the qualifiers and exceptions that shape its meaning, and
+respect the provision's temporal status. These requirements are especially
+demanding for Vietnamese legal corpora, where a citizen's everyday wording may
+differ sharply from statutory language and where an answer can depend on a
+provision's place in a legal hierarchy. This report combines the system,
+dataset, protocol, and ablation evidence into one traceable account of
+L\_RAG.
 
 \subsection{Background and Motivation}
 \label{sec:intro-motivation}
 
-\textit{Guidance: Add a motivating Vietnamese legal question, the governing
-provision, and an explanation of why a cited answer is required. Include the
-planned motivation figure and the keyword-search versus vector-RAG versus
-L\_RAG contrast.}
+Retrieval-Augmented Generation (RAG) gives a language model access to
+external evidence rather than relying solely on model parameters. In a legal
+setting, however, a semantically similar passage is not automatically the
+governing rule. A retrieved answer may omit an exception, point to a repealed
+instrument, or cite a document without identifying the article and clause
+that support the conclusion. The system therefore needs to balance semantic
+matching, exact terminology, document structure, and evidence ordering before
+generation begins.
+
+For example, a Vietnamese question about whether a land-use transaction is
+permitted may use everyday wording, while the controlling provision uses a
+formal land category, an effective date, and a cross-reference to another
+article. A keyword-only search can miss the paraphrase; a vector-only search
+can retrieve a broad discussion; and a generator without source constraints
+can produce a fluent but unsupported explanation. L\_RAG treats the answer as
+an evidence assembly problem: identify the source document, recover the
+relevant provision and neighboring context, rank the available chunks, and
+show the citations used to form the response.
 
 \subsection{Problem Statement}
 \label{sec:problem-statement}
 
-\textit{Guidance: State the failure modes to be addressed: long documents,
-hierarchy blindness, cross-document references, outdated provisions, missing
-text, and unsupported answers. Add the problem-to-consequence table.}
+The study addresses five recurring failure modes in legal RAG:
+
+\begin{enumerate}
+    \item \textbf{Vocabulary mismatch.} Users describe a legal problem in
+    everyday Vietnamese, whereas statutes use formal terms, identifiers, and
+    numeric thresholds. Dense retrieval helps with paraphrase, while lexical
+    retrieval can preserve exact legal terminology.
+    \item \textbf{Lost statutory context.} Laws are hierarchical---from a
+    legal instrument to chapters, articles, clauses, and items. Fixed-size
+    chunks can separate a rule from its scope, definition, or exception.
+    \item \textbf{Cross-document dependencies.} Provisions can cite, amend,
+    replace, or repeal one another. A relevant answer may require a relation
+    edge in addition to a similar passage.
+    \item \textbf{Temporal and authority errors.} Semantic similarity does
+    not determine whether an instrument was effective at the requested date or
+    whether a lower-authority rule has been superseded.
+    \item \textbf{Unsupported answers.} A model can answer confidently when
+    the retrieved context is incomplete. Citation markers and refusal strings
+    must be measured separately from legal correctness.
+\end{enumerate}
+
+L\_RAG combines dense and sparse retrieval with a graph overlay, a shared
+candidate-pool reranker, and citation-oriented prompting. The central
+question is not whether every component is plausible in isolation, but which
+components improve the evidence available to the generator under a controlled
+evaluation protocol.
 
 \subsection{Project Objectives}
 \label{sec:objectives}
 
-\textit{Guidance: List measurable objectives and map each objective to an
-implemented module, source file or script, and validation evidence. Add the
-contribution map.}
+The project has four operational objectives:
+
+\begin{itemize}
+    \item build an end-to-end Vietnamese legal RAG pipeline using dense E5
+    retrieval, BM25, reciprocal-rank fusion (RRF), graph expansion,
+    reranking, and citation-grounded generation;
+    \item represent legal hierarchy, reading order, and document relationships
+    in a query-time knowledge-graph overlay;
+    \item compare embedding text, retrieval mode, graph policy, reranker, and
+    generator prompt choices with question-level pairing; and
+    \item evaluate retrieval, answer-overlap, abstention, citation-structure,
+    and latency behavior on a 500-question Vietnamese legal benchmark.
+\end{itemize}
+
+Each objective has an observable artifact. The corpus and benchmark are
+described in Section~\ref{sec:dataset-construction}; the online and offline
+modules are specified in Section~\ref{sec:system-design}; frozen manifests
+and metric definitions are given in Section~\ref{sec:implementation-setup};
+and the five completed comparisons, with inline links to their evidence, are
+reported in Section~\ref{sec:ablation-study}.
 
 \subsection{Scope of the System}
 \label{sec:scope}
 
-\textit{Guidance: Define the included corpus, preprocessing, graph, retrieval,
-generation, and evaluation stages. Explicitly list excluded capabilities and
-the assumptions that limit deployment.}
+The evaluated scope includes Vietnamese legal-document ingestion,
+normalization, provision and chunk construction, relationship processing,
+vector and BM25 indexing, graph-based filtering or expansion, candidate
+reranking, prompt serialization, generation, and post-hoc scoring. The
+benchmark uses stored question IDs, reference answers, and gold document,
+provision, and chunk identifiers. The report consequently evaluates a frozen
+research pipeline and its saved outputs rather than a live legal service.
+
+The scope excludes autonomous legal advice, formal legal interpretation,
+claim-level citation-entailment verification, expert adjudication of legal
+correctness, and guaranteed coverage of every current external instrument.
+The corpus is a snapshot; unresolved external references are represented as
+stubs, and graph direction or validity metadata can require further review.
+The generator is instructed to abstain on insufficient context, but an
+abstention marker is only an observable output diagnostic. These boundaries
+are part of the system definition, not post-hoc qualifications.
 
 \subsection{Main Contributions}
 \label{sec:contributions}
 
-\textit{Guidance: Summarize the structured legal corpus, G-LRAG graph,
-hybrid retrieval pipeline, citation-grounded generation, and controlled
-ablation study. Use one contribution overview figure.}
+This report contributes a controlled empirical account of L\_RAG rather than
+an unqualified claim of legal reliability:
+
+\begin{enumerate}
+    \item a structured Vietnamese legal corpus that preserves document,
+    provision, chunk, metadata, and relationship provenance;
+    \item a G-LRAG graph overlay for containment, reading order, legal
+    relations, authority, and validity-aware query filtering;
+    \item an end-to-end retrieval and generation pipeline combining E5 dense
+    retrieval, optional BM25/RRF, graph expansion, cross-encoder reranking,
+    and cited output formatting; and
+    \item five paired ablation families that distinguish document discovery
+    from exact evidence ranking, isolate graph and reranker effects, and
+    separate observable prompt behavior from legal correctness.
+\end{enumerate}
+
+The most important methodological contribution is the separation of evidence
+availability, answer overlap, refusal behavior, citation structure, and
+efficiency. A component is not called an improvement merely because one
+aggregate score increases: candidate ceilings, denominators, pairing, and
+claim boundaries are reported alongside every headline result.
 
 \subsection{Report Organization}
 \label{sec:report-organization}
 
-\textit{Guidance: Explain the Problem $\rightarrow$ Data $\rightarrow$
-Methodology $\rightarrow$ Implementation $\rightarrow$ Evaluation
-$\rightarrow$ Ablations $\rightarrow$ Discussion $\rightarrow$ Conclusion
-flow and add the report-roadmap figure.}
+The report follows a Problem $\rightarrow$ Data $\rightarrow$ Methodology
+$\rightarrow$ Implementation $\rightarrow$ Ablations $\rightarrow$
+Discussion $\rightarrow$ Conclusion flow. Section~\ref{sec:related-work}
+reviews RAG, legal information retrieval, hybrid ranking, GraphRAG, and
+evidence-grounded generation. Section~\ref{sec:dataset-construction}
+describes the corpus, graph-ready records, benchmark construction, and gold
+evidence. Section~\ref{sec:system-design} turns those data products into the
+L\_RAG architecture and query workflow. Section~\ref{sec:implementation-setup}
+defines frozen artifacts, metrics, pairing, uncertainty, and configurations.
+Section~\ref{sec:ablation-study} reports the five controlled families with
+clickable table and figure references in the result sentences.
+Section~\ref{sec:discussion-limitations-ethics} interprets trade-offs and
+sets safety boundaries, while Section~\ref{sec:conclusion-future-work}
+summarizes the evidence and prioritizes follow-up experiments. Appendices
+record schemas, examples, configuration details, observable prompt formats,
+and artifact pointers.

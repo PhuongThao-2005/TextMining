@@ -1,49 +1,147 @@
 % ============================================================================
-% Section 2: Background and Related Work scaffold
+% Section 2: Background and Related Work
 % ============================================================================
 \section{Background and Related Work}
 \label{sec:related-work}
 
-\textit{Guidance: Replace these prompts with a focused literature review.
-Explain which prior ideas motivate each L\_RAG design choice and identify the
-gap addressed by the controlled ablations.}
+This section positions L\_RAG at the intersection of retrieval-augmented
+generation, legal information retrieval, hybrid ranking, knowledge-graph
+retrieval, and citation-grounded generation. The purpose is not to claim that
+one paradigm solves legal QA by itself, but to make explicit which prior
+ideas motivate each component and why the report tests them separately.
 
 \subsection{Retrieval-Augmented Generation}
 \label{sec:related-rag}
 
-\textit{Guidance: Define the standard query, retriever, context, prompt, LLM,
-and answer pipeline. Add a standard RAG diagram and a grounding illustration.}
+Retrieval-Augmented Generation (RAG)~\cite{lewis2020retrieval} supplements a
+language model's parameters with documents retrieved at query time. A
+standard pipeline embeds a query, retrieves passages from an indexed corpus,
+serializes the top passages into a prompt, and asks a generator to produce an
+answer. The external context can reduce dependence on stale parametric
+knowledge and gives a user sources to inspect, but it does not guarantee that
+the selected passages are sufficient or that the generated claims follow from
+them.
+
+The basic RAG abstraction is useful for L\_RAG because it separates three
+possible failure locations: the retriever can miss the governing passage, the
+context builder can omit its parent or exception, and the generator can fail
+to use or cite the evidence. Advanced methods such as Self-RAG~\cite{asai2023self}
+and Corrective RAG~\cite{yan2024corrective} add self-reflection or retrieval
+correction. They motivate measuring evidence availability and abstention, but
+they do not by themselves encode the formal hierarchy, amendment history, or
+temporal validity of Vietnamese legal instruments.
 
 \subsection{Legal Information Retrieval}
 \label{sec:related-legal-ir}
 
-\textit{Guidance: Discuss authority, hierarchy, temporal validity, citation
-dependencies, and the cost of retrieval errors in legal settings. Add the
-legal-document hierarchy and a legal retrieval example.}
+Legal Information Retrieval (Legal IR) is a specialized area of information
+retrieval and legal informatics~\cite{locke2022legal}. Legal texts differ from
+open-domain documents in ways that change both indexing and evaluation:
+
+\begin{enumerate}
+    \item \textbf{Hierarchical structure.} An instrument is organized into
+    parts, chapters, articles, clauses, and items. The meaning of a chunk can
+    depend on its parent heading or a neighboring exception.
+    \item \textbf{Precision requirements.} A missing qualifier, number, or
+    negation can change the interpretation of a rule even when the retrieved
+    paragraph is topically correct.
+    \item \textbf{Authority and validity.} The Constitution, laws, decrees,
+    decisions, and circulars occupy different authority levels, and the
+    applicable instrument depends on effective dates and amendment status.
+    \item \textbf{Explicit dependencies.} A provision may cite, amend,
+    replace, or repeal another instrument. These relationships are evidence
+    about context, not ordinary lexical similarity.
+\end{enumerate}
+
+Legal-BERT~\cite{chalkidis2020legal_bert} and Lawformer~\cite{xiao2021lawformer}
+show how domain-adapted transformers can represent legal language. Such
+encoders improve semantic matching, but a vector alone does not state whether
+an article is current, whether a reference is authoritative, or which sibling
+chunk supplies a missing exception. L\_RAG therefore retains structured
+identifiers and graph relations alongside the embedded text.
 
 \subsection{Dense, Sparse, and Hybrid Retrieval}
 \label{sec:related-hybrid}
 
-\textit{Guidance: Compare dense retrieval, BM25, and rank fusion. Add the
-retrieval comparison table and a vocabulary-mismatch example.}
+Dense bi-encoders are effective for paraphrase and vocabulary variation,
+whereas sparse methods such as BM25 are strong at exact codes, names,
+numbers, and technical terminology. E5~\cite{wang2022e5} motivates the dense
+component in L\_RAG; BM25 supplies a lexical complement when a question uses a
+statutory phrase verbatim. The trade-off is empirical: adding a modality can
+also change candidate ordering, tokenization behavior, and latency.
+
+Reciprocal Rank Fusion (RRF)~\cite{cormack2009reciprocal} combines ranked
+lists without requiring calibrated scores. For a candidate $d$ and retrieval
+systems $m \in M$,
+\begin{equation}
+    \operatorname{RRF}(d)=\sum_{m\in M}\frac{1}{k+r_m(d)},
+\end{equation}
+where $r_m(d)$ is the rank assigned by system $m$ and $k$ is a smoothing
+constant. L\_RAG uses $k=60$ in its RRF configurations. Because fusion can
+help one query while harming another, the ablation reports paired recall,
+rank, and latency deltas rather than assuming that hybrid retrieval is an
+unconditional improvement.
 
 \subsection{Knowledge-Graph-Augmented Retrieval}
 \label{sec:related-graph}
 
-\textit{Guidance: Explain how graph structure supplies containment,
-neighboring, citation, amendment, and validity context. Add a graph-retrieval
-illustration and a vector-versus-graph comparison table.}
+Knowledge graphs represent entities and explicit relationships as triples
+$(e_1,r,e_2)$. GraphRAG~\cite{edge2024graphrag} shows how graph structure can
+support query-focused retrieval and multi-hop context. In a legal corpus, a
+graph can connect a document to its provisions, a provision to its chunks,
+adjacent chunks in reading order, and one instrument to another through
+citation, amendment, replacement, or repeal edges.
+
+This structure can restore context that a fixed-size vector chunk omits. It
+also introduces failure modes that do not occur in a simple vector index:
+incorrect edge direction, stale validity fields, and a traversal policy that
+replaces high-confidence seeds under a fixed context budget. L\_RAG's G-LRAG
+overlay therefore applies validity and authority filters at query time and
+tests one-hop expansion as a distinct ablation. The graph result is
+interpreted as evidence about the tested policy, not about graph retrieval in
+general.
 
 \subsection{Reranking and Citation-Grounded Generation}
 \label{sec:related-reranking}
 
-\textit{Guidance: Introduce candidate reranking, cross-encoders, citation
-grounding, and abstention. Add the two-stage ranking and citation-grounding
-illustrations.}
+Cross-encoder rerankers score the query and candidate passage jointly rather
+than comparing two independently encoded vectors. Passage reranking with
+BERT~\cite{nogueira2019passage} motivates this second-stage design: it can
+improve the order of evidence at the cost of additional inference time. L\_RAG
+compares multilingual backends including BGE-Reranker-v2-m3~\cite{chen2024bge},
+Jina Reranker v2~\cite{jina2024jina}, and Qwen3 Reranker~\cite{qwen2025qwen3}
+over a shared 30-candidate pool. Holding the pool fixed makes a positive
+effect interpretable as evidence promotion rather than new evidence access.
+
+Citation-grounded generation adds source identifiers or provision references
+to the answer format and asks the generator to abstain when context is
+insufficient. These controls improve inspectability, but a citation marker is
+not the same as claim-to-source entailment. The report consequently treats
+citation presence, structural coverage, and refusal markers as observable
+diagnostics and does not convert them into legal-correctness labels.
 
 \subsection{Design Requirements for Legal RAG}
 \label{sec:related-requirements}
 
-\textit{Guidance: Convert legal reliability requirements into design choices
-and evaluation checks. Add a requirement traceability matrix and design
-rationale diagram.}
+The related work implies six requirements for a defensible legal RAG
+evaluation:
+
+\begin{enumerate}
+    \item \textbf{Provenance:} every passage must retain document, provision,
+    and chunk identifiers so a result can be inspected;
+    \item \textbf{Context preservation:} hierarchy and reading order must be
+    available without assuming that a single chunk is self-contained;
+    \item \textbf{Validity awareness:} temporal status, authority, and
+    relationship direction must be explicit and auditable;
+    \item \textbf{Controlled comparisons:} each ablation must freeze its
+    benchmark, candidate pool, context budget, and generator conditions;
+    \item \textbf{Separate diagnostics:} retrieval coverage, lexical overlap,
+    abstention, citation structure, and efficiency must not be collapsed into
+    one unsupported quality score; and
+    \item \textbf{Safe interpretation:} automatic metrics must be reported
+    with the missing human labels and must not be presented as legal advice.
+\end{enumerate}
+
+L\_RAG implements these requirements through structured corpus records, the
+G-LRAG overlay, frozen per-question artifacts, and paired analyses. The
+dataset and benchmark that make the requirements testable are described next.

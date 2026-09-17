@@ -1,73 +1,281 @@
 % ============================================================================
-% Section 3: Legal Dataset and Benchmark Construction scaffold
+% Section 3: Legal Dataset and Benchmark Construction
 % ============================================================================
 \section{Legal Dataset and Benchmark Construction}
 \label{sec:dataset-construction}
 
-\textit{Guidance: Describe the corpus and benchmark as reproducible data
-products. Keep the running Vietnamese legal question consistent across the
-dataset, graph, retrieval, and generation examples.}
+The experiments use two linked data products: a processed Vietnamese legal
+corpus and a question-answer benchmark with explicit evidence provenance. The
+ingestion path preserves the hierarchy of an instrument instead of flattening
+all text into unrelated passages. This section records the transformations,
+quality gates, and final statistics needed to reproduce the evaluation
+denominators.
 
 \subsection{Legal Corpus and Raw Data Sources}
 \label{sec:raw-corpus}
 
-\textit{Guidance: Inventory raw files, record types, identifiers,
-relationships, and text fields. Reuse the document-type distribution and add
-a sanitized metadata and relationship example.}
+The corpus contains Vietnamese legal instruments such as National Assembly
+laws, government decrees, Prime Minister decisions, and ministry circulars.
+Each source record is associated with a stable document identifier, title,
+issuing authority, issue and effective dates, validity status, document type,
+and the raw body from which provisions and chunks are derived. Relationship
+records retain their source and target identifiers, relation type, and any
+available date or confidence metadata.
+
+The processed inventory contains 151,624 documents, 1,386,267 provisions,
+1,513,376 retrieval chunks, 883,256 document-level relationships, and 19,763
+external-reference stubs. The scale summary is linked in
+\hyperref[tab:corpus-statistics]{Table~\ref*{tab:corpus-statistics}}. The
+counts refer to processed records, not a claim that every current Vietnamese
+instrument is present or legally valid.
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Processed Vietnamese legal corpus inventory.}
+\label{tab:corpus-statistics}
+\begin{tabular}{llr}
+\toprule
+\textbf{Entity} & \textbf{Description} & \textbf{Count} \\
+\midrule
+Documents & Full legal instruments and source metadata & 151,624 \\
+Provisions & Articles, clauses, items, and hierarchical units & 1,386,267 \\
+Chunks & Retrieval passages with parent pointers & 1,513,376 \\
+Document relationships & Amend, replace, cite, repeal, and related links & 883,256 \\
+External stubs & Referenced entities not resolved in the corpus & 19,763 \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 \subsection{Dataset Normalization and Cleaning}
 \label{sec:dataset-normalization}
 
-\textit{Guidance: Document identifier, date, document-type, status, and
-relationship transformations. Reuse the data-pipeline figure and add a
-before-and-after record plus a normalization-rules table.}
+Normalization converts heterogeneous source records into deterministic fields.
+Identifiers are canonicalized before joins; dates are represented in one
+machine-readable convention; document type and status values are mapped to a
+controlled vocabulary; and empty or malformed body fields are retained in an
+audit stream instead of silently becoming empty passages. The normalization
+rules are summarized in \hyperref[tab:normalization-rules]{Table~\ref*{tab:normalization-rules}}.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Normalization rules applied before indexing.}
+\label{tab:normalization-rules}
+\begin{tabular}{p{0.24\columnwidth}p{0.64\columnwidth}}
+\toprule
+\textbf{Field} & \textbf{Rule and audit behavior} \\
+\midrule
+Identifier & Trim, canonicalize separators, and preserve the source key for traceability. \\
+Dates & Parse issue/effective dates into a consistent date representation; retain missing values for audit. \\
+Document type & Map source labels to a controlled type vocabulary; keep the raw label as metadata. \\
+Status & Preserve effective, amended, repealed, and unknown states rather than inferring validity from text. \\
+Text & Normalize whitespace and headings while retaining the original body and provision order. \\
+Relations & Resolve in-corpus targets; create an external stub when the target is unavailable. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Cleaning is intentionally conservative. A record is not discarded merely
+because it has an unresolved relation, since that relation can be useful as a
+visible limitation. Records with unusable identifiers, missing structural
+parents, or failed parsing gates are quarantined and counted separately from
+the accepted corpus.
 
 \subsection{Relationship Processing and External References}
 \label{sec:relationship-processing}
 
-\textit{Guidance: Explain resolved in-corpus targets, unresolved external
-targets, external stubs, relationship vocabulary, and direction verification.
-Add the relationship-resolution diagram, vocabulary table, and stub example.}
+Relationship processing separates resolved in-corpus targets from references
+that point outside the snapshot. Resolved edges store a canonical source,
+target, relation vocabulary value, direction, and provenance. An unresolved
+target becomes an \texttt{ExternalStub} with the original reference string;
+the stub is not treated as retrievable legal text. Direction is checked against
+the relation semantics before a graph edge is made available to query-time
+traversal.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Relationship vocabulary used by the graph-ready corpus.}
+\label{tab:relationship-vocabulary}
+\begin{tabular}{p{0.38\columnwidth}p{0.49\columnwidth}}
+\toprule
+\textbf{Relation} & \textbf{Interpretation} \\
+\midrule
+\texttt{DOCUMENT\_HAS\_PROVISION} & Document contains a hierarchical provision. \\
+\texttt{PROVISION\_HAS\_CHUNK} & Provision owns an indexed passage. \\
+\texttt{CHUNK\_NEXT} & Adjacent chunks in reading order. \\
+\texttt{PROVISION\_NEXT} & Adjacent provisions in reading order. \\
+\texttt{CITES} & Source instrument explicitly cites a target instrument. \\
+\texttt{AMENDS}/\texttt{REPEALS} & Source changes or terminates a target instrument. \\
+\texttt{REPLACES} & Source supersedes a target instrument. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The relation inventory supports both structural context recovery and legal
+dependency analysis. It does not turn every citation into a validity decision:
+authority and effective-date overlays are applied only when the relevant
+fields and edge direction have passed verification.
 
 \subsection{Quarantine and Data-Quality Verification}
 \label{sec:quarantine}
 
-\textit{Guidance: Show accepted records, quarantined records, verification
-gates, final inclusion, audit counts, and reconciliation identities. Reuse the
-edge-quarantine asset.}
+Quality verification runs before a record contributes to the retrieval index
+or graph. The gates check identifier uniqueness, document-to-provision and
+provision-to-chunk parentage, non-empty indexed text, relation endpoint
+resolution, and direction consistency. A failed gate writes the record and
+reason to a quarantine ledger so that the final inventory can be reconciled
+without guessing how many records were removed.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Data-quality gates and their downstream effect.}
+\label{tab:data-quality-gates}
+\begin{tabular}{p{0.34\columnwidth}p{0.53\columnwidth}}
+\toprule
+\textbf{Gate} & \textbf{Action on failure} \\
+\midrule
+Identifier and parent integrity & Quarantine; do not emit a retrievable child record. \\
+Text availability & Quarantine empty or unparseable passages; retain audit reason. \\
+Relation endpoint & Resolve target or emit an external stub. \\
+Relation direction & Keep in audit stream until direction is verified. \\
+Validity metadata & Preserve unknown status and exclude it from strict filters. \\
+Count reconciliation & Block export until document/provision/chunk counts agree. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This quarantine policy is conservative by design. It avoids propagating an
+incorrect legal edge, but it can lower recall by excluding records whose
+metadata is incomplete. That trade-off is part of the corpus limitations
+discussed in Section~\ref{sec:discussion-limitations-ethics}.
 
 \subsection{Legal Text Structuring}
 \label{sec:text-structuring}
 
-\textit{Guidance: Describe the Document $\rightarrow$ Provision $\rightarrow$
-Chunk hierarchy and provenance pointers. Reuse the provision and chunk assets
-and add the structured-artifact inventory.}
+The canonical hierarchy is
+\textit{Document $\rightarrow$ Provision $\rightarrow$ Chunk}. A document
+stores source-level metadata; a provision stores article, clause, item, and
+heading information; and a chunk stores the text presented to the retriever,
+its sequence number, and pointers back to both parents. The embedded text can
+be chunk-only or metadata-enriched, but the provenance fields remain present
+in both variants.
+
+For each indexed passage, the minimum provenance object is
+\begin{equation}
+\begin{aligned}
+\mathrm{ChunkMeta} = \{&\mathrm{chunk\_id},\mathrm{doc\_id},\\
+&\mathrm{provision\_id},\mathrm{title},\\
+&\mathrm{issuing\_authority},\mathrm{effective\_date},\\
+&\mathrm{sequence}\}.
+\end{aligned}
+\end{equation}
+This structure lets evaluation match retrieved IDs to gold evidence even when
+the visible passage is shortened for a prompt. It also lets the graph restore
+neighboring passages without losing the source document.
 
 \subsection{QA Benchmark Construction}
 \label{sec:benchmark-construction}
 
-\textit{Guidance: Show context sampling, question generation, verification,
-diversity filtering, deduplication, and final export. Add the benchmark-flow
-figure, a record example, and stage-count table.}
+The benchmark contains 500 Vietnamese legal questions: 400 answerable
+questions with gold evidence and 100 deliberately unanswerable questions.
+Candidates were generated from bundles of approximately three to five related
+provisions and chunks using \texttt{gemini-3.1-flash-lite}. A separate
+verification pass checked answerability from the supplied evidence, absence
+of unsupported claims, category and difficulty labels, and consistency of the
+reference answer. Diversity filtering and deduplication were applied only
+after candidates passed those checks.
+
+The final generation run sampled 515 documents and 1,697 provisions, and
+72.41\% of candidates passed verification before filtering. The resulting
+question records carry the same stable \texttt{qa\_id} through retrieval,
+generation, and post-hoc analysis. Unanswerable questions have empty gold
+evidence by construction so that refusal behavior can be measured separately
+from answer generation.
 
 \subsection{Question Categories and Answer Types}
 \label{sec:question-taxonomy}
 
-\textit{Guidance: Define single-hop, citation, legal-validity, multi-hop, and
-cross-document categories, and relate them to abstractive, boolean,
-extractive, and unanswerable answer types. Add the category-answer-type
-matrix.}
+Question categories encode the evidence pattern rather than the expected
+answer length. Single-hop questions can be answered from one local passage;
+citation questions require identifying a named authority; legal-validity
+questions depend on status or date; multi-hop questions require more than one
+linked passage; and cross-document questions require a relation between
+instruments. Answer types are abstractive, boolean, extractive, or
+unanswerable. The final category counts are linked in
+\hyperref[tab:benchmark-taxonomy]{Table~\ref*{tab:benchmark-taxonomy}}.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Benchmark category and answer-type inventory.}
+\label{tab:benchmark-taxonomy}
+\begin{tabular}{lr|lr}
+\toprule
+\textbf{Category} & \textbf{Count} & \textbf{Answer type} & \textbf{Count} \\
+\midrule
+Single hop & 265 & Abstractive & 199 \\
+Citation & 106 & Boolean & 123 \\
+Legal validity & 96 & Extractive & 78 \\
+Multi hop & 21 & Unanswerable & 100 \\
+Cross-document & 12 & Answerable total & 400 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The category counts sum to 500, while the answer-type counts intentionally
+separate the 400 answerable records from the 100 unanswerable records. Small
+subgroups, particularly multi-hop and cross-document questions, are retained
+for diagnosis but are not treated as stable estimates of generalization.
 
 \subsection{Ground-Truth Evidence}
 \label{sec:ground-truth}
 
-\textit{Guidance: Explain reference answers and document, provision, and chunk
-identifiers. Add the evidence-link diagram, annotated JSONL record, and
-ground-truth coverage table.}
+Each question stores its text, category, answer type, reference answer, and a
+ground-truth object containing the supporting document, provision, and chunk
+identifiers:
+\begin{equation}
+\begin{aligned}
+Q_i=\{&\mathrm{qa\_id},\mathrm{question},\\
+&\mathrm{category},\mathrm{answer\_type},\\
+&\mathrm{reference\_answer},\mathrm{ground\_truth}\}.
+\end{aligned}
+\end{equation}
+For answerable questions, the gold chunk set $G_i$ is the retrieval relevance
+unit used for Recall@$k$, Hit@$k$, MRR@$k$, and nDCG@$k$. The document and
+provision IDs are retained so that document-level success and structural
+coverage can be analyzed alongside exact chunk ranking. For unanswerable
+questions, $G_i=\varnothing$ by design; they are not silently inserted into
+retrieval denominators.
+
+Gold evidence is an annotation target, not a complete legal theory. A legal
+expert may regard an alternative provision or a broader authority set as
+sufficient, and the benchmark does not provide that semantic judgment. The
+evaluation therefore states exactly what the gold IDs measure and what they do
+not establish.
 
 \subsection{Dataset Statistics and Validation}
 \label{sec:dataset-validation}
 
-\textit{Guidance: Report corpus size, missing-text counts, orphan counts,
-quarantine counts, external stubs, and reconciliation checks. Reuse the
-length, node-type, and document-type assets and add a validation dashboard.}
+Before export, the pipeline reconciles source, normalized, structured, and
+indexed counts. Every document points to zero or more provisions; every
+indexed chunk points to one provision and one document; every resolved legal
+edge points to existing endpoints; and every external reference points to a
+stub rather than an invented target. Missing-text, orphan, quarantine, and
+unknown-validity counts are retained in the audit ledger even when the final
+retrieval index excludes them.
+
+The validation identity is checked at each stage:
+\begin{equation}
+\begin{aligned}
+N_{\mathrm{input}} &= N_{\mathrm{accepted}} + N_{\mathrm{quarantined}},\\
+N_{\mathrm{relations}} &= N_{\mathrm{resolved}} + N_{\mathrm{external}}.
+\end{aligned}
+\end{equation}
+These identities make the corpus summary in
+\hyperref[tab:corpus-statistics]{Table~\ref*{tab:corpus-statistics}} auditable.
+They also explain why a graph or strict validity filter can reduce available
+evidence: the system prefers a visible missing or uncertain record to an
+unverified relation presented as authoritative.

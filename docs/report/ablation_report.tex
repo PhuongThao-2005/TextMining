@@ -41,24 +41,28 @@ Retrieval-Augmented Generation}
 \maketitle
 
 \begin{abstract}
-This report evaluates design choices in L\_RAG, a Vietnamese legal
-retrieval-augmented generation system, on a fixed 500-question benchmark
-(400 answerable and 100 unanswerable questions). We report four controlled
-ablation families rather than a pooled comparison: embedded chunk text,
-dense versus hybrid retrieval with graph expansion, reranking within a shared
-candidate pool, and Base versus chain-of-thought (CoT) prompting. Retrieval
-is scored against gold chunk identifiers; lexical answer overlap,
-template-based answerability behavior, structural citation fields, and
-recorded latency are separate diagnostics. Metadata improves document success
-at depth 10 by 4.5 percentage points but reduces MRR. The tested BM25+RRF
-hybrid loses 5.98 Recall@10 points to dense retrieval and increases median
-total latency from 5.483 to 31.538 seconds. One-hop graph expansion loses
-11.81--12.40 Recall@10 points, chiefly by replacing seed evidence. In a
-common 30-candidate pool, Jina reranking improves Recall@10 by 9.23 points
-and nDCG@10 by 11.85 points over RRF-only. Under fixed context, CoT decreases
-GPT-4o-mini Token F1 by 1.57 points. These are benchmark-bounded engineering
-findings: lexical and structural diagnostics do not establish legal
-correctness, citation entailment, or faithfulness.
+Legal question answering must retrieve evidence that is relevant, complete in
+its statutory context, valid at the relevant time, and traceable to an
+authoritative source. We evaluate L\_RAG, a Vietnamese legal
+retrieval-augmented generation pipeline that combines E5 dense retrieval,
+BM25, a knowledge-graph overlay, reciprocal-rank fusion, cross-encoder
+reranking, and citation-grounded generation. On a fixed 500-question
+benchmark (400 answerable and 100 unanswerable questions), we report five
+controlled ablation families rather than a pooled factorial comparison:
+embedding text, dense versus hybrid retrieval, graph expansion, reranking
+within a shared candidate pool, and Base versus chain-of-thought (CoT)
+prompting. Metadata improves document success at depth 10 by 4.5 percentage
+points but reduces MRR. The tested BM25+RRF hybrid loses 5.98 Recall@10
+points to dense retrieval and increases median total latency from 5.483 to
+31.538 seconds. One-hop graph expansion loses 11.81--12.40 Recall@10 points,
+chiefly by replacing seed evidence. In a common 30-candidate pool, Jina
+reranking improves Recall@10 by 9.23 points and nDCG@10 by 11.85 points over
+RRF-only. Under fixed context, CoT decreases GPT-4o-mini Token F1 by 1.57
+points. Retrieval is scored against gold chunk identifiers; lexical answer
+overlap, template-based answerability behavior, structural citation fields,
+and recorded latency are separate diagnostics. These are benchmark-bounded
+engineering findings: they do not establish legal correctness, citation
+entailment, or faithful reasoning.
 \end{abstract}
 
 % The report body is modular so each experiment can be updated without
@@ -74,12 +78,14 @@ correctness, citation entailment, or faithfulness.
 \input{sections/8_discussion}
 
 \section*{Acknowledgments}
-\textit{Guidance: Acknowledge supervision, dataset preparation, software,
-and any external resources or funding.}
+The authors thank Dr. Le Thanh Tung for guidance on the course project and
+the contributors who prepared the Vietnamese legal corpus, benchmark, and
+evaluation artifacts. We also acknowledge the open-source maintainers of the
+retrieval, embedding, reranking, and document-processing libraries used by
+the implementation.
 
 \section*{References}
-\textit{Guidance: Add the cited scholarly, technical, dataset, and legal
-sources here after the substantive sections are completed.}
+\bibliography{references}
 
 \input{appendix}
 

@@ -1,62 +1,188 @@
 % ============================================================================
-% Section 4: L_RAG System Design and Methodology scaffold
+% Section 4: L_RAG System Design and Methodology
 % ============================================================================
 \section{L\_RAG System Design and Methodology}
 \label{sec:system-design}
 
-\textit{Guidance: Explain how the data products become an end-to-end legal RAG
-system. Use the same identifiers and running example introduced in
-Section~\ref{sec:dataset-construction}.}
+L\_RAG turns the structured corpus and benchmark into an evidence-oriented
+retrieval and generation pipeline. Offline processing creates normalized
+records, graph artifacts, and vector or sparse indexes. Online processing
+resolves query scope, retrieves candidate chunks, optionally expands or
+filters them with the graph, reranks a bounded pool, and serializes the final
+context for a citation-grounded generator. The same document, provision, and
+chunk identifiers introduced in Section~\ref{sec:dataset-construction} are
+carried through every stage.
 
 \subsection{End-to-End System Architecture}
 \label{sec:architecture}
 
-\textit{Guidance: Reuse the system-architecture asset and add a labeled
-version covering corpus construction, graph construction, vector indexing,
-retrieval, ranking, generation, and output. Include a component
-responsibilities table.}
+The architecture has five operational phases: (1) query and temporal-scope
+resolution, (2) dense and optional sparse retrieval, (3) graph filtering or
+context expansion, (4) rank fusion and candidate reranking, and (5) prompt
+construction, generation, and cited output. \hyperref[fig:architecture]{Figure~\ref*{fig:architecture}}
+shows the data flow and the point at which each family of ablations changes a
+component.
+
+\begin{figure*}[t]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=1.45cm, auto,
+    block/.style={rectangle, draw=blue!80, fill=blue!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners},
+    kgblock/.style={rectangle, draw=green!60!black, fill=green!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners},
+    llmblock/.style={rectangle, draw=red!70, fill=red!5, thick, minimum width=3cm, minimum height=1cm, align=center, rounded corners},
+    line/.style={draw, -latex', thick}]
+    \node [block] (query) {User query $q$\\+(date/scope)};
+    \node [block, right=1.3cm of query] (retrieve) {Dense E5\\+ optional BM25};
+    \node [kgblock, below=1.15cm of retrieve] (graph) {G-LRAG overlay\\filter/expand};
+    \node [block, right=1.3cm of retrieve] (fuse) {RRF and\\candidate mask};
+    \node [block, right=1.3cm of fuse] (rank) {Cross-encoder\\reranking};
+    \node [llmblock, below=1.15cm of rank] (generate) {Grounded prompt\\gpt-4o-mini};
+    \node [block, left=1.3cm of generate] (output) {Answer +\\source citations};
+    \path [line] (query) -- (retrieve);
+    \path [line] (query) |- (graph);
+    \path [line] (retrieve) -- (fuse);
+    \path [line] (graph) -- (fuse);
+    \path [line] (fuse) -- (rank);
+    \path [line] (rank) -- (generate);
+    \path [line] (generate) -- (output);
+\end{tikzpicture}%
+}%
+\caption{End-to-end operational workflow of L\_RAG. The graph and reranker
+stages are optional branches whose effects are tested under separate frozen
+ablation controls.}
+\label{fig:architecture}
+\end{figure*}
+
+The component boundaries are deliberate. The retriever decides which chunks
+are available, the graph can alter that set under a fixed context budget, the
+reranker only reorders a candidate pool, and the generator sees a serialized
+top-10 context. This separation prevents a generation metric from being
+mistaken for evidence-retrieval quality.
 
 \subsection{Offline Data and Index Construction}
 \label{sec:offline-construction}
 
-\textit{Guidance: Describe the normalized-data branches for structured text,
-graph artifacts, and vector-index artifacts. Reuse the graph-pipeline asset
-and add the offline pipeline and artifact-lineage diagrams.}
+Offline construction branches from the normalized records into three linked
+artifacts. The structured-text branch emits provisions and chunks with stable
+parent pointers. The graph branch emits document, provision, chunk, and
+relationship nodes plus validity and authority metadata. The retrieval branch
+embeds either chunk-only or header-plus-chunk text into a FAISS index and
+builds tokenized BM25 shards for configurations that enable sparse retrieval.
+
+The dense index uses L2-normalized vectors and inner-product search, which is
+equivalent to cosine ranking for normalized embeddings. The graph and index
+artifacts keep the same chunk IDs, so a retrieved vector row can be joined
+back to its document and provision without fuzzy matching. Frozen manifests
+record the corpus snapshot, model checkpoint, index path, configuration name,
+and benchmark version used to create each evaluation run.
 
 \subsection{Online Query-Processing Workflow}
 \label{sec:online-query}
 
-\textit{Guidance: Add a sequence diagram for query embedding, dense/BM25
-retrieval, graph filtering or expansion, fusion, reranking, context
-construction, and generation. Include decision paths for insufficient evidence,
-invalid filters, and unanswerable questions.}
+At query time, the system first preserves the raw Vietnamese question and any
+explicit date or scope constraint. The query encoder produces an E5 vector;
+the dense branch retrieves a broad seed set, while the optional BM25 branch
+searches tokenized shards. The branches are merged with RRF when hybrid mode
+is enabled. A graph configuration can then apply an ID whitelist or expand
+five seeds by one hop along structural edges. The resulting candidates are
+trimmed to the family-specific budget, reranked when enabled, and serialized
+as the final ten chunks.
+
+Insufficient evidence follows an observable fallback path. If no candidate
+survives a valid scope filter, if the context contains no usable text, or if
+the prompt's evidence threshold is not met, the generator is instructed to
+emit \texttt{INSUFFICIENT\_CONTEXT}. This marker is saved for evaluation; it
+is not treated as proof that the question was legally unanswerable. Invalid
+filters and unresolved external references remain visible in the run record
+instead of being silently repaired.
 
 \subsection{Knowledge Graph Construction}
 \label{sec:graph-construction}
 
-\textit{Guidance: Define Document, ExternalStub, Provision, and Chunk nodes;
-structural and legal edges; validity and authority overlays; traversal; and
-the graph API mapping. Reuse the graph-pipeline, node-distribution, and
-edge-dashboard assets.}
+The G-LRAG graph uses Document ($D$), Provision ($P$), Chunk ($C$), and
+ExternalStub nodes. Structural edges encode
+\texttt{DOCUMENT\_HAS\_PROVISION}, \texttt{PROVISION\_HAS\_CHUNK},
+\texttt{CHUNK\_NEXT}, and \texttt{PROVISION\_NEXT}. Legal-relation edges encode
+citations, amendments, replacements, and repeals. Each edge retains source
+provenance and is available to query-time traversal only after direction and
+endpoint checks.
+
+The overlay folds validity fields relative to an \texttt{as\_of\_date}
+parameter and can sort candidates by authority rank. A simplified precedence
+ordering used for filtering is
+\begin{equation}
+\text{Constitution} \succ \text{Law/Code} \succ
+\text{Decree} \succ \text{Circular}.
+\end{equation}
+Reading-order traversal follows adjacent chunks or provisions to recover
+nearby context. In the completed graph ablation, however, the traversal is
+limited to five seeds and at most ten retained chunks; this policy can replace
+strong seed evidence and is therefore evaluated as a change to the candidate
+set, not as a free context addition.
 
 \subsection{Retrieval and Ranking}
 \label{sec:retrieval-ranking}
 
-\textit{Guidance: Explain chunk-text construction, E5 and FAISS retrieval,
-Vietnamese BM25, RRF, graph expansion, and the 30-candidate reranker pool.
-Add the planned diagrams and reranker-configuration table.}
+The dense encoder is \texttt{intfloat/multilingual-e5-large}. For the
+metadata condition, the indexed string is
+\begin{equation}
+\begin{aligned}
+\text{Text}_{\mathrm{embed}}={}&\text{DocumentTitle}
+\;\parallel\;\text{ProvisionHeader}\\
+&\;\parallel\;\text{ChunkContent}.
+\end{aligned}
+\end{equation}
+the chunk-only condition removes the first two fields. The FAISS index uses
+\texttt{IndexFlatIP}. Sparse retrieval uses \texttt{rank\_bm25} with
+\texttt{underthesea} tokenization and $k_1=1.5$, $b=0.75$. Dense and sparse
+lists are fused by
+\begin{equation}
+\mathrm{RRF}(d)=\sum_{m\in\{\mathrm{dense},\mathrm{BM25}\}}
+\frac{1}{60+r_m(d)}.
+\end{equation}
+
+The dense/hybrid/graph family retrieves 50 seeds and retains at most ten final
+chunks. The reranker family reconstructs a common RRF pool of 30 candidates
+($C_{30}$), then retains ten ($T_{10}$). mMiniLM, Qwen3, BGE, and Jina score
+the full query--candidate pair with a cross-encoder. Models are loaded,
+executed, and unloaded sequentially to avoid GPU memory interference. The
+reranker can improve ordering inside $C_{30}$, but it cannot recover evidence
+that never entered the pool.
 
 \subsection{Answer Generation}
 \label{sec:answer-generation}
 
-\textit{Guidance: Describe context serialization, prompt anatomy, answer
-formats, citation mapping, and the insufficient-context branch. Do not include
-hidden chain-of-thought; show only observable prompt and output structure.}
+The context serializer writes each retained chunk with its chunk ID, document
+title, provision header, and passage text. The generator receives a fixed
+temperature of $0.0$, a maximum of 1,024 output tokens, and instructions to
+answer in the requested type: abstractive, boolean, extractive, or
+unanswerable. A citation should identify the governing article or instrument,
+and an insufficient context should produce the visible marker
+\texttt{INSUFFICIENT\_CONTEXT}.
+
+The observable output record contains the final answer, citation markers,
+parser fields, refusal marker, latency, and the ordered context IDs. It does
+not contain hidden chain-of-thought, reasoning-token accounting, or a human
+claim-entailment annotation. Consequently, the evaluation can report output
+format and lexical overlap but cannot infer legal correctness from a fluent
+answer or a well-formed citation.
 
 \subsection{End-to-End Worked Example}
 \label{sec:worked-example}
 
-\textit{Guidance: Carry one real benchmark question through source document,
-structured provision, chunk, graph neighborhood, ranked evidence, and final
-cited answer. Add the six-stage storyboard, evidence table, and success or
-failure comparison.}
+Consider a benchmark question asking whether a specified land-use action is
+permitted under a named Vietnamese instrument. The source record is first
+joined to its document ID and effective date. Its controlling article is
+represented as a provision, and the provision is split into ordered chunks
+whose IDs remain linked to the parent. The query encoder retrieves candidate
+chunks; the graph can add the adjacent clause or a cited instrument; RRF and
+the reranker order the retained candidates; and the serializer presents the
+top ten with their provenance.
+
+The generator then produces an answer in the requested format and attaches
+the document and provision identifiers used as citations. If the retrieved
+context contains only a related definition but not the operative condition,
+the intended output is \texttt{INSUFFICIENT\_CONTEXT}. The example illustrates
+why the report distinguishes document success from exact chunk recall and
+citation presence from citation entailment: each is a different observable
+stage in the same traceable workflow.

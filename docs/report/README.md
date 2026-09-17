@@ -1,10 +1,12 @@
 # L_RAG report sources
 
 ablation_report.tex is the canonical ACL-style manuscript entry point for the
-report. Its section order now follows report_structure.md: Sections 1--8 and
-Appendices A--F use the prescribed headings. Sections 1--5, 7, 8, and the
-appendices intentionally contain short guidance placeholders; Section 6
-retains the completed deterministic ablation evidence.
+report. Its section order follows report_structure.md: Sections 1--8 and
+Appendices A--F use the prescribed headings. The current tree combines the
+substantive system, dataset, protocol, and discussion prose from the earlier
+report with the detailed, inline-linked five-family ablation analysis in
+Section 6. The legacy Sections 9 and 10 remain as compatibility files but are
+not included by the canonical entry point.
 
 The ablation branch keeps compact manifests, aggregate metrics, derived
 reports, analysis code, and the compiled manuscript. Raw per-query outputs,
@@ -30,14 +32,14 @@ anonymous, line-numbered ACL review layout.
 
 | File | Role |
 | --- | --- |
-| sections/1_introduction.tex | Introduction structure and guidance |
-| sections/2_related_work.tex | Background and Related Work structure |
-| sections/3_system_overview.tex | Legal Dataset and Benchmark Construction structure |
-| sections/4_dataset_and_corpus.tex | L_RAG System Design and Methodology structure |
-| sections/5_experimental_setup.tex | Implementation and Experimental Setup structure |
+| sections/1_introduction.tex | Combined Introduction prose and scope |
+| sections/2_related_work.tex | Combined Background and Related Work prose |
+| sections/3_system_overview.tex | Legal Dataset and Benchmark Construction |
+| sections/4_dataset_and_corpus.tex | L_RAG System Design and Methodology |
+| sections/5_experimental_setup.tex | Controls, metrics, configurations, and reproducibility |
 | sections/6_ablation_study.tex | Completed ablation evidence in the planned 6.1--6.10 layout |
-| sections/7_results.tex | Discussion, limitations, and ethical considerations guidance |
-| sections/8_discussion.tex | Conclusion and future work guidance |
+| sections/7_results.tex | Discussion, limitations, and ethical considerations |
+| sections/8_discussion.tex | Conclusion and future work |
 | sections/9_limitations.tex | Legacy guidance file; not included |
 | sections/10_conclusion.tex | Legacy guidance file; not included |
-| appendix.tex | Appendices A--F guidance skeleton |
+| appendix.tex | Substantive Appendices A--F: schemas, examples, configs, prompts, and artifacts |

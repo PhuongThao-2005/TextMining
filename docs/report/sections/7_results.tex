@@ -10,19 +10,27 @@
 The ablations yield one clear positive retrieval intervention and several
 conditional or negative findings. Cross-encoder reranking improves the rank of
 evidence already admitted to the shared C30 pool; Jina has the strongest
-retrieval result, while BGE has the strongest lexical answer overlap. By
+retrieval result, while BGE has the strongest lexical answer overlap (the
+paired evidence is linked in
+\hyperref[tab:reranker-paired]{Table~\ref*{tab:reranker-paired}}). By
 contrast, the tested hybrid and graph configurations reduce exact gold-chunk
-coverage. These statements concern a finite benchmark and its gold evidence,
-not legal advice quality in deployment.
+coverage, as shown by the dense/hybrid comparison in
+\hyperref[tab:dense-hybrid-results]{Table~\ref*{tab:dense-hybrid-results}} and
+the graph displacement counts in
+\hyperref[tab:graph-effect]{Table~\ref*{tab:graph-effect}}. These statements
+concern a finite benchmark and its gold evidence, not legal advice quality in
+deployment.
 
 \subsection{Retrieval Quality, Context Coverage, and Latency Trade-offs}
 \label{sec:retrieval-quality-tradeoffs}
 
 DenseOnly is the preferred retrieval baseline in the dense/hybrid study: it
 achieves Recall@10 of 0.4855 at 0.797-second retrieval p50. HybridOnly falls
-to 0.4257 and takes 27.855 seconds when amortized BM25 time is included. Graph
-contexts appear more identity-precise because they contain only 5.605--6.305
-chunks on average, but their reduced context size also removes gold coverage.
+to 0.4257 and takes 27.855 seconds when amortized BM25 time is included
+(\hyperref[tab:dense-hybrid-results]{Table~\ref*{tab:dense-hybrid-results}}).
+Graph contexts appear more identity-precise because they contain only
+5.605--6.305 chunks on average, but their reduced context size also removes
+gold coverage (\hyperref[tab:graph-effect]{Table~\ref*{tab:graph-effect}}).
 The reranker result has a different interpretation: it operates after a fixed
 candidate ceiling, so Jina's gain is a ranking gain rather than proof that the
 underlying candidate retriever finds more evidence.
@@ -32,12 +40,14 @@ underlying candidate retriever finds more evidence.
 
 For this benchmark, use header-plus-chunk embeddings when correct document
 identification is more valuable than the rank of an exact chunk; otherwise
-prefer the chunk-only representation. Do not deploy the current BM25+RRF or
-one-hop graph setup as the default retrieval path without retuning. Prefer
-Jina when retrieval quality justifies its 1.278-second reranking p50, or
-mMiniLM when its lower 0.385-second cost is more important. Retain the Base
-prompt for lexical answer overlap. In all cases, present citations as sources
-to inspect and retain human review for legal interpretation.
+prefer the chunk-only representation
+(\hyperref[tab:embedding-results]{Table~\ref*{tab:embedding-results}}).
+Do not deploy the current BM25+RRF or one-hop graph setup as the default
+retrieval path without retuning. Prefer Jina when retrieval quality justifies
+its 1.278-second reranking p50, or mMiniLM when its lower 0.385-second cost is
+more important. Retain the Base prompt for lexical answer overlap. In all
+cases, present citations as sources to inspect and retain human review for
+legal interpretation.
 
 \subsection{Dataset and Coverage Limitations}
 \label{sec:dataset-coverage-limitations}

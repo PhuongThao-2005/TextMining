@@ -5,30 +5,190 @@
 
 \section{Dataset and JSONL Schemas}
 \label{app:dataset-jsonl-schemas}
-\textit{Guidance: Document the normalized document, provision, chunk, QA,
-evidence, and run-record schemas with representative JSONL fields.}
+
+The corpus and evaluation artifacts use line-delimited JSON records so that a
+single question or passage can be audited without loading the full corpus.
+The minimum normalized document, provision, chunk, question, and run fields
+are listed in \hyperref[tab:jsonl-schemas]{Table~\ref*{tab:jsonl-schemas}}.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{Core fields in the machine-readable report artifacts.}
+\label{tab:jsonl-schemas}
+\begin{tabular}{p{0.20\textwidth}p{0.27\textwidth}p{0.43\textwidth}}
+\toprule
+\textbf{Record} & \textbf{Required identifiers} & \textbf{Representative fields} \\
+\midrule
+Document & \texttt{doc\_id} & title, document type, issuing authority, issue/effective dates, validity status, raw source. \\
+Provision & \texttt{provision\_id}, \texttt{doc\_id} & heading, article/clause/item path, sequence, parent provision. \\
+Chunk & \texttt{chunk\_id}, \texttt{provision\_id}, \texttt{doc\_id} & passage text, sequence, embedded text variant, reading-order pointers. \\
+Question & \texttt{qa\_id} & question, category, answer type, reference answer, ground-truth IDs. \\
+Prediction & \texttt{qa\_id}, \texttt{run\_id} & answer, ordered context IDs, citation markers, refusal marker, status, error. \\
+Run manifest & \texttt{run\_id} & model/checkpoint, corpus snapshot, seed, configuration, code snapshot, timing files. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+The ground-truth object stores document, provision, and chunk IDs rather than
+only a text span. An unanswerable question has an empty gold set and remains
+in the scheduled denominator for answerability diagnostics. Prediction rows
+retain failed or skipped statuses in the ledger, while lexical metrics use
+only valid successful answerable rows. This distinction is required to
+reproduce the denominators in Section~\ref{sec:implementation-setup}.
 
 \section{Example Documents, Provisions, Chunks, and Edges}
 \label{app:example-objects}
-\textit{Guidance: Provide compact, anonymized examples showing hierarchy,
-chunking, metadata, and graph-edge construction.}
+
+The following compact example shows how one source is represented without
+including a full legal document:
+
+{\scriptsize
+\begin{verbatim}
+document: doc_id=LAW-EXAMPLE-2024
+          type=law, effective_date=2024-01-01
+provision: provision_id=LAW-EXAMPLE-2024-A15
+           article=15, parent=LAW-EXAMPLE-2024
+chunk: chunk_id=LAW-EXAMPLE-2024-A15-02
+       sequence=2, text="..."
+edges: DOCUMENT_HAS_PROVISION -> A15
+       PROVISION_HAS_CHUNK -> A15-02
+       CHUNK_NEXT: A15-01 -> A15-02 -> A15-03
+\end{verbatim}
+}
+
+The visible passage can be shortened for a prompt, but its parent identifiers
+remain unchanged. A relation to an unavailable instrument is represented as
+an external stub rather than a fabricated document:
+
+{\scriptsize
+\begin{verbatim}
+external_stub: stub_id=EXT-8841
+               reference="Instrument X, Article 4"
+relation: LAW-EXAMPLE-2024 --CITES--> EXT-8841
+status: unresolved_target=true
+        retrievable_text=false
+\end{verbatim}
+}
+
+These examples make the graph and retrieval joins explicit. They also explain
+why a high-ranked document can be counted as a document-level success while a
+specific article or chunk remains absent from the retrieved evidence.
 
 \section{Graph Relationship Vocabulary}
 \label{app:graph-vocabulary}
-\textit{Guidance: Define every relationship type, direction, source,
-confidence, and validity convention used by the knowledge graph.}
+
+Graph edges are directed and retain a source record, target record, relation
+type, provenance, and (when available) effective-date or confidence fields.
+The structural and legal relations used by L\_RAG are summarized in
+\hyperref[tab:appendix-edge-vocabulary]{Table~\ref*{tab:appendix-edge-vocabulary}}.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Graph relation conventions.}
+\label{tab:appendix-edge-vocabulary}
+\begin{tabular}{p{0.40\columnwidth}p{0.45\columnwidth}}
+\toprule
+\textbf{Edge} & \textbf{Direction and use} \\
+\midrule
+\texttt{DOCUMENT\_HAS\_PROVISION} & Document to contained provision. \\
+\texttt{PROVISION\_HAS\_CHUNK} & Provision to indexed chunk. \\
+\texttt{CHUNK\_NEXT} & Earlier chunk to next chunk in reading order. \\
+\texttt{PROVISION\_NEXT} & Earlier provision to next provision in reading order. \\
+\texttt{CITES} & Citing instrument to cited instrument. \\
+\texttt{AMENDS}/\texttt{REPEALS} & Later instrument to the instrument it changes or terminates. \\
+\texttt{REPLACES} & Superseding instrument to the replaced instrument. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Only verified directions are exposed to query-time traversal. An uncertain
+relation can remain in the audit ledger or point to an \texttt{ExternalStub},
+but it is not silently promoted to an authoritative retrievable edge. The
+validity overlay also records unknown status explicitly; it does not infer
+current law from a similar title.
 
 \section{Retrieval and Reranker Configurations}
 \label{app:retrieval-reranker-configurations}
-\textit{Guidance: Record index settings, candidate budgets, fusion constants,
-reranker checkpoints, scoring conventions, and hardware-relevant settings.}
+
+\hyperref[tab:appendix-config-reference]{Table~\ref*{tab:appendix-config-reference}}
+records the model checkpoints, budgets, and scoring conventions used across
+the completed runs. It complements the family-level table in
+Section~\ref{sec:implementation-setup} by documenting implementation details
+that are useful when reproducing an individual run.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\caption{System-wide component and model configuration reference.}
+\label{tab:appendix-config-reference}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lllp{6cm}}
+\toprule
+\textbf{Component} & \textbf{Model/checkpoint} & \textbf{Key settings} & \textbf{Role and convention} \\
+\midrule
+Dense retriever & \texttt{intfloat/multilingual-e5-large} & 560M parameters; normalized inner product & Encodes chunk-only or title+header+chunk text in FAISS \texttt{IndexFlatIP}. \\
+Sparse retriever & BM25 (\texttt{rank\_bm25}) & $k_1=1.5$, $b=0.75$; \texttt{underthesea} & Sharded lexical search over Vietnamese tokens. \\
+Fusion & RRF & $k=60$; $C_{30}$ where enabled & Combines dense and BM25 ranks before reranking. \\
+Graph overlay & G-LRAG & \texttt{as\_of\_date}; one-hop test & Validity filtering and reading-order expansion with a ten-chunk cap. \\
+mMiniLM & \texttt{mmarco-mMiniLMv2-L12-H384-v1} & 117M; FP32 & Lightweight cross-encoder baseline. \\
+BGE & \texttt{BAAI/bge-reranker-v2-m3} & 567M; multilingual & Cross-encoder with highest observed lexical overlap. \\
+Jina & \texttt{jinaai/jina-reranker-v2-base-multilingual} & 278M; position patch & Strongest observed fixed-pool retrieval scores. \\
+Qwen3 & \texttt{Qwen/Qwen3-Reranker-0.6B} & 0.6B; FP16 & CausalLM-based reranker with OOM retry handling. \\
+Generator & \texttt{gpt-4o-mini} & $T=0.0$; max 1024 tokens; $T_{10}$ & Grounded answer, provision citation, or \texttt{INSUFFICIENT\_CONTEXT}. \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
 
 \section{Prompt and Output Formats}
 \label{app:prompt-output-formats}
-\textit{Guidance: Include the base and reasoning prompts, expected structured
-outputs, citation format, refusal format, and parsing rules.}
+
+The Base and CoT conditions use the same retrieved context and output budget
+in the primary GPT-4o-mini comparison. The Base prompt asks for a concise
+answer supported by the supplied passages and provision-level citations. The
+CoT prompt adds an explicit reasoning instruction, but the saved artifacts
+retain only the final answer and observable diagnostics, not hidden reasoning.
+
+The output contract is conceptually:
+{\scriptsize
+\begin{verbatim}
+answer_type: boolean | extractive |
+             abstractive | unanswerable
+answer: final answer text or INSUFFICIENT_CONTEXT
+citations: [{doc_id, provision_id,
+             chunk_id, marker}]
+\end{verbatim}
+}
+
+The parser records citation presence, the number of unique sources, structural
+coverage of scored factual sentences, invalid markers, and refusal markers.
+These fields measure formatting and parser behavior. They do not determine
+whether a cited provision entails the adjacent statement, whether an answer
+is legally complete, or whether abstention was substantively appropriate.
 
 \section{Run Manifests and Additional Results}
 \label{app:run-manifests-results}
-\textit{Guidance: Link or summarize run manifests, seeds, code snapshots,
-additional slices, latency summaries, and machine-readable result files.}
+
+All paths below are relative to the repository root. The lean report commit
+retains manifests, aggregate metrics, derived reports, and latency summaries;
+large raw per-question outputs and retrieval caches remain local evaluation
+artifacts.
+
+\begin{itemize}
+    \item Embedding-text comparison: \url{ablation_study/chunkOnly_vs_chunkMetadata/results/}.
+    \item Dense, hybrid, and graph comparison: \url{ablation_study/dense_vs_Hybrid_vs_Graph/results/}.
+    \item Reranker source and analysis: \url{ablation_work/reranker_choices/evaluation_runs/ablation3_reranker_v2/} and \url{ablation_work/reranker_choices/analyze_reranker_metrics.py}.
+    \item Generator-reasoning analysis: \url{ablation_study/e2e_LLM_reasoning/results/report.md} and \url{ablation_work/e2e_LLM_Reasoning/analyze_posthoc.py}.
+    \item The teammate writing allocation is recorded in \url{docs/report/work_share.md}.
+\end{itemize}
+
+The detailed graph displacement counts, reranker paired intervals, category
+slices, evidence diagnostics, and latency table are linked in the relevant
+result sentences of Section~\ref{sec:ablation-study}. For example, the graph
+summary reports one graph-only gold recovery for DenseGraph versus 61 queries
+that lose a previously retrieved gold chunk, while HybridGraph reports six
+recoveries versus 59 losses. These values are not duplicated here so that the
+report has one canonical table for each result and one clickable path from the
+interpretive sentence to its evidence.
