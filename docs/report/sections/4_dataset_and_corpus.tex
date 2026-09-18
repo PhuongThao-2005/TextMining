@@ -161,6 +161,29 @@ executed, and unloaded sequentially to avoid GPU memory interference. The
 reranker can improve ordering inside $C_{30}$, but it cannot recover evidence
 that never entered the pool.
 
+Table~\ref{tab:retrieval-ranking-config} summarizes the retrieval and ranking
+settings used by the system.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Retrieval and ranking configuration.}
+\label{tab:retrieval-ranking-config}
+\begin{tabularx}{\columnwidth}{@{}p{0.28\columnwidth}X@{}}
+\toprule
+\textbf{Component} & \textbf{Configuration} \\
+\midrule
+Dense encoder & \texttt{intfloat/multilingual-e5-large}; L2-normalized vectors. \\
+Indexed text & Chunk-only or document title + provision header + chunk content. \\
+Dense index & FAISS \texttt{IndexFlatIP}. \\
+Sparse branch & \texttt{rank\_bm25} with \texttt{underthesea}; $k_1=1.5$, $b=0.75$, 10 shards. \\
+Fusion & RRF with $k=60$ when BM25 is enabled. \\
+Retrieval/graph & 50 candidates; 5 graph seeds; \texttt{max\_hop=1}; at most 10 final chunks. \\
+Reranking & Shared $C_{30}$ candidate pool and $T_{10}$ final context; optional cross-encoder. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
 \subsection{Answer Generation}
 \label{sec:answer-generation}
 
@@ -182,22 +205,42 @@ claim-entailment annotation. Consequently, the evaluation can report output
 format and lexical overlap but cannot infer legal correctness from a fluent
 answer or a well-formed citation.
 
+Table~\ref{tab:generation-config} records the generator, context, and output
+controls that determine the observable answer artifacts.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Answer-generation configuration.}
+\label{tab:generation-config}
+\begin{tabularx}{\columnwidth}{@{}p{0.28\columnwidth}X@{}}
+\toprule
+\textbf{Setting} & \textbf{Configuration} \\
+\midrule
+Generator & \texttt{gpt-4o-mini}; Base and CoT prompts are compared under fixed context. \\
+Temperature & $0.0$. \\
+Serialized context & Up to 10 chunks with chunk ID, document title, provision header, and passage text. \\
+Output limit & Retrieval/graph runs: no explicit client-side cap; fixed-context reasoning: 1,024 tokens. \\
+Insufficient evidence & Vietnamese fallback phrase for retrieval/graph; \texttt{INSUFFICIENT\_CONTEXT} for reasoning runs. \\
+Recorded output & Answer, citation markers, parser fields, refusal marker, latency, and ordered context IDs. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
 \subsection{End-to-End Worked Example}
 \label{sec:worked-example}
 
-Consider a benchmark question asking whether a specified land-use action is
-permitted under a named Vietnamese instrument. The source record is first
-joined to its document ID and effective date. Its controlling article is
-represented as a provision, and the provision is split into ordered chunks
-whose IDs remain linked to the parent. The query encoder retrieves candidate
-chunks; the graph can add the adjacent clause or a cited instrument; RRF and
-the reranker order the retained candidates; and the serializer presents the
-top ten with their provenance.
+A concrete trace is case \texttt{vlrag-5b20bcd0a2} from the completed
+\texttt{LLM-BaseReasoning} end-to-end run.
 
-The generator then produces an answer in the requested format and attaches
-the document and provision identifiers used as citations. If the retrieved
-context contains only a related definition but not the operative condition,
-the intended output is \texttt{INSUFFICIENT\_CONTEXT}. The example illustrates
-why the report distinguishes document success from exact chunk recall and
-citation presence from citation entailment: each is a different observable
-stage in the same traceable workflow.
+\textbf{Input.} ``Chúng tôi là đơn vị chuyên môn đang thực hiện phương án
+phòng chống bệnh dại, nếu kinh phí phát sinh ngoài kế hoạch đã được phê duyệt
+thì phải làm sao?''
+
+\textbf{Output.} ``Nếu có phát sinh về kinh phí so với phương án đã duyệt,
+UBND tỉnh sẽ xem xét và Sở Tài chính - Vật giá thực hiện theo phê duyệt của
+UBND tỉnh [1].''
+
+\textbf{Citation.} [1] \textit{V/v tăng cường biện pháp thực hiện phương án
+phòng chống bệnh dại}, document \texttt{116379}, item 2, chunk
+\texttt{116379::item::2::chunk::1}.

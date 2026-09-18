@@ -89,6 +89,55 @@ reads as ``source REL target.'' Relation groups whose direction can be determini
 Targets that resolve to accepted corpus documents are linked directly to their canonical document identifiers.
 References to documents outside the frozen corpus are represented as \texttt{ExternalStub} nodes rather than fabricated retrievable documents.
 These stubs preserve the existence and provenance of external references while remaining excluded from normal text retrieval.
+Figure~\ref{fig:relationship-processing} summarizes the target-resolution and relation-direction workflow.
+
+\begin{figure}[t]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.55cm and 0.75cm,
+    block/.style={rectangle, draw=blue!70, fill=blue!5, thick,
+        minimum width=3.0cm, minimum height=0.62cm, align=center,
+        rounded corners, font=\scriptsize},
+    decision/.style={diamond, draw=orange!80!black, fill=orange!8, thick,
+        minimum width=2.9cm, minimum height=0.75cm, align=center,
+        inner sep=1pt, font=\scriptsize},
+    outcome/.style={rectangle, draw=green!60!black, fill=green!5, thick,
+        minimum width=2.75cm, minimum height=0.62cm, align=center,
+        rounded corners, font=\scriptsize},
+    line/.style={draw, -latex', thick}]
+    \node [block] (source) {Source relationship records};
+    \node [block, below=of source] (normalize)
+        {Normalize IDs and relation labels};
+    \node [decision, below=of normalize] (target)
+        {Target in accepted corpus?};
+    \node [outcome, below left=0.8cm and 0.35cm of target] (internal)
+        {Link canonical document ID};
+    \node [outcome, below right=0.8cm and 0.35cm of target] (external)
+        {Create \texttt{ExternalStub}};
+    \node [decision, below=1.0cm of target] (direction)
+        {Direction reliably resolved?};
+    \node [outcome, below left=0.8cm and 0.35cm of direction] (verified)
+        {Mark direction-verified};
+    \node [outcome, below right=0.8cm and 0.35cm of direction] (unverified)
+        {Retain for audit only};
+    \node [block, below=1.0cm of direction] (graph)
+        {Graph context and dependency analysis};
+
+    \path [line] (source) -- (normalize);
+    \path [line] (normalize) -- (target);
+    \path [line] (target) -- node[left, font=\scriptsize]{yes} (internal);
+    \path [line] (target) -- node[right, font=\scriptsize]{no} (external);
+    \path [line] (internal) |- (direction);
+    \path [line] (external) |- (direction);
+    \path [line] (direction) -- node[left, font=\scriptsize]{yes} (verified);
+    \path [line] (direction) -- node[right, font=\scriptsize]{no} (unverified);
+    \path [line] (verified) |- (graph);
+    \path [line] (unverified) |- (graph);
+\end{tikzpicture}%
+}%
+\caption{Relationship-processing flow for resolving targets and verifying relation direction.}
+\label{fig:relationship-processing}
+\end{figure}
 
 The resulting relation inventory supports both structural context recovery and cross-document dependency analysis. Authority and temporal-validity reasoning is applied only when the required metadata and relation direction have passed the corresponding verification checks.
 
@@ -153,6 +202,48 @@ Documents retain source-level metadata, provisions represent citable legal units
 Chunking is provision-bounded: text from different provisions is never merged into the same chunk. Provisions whose extracted text does not exceed the hard limit remain as a single chunk. The pipeline uses a maximum of approximately 1,200 estimated tokens, corresponding to \texttt{CHUNK\_MAX\_CHARS = 4,800} under the deterministic estimate of four characters per token.
 
 Longer provisions are split within their parent provision. The splitter first prefers legal and visual boundaries such as \textit{khoản}, numbered paragraphs, list items, and table-like breaks. When these boundaries are insufficient, it falls back to a paragraph-aware sliding-window strategy targeting approximately 900 estimated tokens per chunk with about 130 tokens of overlap. All emitted chunks remain subject to the 1,200-token hard maximum.
+Figure~\ref{fig:text-structuring-flow} summarizes the deterministic structuring and chunk-emission path.
+
+\begin{figure}[t]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.55cm and 0.75cm,
+    block/.style={rectangle, draw=blue!70, fill=blue!5, thick,
+        minimum width=3.0cm, minimum height=0.62cm, align=center,
+        rounded corners, font=\scriptsize},
+    decision/.style={diamond, draw=orange!80!black, fill=orange!8, thick,
+        minimum width=3.0cm, minimum height=0.8cm, align=center,
+        inner sep=1pt, font=\scriptsize},
+    outcome/.style={rectangle, draw=green!60!black, fill=green!5, thick,
+        minimum width=2.75cm, minimum height=0.62cm, align=center,
+        rounded corners, font=\scriptsize},
+    line/.style={draw, -latex', thick}]
+    \node [block] (input) {Normalized document and text};
+    \node [block, below=of input] (parse)
+        {Parse document hierarchy\\and extract provisions};
+    \node [decision, below=of parse] (length)
+        {Provision within\\1,200-token hard limit?};
+    \node [outcome, below left=0.8cm and 0.35cm of length] (single)
+        {Emit one provision-bounded chunk};
+    \node [outcome, below right=0.8cm and 0.35cm of length] (split)
+        {Split at legal/visual boundaries\\or sliding windows};
+    \node [block, below=1.0cm of length] (ids)
+        {Assign stable document, provision,\\and chunk identifiers};
+    \node [block, below=of ids] (verify)
+        {Verify parent-child structure\\and export for indexing};
+
+    \path [line] (input) -- (parse);
+    \path [line] (parse) -- (length);
+    \path [line] (length) -- node[left, font=\scriptsize]{yes} (single);
+    \path [line] (length) -- node[right, font=\scriptsize]{no} (split);
+    \path [line] (single) |- (ids);
+    \path [line] (split) |- (ids);
+    \path [line] (ids) -- (verify);
+\end{tikzpicture}%
+}%
+\caption{Deterministic document-to-provision-to-chunk structuring workflow.}
+\label{fig:text-structuring-flow}
+\end{figure}
 
 Document titles, provision headings, and citation metadata are retained at the parent levels rather than duplicated into the base chunk record. They are joined with chunk text only when constructing metadata-enriched retrieval representations. Stable document, provision, and chunk identifiers preserve provenance throughout indexing, retrieval, and evaluation.
 
@@ -161,7 +252,7 @@ Document titles, provision headings, and citation metadata are retained at the p
 \scriptsize
 \caption{Chunk-length distribution in the frozen corpus. Token counts are deterministic estimates from the text-structuring pipeline.}
 \label{tab:chunk-length-distribution}
-\begin{tabular}{lrrrrrr}
+\begin{tabular}{@{}lrrrrrr@{}}
 \toprule
 \textbf{Measure} & \textbf{Min} & \textbf{P25} & \textbf{Median} & \textbf{P75} & \textbf{P95} & \textbf{Max} \\
 \midrule
@@ -246,15 +337,11 @@ The category counts sum to 500, while the answer-type counts separate the 400 an
 Each benchmark item stores its question, category, answer type, reference answer, and a structured evidence object containing document, provision, and chunk identifiers:
 
 \begin{equation}
-Q_i =
-\left(
-\mathrm{qa\_id},
-\mathrm{question},
-\mathrm{category},
-\mathrm{answer\_type},
-\mathrm{reference\_answer},
-\mathrm{ground\_truth}
-\right).
+\begin{aligned}
+Q_i = \bigl(&\mathrm{qa\_id},\ \mathrm{question},\ \mathrm{category},\\
+             &\mathrm{answer\_type},\ \mathrm{reference\_answer},\\
+             &\mathrm{ground\_truth}\bigr).
+\end{aligned}
 \end{equation}
 
 For each answerable question, the gold chunk set $G_i$ is the relevance unit used for Recall@$k$, Hit@$k$, MRR@$k$, and nDCG@$k$. Document and provision identifiers are retained to support document-level and structural analyses in addition to exact chunk ranking. For unanswerable questions, $G_i=\varnothing$ by construction and these cases are excluded from retrieval-metric denominators.

@@ -12,7 +12,7 @@ The corpus and evaluation pipeline use line-delimited JSON records so that indiv
 \caption{Core records used by the corpus and evaluation pipeline.}
 \label{tab:data-record-structure}
 
-\begin{tabular}{p{0.14\textwidth}p{0.22\textwidth}p{0.16\textwidth}p{0.40\textwidth}}
+\begin{tabularx}{\textwidth}{@{}p{0.14\textwidth}p{0.22\textwidth}p{0.16\textwidth}X@{}}
 \toprule
 \textbf{Record} & \textbf{Required identifiers} & \textbf{Structure} & \textbf{Representative fields} \\
 \midrule
@@ -46,7 +46,7 @@ Run manifest
 & JSON object
 & model/checkpoint, corpus snapshot, benchmark/configuration identifiers, seed, code snapshot, and timing artifacts where recorded. \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table*}
 
 Identifiers are stable across pipeline stages. A chunk resolves to one provision and document, while prediction records join to benchmark questions through \texttt{qa\_id} and to experimental conditions through \texttt{run\_id}. Ground-truth evidence is represented by document, provision, and chunk identifier arrays rather than by a text span alone.
@@ -331,7 +331,6 @@ Generator & \texttt{gpt-4o-mini} & $T=0.0$; family-specific cap; $T_{10}$ & Retr
 }
 \end{table*}
 
-\FloatBarrier
 \section{Prompt and Output Formats}
 \label{app:prompt-output-formats}
 
@@ -607,7 +606,6 @@ contaminating the scored final answer when a supported response shape is
 available, but it does not establish that the extracted text is faithful to
 the model's internal computation.
 
-\FloatBarrier
 \section{Run Manifests and Additional Results}
 \label{app:run-manifests-results}
 % \section{Run Manifests and Additional Results}

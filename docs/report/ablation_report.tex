@@ -15,14 +15,14 @@
 \usepackage[english,bidi=default]{babel}
 \babelfont{rm}{Times New Roman}
 \usepackage{graphicx}
+\usepackage{float}
 
 % Project-specific packages used by the section files.
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{tabularx}
 \usepackage{multirow}
-\usepackage{placeins}
-\usepackage{balance}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows, positioning}
 
@@ -94,8 +94,6 @@ entailment, or faithful reasoning.
 \input{sections/4_dataset_and_corpus}
 \input{sections/5_experimental_setup}
 \input{sections/6_ablation_study}
-\FloatBarrier
-\nobalance
 \input{sections/7_results}
 \input{sections/8_discussion}
 

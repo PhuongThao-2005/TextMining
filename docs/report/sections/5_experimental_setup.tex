@@ -69,6 +69,29 @@ The metadata study changes only the indexed string from chunk body to
 header-plus-chunk text; encoder, FAISS, top-$k=10$, generator, prompt, seed,
 corpus, and benchmark remain fixed.
 
+Table~\ref{tab:index-graph-runtime-config} summarizes the operational settings
+used by the completed retrieval, graph, reranking, and generation runs.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{Index, graph, and runtime configuration for completed runs.}
+\label{tab:index-graph-runtime-config}
+\begin{tabularx}{\columnwidth}{@{}p{0.30\columnwidth}X@{}}
+\toprule
+\textbf{Component} & \textbf{Frozen setting} \\
+\midrule
+Corpus/index & 1,513,376 chunk vectors; graph and index share stable chunk IDs. \\
+Dense retrieval & FAISS \texttt{IndexFlatIP}; 50-result search budget and broad filtering. \\
+Sparse retrieval & 10 BM25 shards with shard-local IDF and average-document-length statistics; optional branch. \\
+Fusion & Reciprocal Rank Fusion with $k=60$ when the sparse branch is enabled. \\
+Graph & Five seed chunks within parent provisions; \texttt{max\_hop=1}; replace baseline context; retain at most 10 chunks. \\
+Reranking & Shared $C_{30}$ pool followed by $T_{10}$ final context; no reranking or one of four cross-encoders. \\
+Generation & \texttt{gpt-4o-mini}; fixed-context Base/CoT comparison where applicable. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
 \begin{table*}[t]
 \centering
 \scriptsize
@@ -122,13 +145,14 @@ Recall and hit rate are defined as
 \end{aligned}
 \end{equation}
 
-Let $r_i$ be the rank of the first retrieved gold chunk. Truncated reciprocal rank is
+Let $r_i$ be the rank of the first retrieved gold chunk, with $r_i=\infty$
+when no gold chunk is retrieved. Truncated reciprocal rank is
 
 \begin{equation}
 \mathrm{MRR@}k_i =
 \begin{cases}
 1/r_i, & r_i \leq k,\\
-0, & r_i > k \text{ or no gold chunk is retrieved}.
+0, & r_i > k.
 \end{cases}
 \end{equation}
 

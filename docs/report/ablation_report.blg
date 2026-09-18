@@ -1,54 +1,52 @@
-This is BibTeX, Version 0.99e
+This is BibTeX, Version 0.99e (TeX Live 2026)
 Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: ablation_report.aux
-Reallocating 'name_of_file' (item size: 1) to 11 items.
 The style file: acl_natbib.bst
-Reallocating 'name_of_file' (item size: 1) to 11 items.
-Reallocating 'glb_str_end' (item size: 4) to 20 items.
-Reallocating 'glb_str_ptr' (item size: 4) to 20 items.
-Reallocating 'global_strs' (item size: 1) to 4000000 items.
-Reallocating 'singl_function' (item size: 4) to 100 items.
-Reallocating 'singl_function' (item size: 4) to 100 items.
-Reallocating 'wiz_functions' (item size: 4) to 6000 items.
+Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
+Reallocated global_strs (elt_size=200001) to 20 items from 10.
+Reallocated glb_str_end (elt_size=4) to 20 items from 10.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
 Database file #1: references.bib
-You've used 15 entries,
+You've used 16 entries,
             3782 wiz_defined-function locations,
-            816 strings with 9240 characters,
-and the built_in function-call counts, 12072 in all, are:
-= -- 995
-> -- 750
-< -- 7
-+ -- 302
-- -- 226
-* -- 817
-:= -- 1840
-add.period$ -- 60
-call.type$ -- 15
-change.case$ -- 160
-chr.to.int$ -- 16
-cite$ -- 15
-duplicate$ -- 693
-empty$ -- 767
-format.name$ -- 274
-if$ -- 2578
+            823 strings with 9404 characters,
+and the built_in function-call counts, 12532 in all, are:
+= -- 1040
+> -- 761
+< -- 8
++ -- 306
+- -- 229
+* -- 836
+:= -- 1920
+add.period$ -- 64
+call.type$ -- 16
+change.case$ -- 166
+chr.to.int$ -- 17
+cite$ -- 16
+duplicate$ -- 721
+empty$ -- 808
+format.name$ -- 278
+if$ -- 2685
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 159
-newline$ -- 79
-num.names$ -- 60
-pop$ -- 442
+missing$ -- 163
+newline$ -- 84
+num.names$ -- 64
+pop$ -- 452
 preamble$ -- 1
-purify$ -- 135
+purify$ -- 140
 quote$ -- 0
-skip$ -- 622
+skip$ -- 653
 stack$ -- 0
-substring$ -- 306
-swap$ -- 368
+substring$ -- 317
+swap$ -- 378
 text.length$ -- 5
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 135
+type$ -- 144
 warning$ -- 0
-while$ -- 56
+while$ -- 59
 width$ -- 0
-write$ -- 187
+write$ -- 199
